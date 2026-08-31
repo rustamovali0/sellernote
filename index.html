@@ -7,6 +7,7 @@
   <title>Mal Uçotu</title>
 
   <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f172a'/%3E%3Cpath d='M13 44L25 32l9 6 17-18' fill='none' stroke='%2334d399' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M44 20h7v7' fill='none' stroke='%2334d399' stroke-width='5' stroke-linecap='round'/%3E%3Ctext x='13' y='27' font-size='19' font-family='Arial' font-weight='700' fill='white'%3E%E2%82%BC%3C/text%3E%3C/svg%3E" />
+  <link id="appAppleTouchIcon" rel="apple-touch-icon" sizes="180x180" href="">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -3188,16 +3189,21 @@ function applyBranding(){
     $("logoDropText").classList.remove("hidden");
   }
 
-  if(favicon){
-    $("appFavicon").href=favicon;
-    $("faviconSettingsPreview").src=favicon;
-    $("faviconSettingsPreview").classList.remove("hidden");
-    $("faviconDropText").classList.add("hidden");
-  }else{
-    $("faviconSettingsPreview").removeAttribute("src");
-    $("faviconSettingsPreview").classList.add("hidden");
-    $("faviconDropText").classList.remove("hidden");
-  }
+ if(favicon){
+  $("appFavicon").href = favicon;
+  $("appAppleTouchIcon").href = favicon;
+
+  $("faviconSettingsPreview").src = favicon;
+  $("faviconSettingsPreview").classList.remove("hidden");
+  $("faviconDropText").classList.add("hidden");
+}else{
+  $("appFavicon").removeAttribute("href");
+  $("appAppleTouchIcon").removeAttribute("href");
+
+  $("faviconSettingsPreview").removeAttribute("src");
+  $("faviconSettingsPreview").classList.add("hidden");
+  $("faviconDropText").classList.remove("hidden");
+}
 }
 
 async function uploadBrandAsset(file,type){
