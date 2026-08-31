@@ -6,8 +6,9 @@
   <meta name="theme-color" content="#0f172a" />
   <title>Mal Uçotu</title>
 
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f172a'/%3E%3Cpath d='M13 44L25 32l9 6 17-18' fill='none' stroke='%2334d399' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M44 20h7v7' fill='none' stroke='%2334d399' stroke-width='5' stroke-linecap='round'/%3E%3Ctext x='13' y='27' font-size='19' font-family='Arial' font-weight='700' fill='white'%3E%E2%82%BC%3C/text%3E%3C/svg%3E" />
+  <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f172a'/%3E%3Cpath d='M13 44L25 32l9 6 17-18' fill='none' stroke='%2334d399' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M44 20h7v7' fill='none' stroke='%2334d399' stroke-width='5' stroke-linecap='round'/%3E%3Ctext x='13' y='27' font-size='19' font-family='Arial' font-weight='700' fill='white'%3E%E2%82%BC%3C/text%3E%3C/svg%3E" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
     :root{
@@ -367,6 +368,243 @@
       }
     }
 
+  
+    .sales-quick-actions{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+      margin:-2px 0 10px;
+    }
+    .sales-quick-actions .btn{
+      min-width:0;
+      min-height:42px;
+      padding:8px 7px;
+      font-size:12px;
+      line-height:1.15;
+      white-space:normal;
+    }
+
+    .settings-card{
+      padding:13px;
+      margin-bottom:12px;
+    }
+    .settings-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:9px;
+      min-width:0;
+      margin-bottom:11px;
+      flex-wrap:wrap;
+    }
+    .settings-head>div{min-width:0}
+    .settings-title{
+      font-weight:850;
+      font-size:15px;
+      overflow-wrap:anywhere;
+    }
+    .settings-card .category-item{
+      box-shadow:none;
+      background:var(--card2);
+      border-radius:14px;
+    }
+    .log-filters{
+      display:grid;
+      gap:8px;
+      margin-bottom:11px;
+    }
+    .log-list{
+      display:grid;
+      gap:8px;
+    }
+    .log-item{
+      padding:11px;
+      border:1px solid var(--line);
+      background:var(--card2);
+      border-radius:14px;
+      min-width:0;
+    }
+    .log-top{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      min-width:0;
+      align-items:flex-start;
+    }
+    .log-title{
+      min-width:0;
+      font-weight:800;
+      overflow-wrap:anywhere;
+    }
+    .log-date{
+      flex:0 0 auto;
+      max-width:42%;
+      font-size:10px;
+      color:var(--muted);
+      text-align:right;
+    }
+    .log-tags{
+      display:flex;
+      gap:5px;
+      flex-wrap:wrap;
+      margin-top:7px;
+    }
+    .log-tag{
+      font-size:9px;
+      padding:4px 7px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:var(--muted);
+      background:var(--card);
+    }
+
+    .sale-with-image{
+      display:grid;
+      grid-template-columns:58px minmax(0,1fr);
+      gap:10px;
+      align-items:start;
+    }
+    .sale-thumb{
+      width:58px;
+      height:58px;
+      border-radius:12px;
+      object-fit:cover;
+      background:var(--card2);
+      border:1px solid var(--line);
+    }
+    .not-recorded{
+      color:var(--muted)!important;
+      font-weight:650!important;
+    }
+    #looseSaleModal .preview{aspect-ratio:16/8}
+
+    @media(max-width:350px){
+      .sales-quick-actions .btn{font-size:11px;padding:7px 5px}
+      .log-date{max-width:38%}
+    }
+
+  
+    .app-logo-img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      border-radius:inherit;
+    }
+    .global-search-wrap{
+      margin:-3px 0 10px;
+    }
+    .global-search{
+      background:var(--card);
+      box-shadow:var(--shadow);
+      border-radius:15px;
+    }
+    .sales-quick-actions{
+      grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    }
+    .image-source-actions{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+    }
+    .image-source-actions .btn{
+      min-width:0;
+      white-space:normal;
+    }
+
+    .branding-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    .asset-drop{
+      width:100%;
+      min-width:0;
+      aspect-ratio:1/1;
+      padding:10px;
+      border-radius:16px;
+      border:1.5px dashed var(--line);
+      background:var(--card2);
+      color:var(--muted);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      overflow:hidden;
+      transition:border-color .15s, transform .15s, background .15s;
+    }
+    .asset-drop.dragging{
+      border-color:var(--text);
+      transform:scale(.985);
+    }
+    .asset-preview{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      border-radius:11px;
+    }
+    .asset-reset{
+      margin-top:7px;
+      font-size:11px;
+      min-height:38px;
+    }
+
+    .pdf-report{
+      width:760px;
+      padding:28px;
+      background:#fff;
+      color:#111827;
+      font-family:Arial,sans-serif;
+    }
+    .pdf-report-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      border-bottom:1px solid #e5e7eb;
+      padding-bottom:14px;
+      margin-bottom:16px;
+    }
+    .pdf-report-logo{
+      width:50px;
+      height:50px;
+      object-fit:contain;
+      border-radius:10px;
+    }
+    .pdf-report h1{margin:0;font-size:22px}
+    .pdf-report-sub{font-size:11px;color:#6b7280;margin-top:4px}
+    .pdf-table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:10px;
+    }
+    .pdf-table th,.pdf-table td{
+      padding:7px 6px;
+      border-bottom:1px solid #e5e7eb;
+      text-align:left;
+      vertical-align:top;
+    }
+    .pdf-table th{background:#f8fafc;font-weight:700}
+    .pdf-summary{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:8px;
+      margin:0 0 16px;
+    }
+    .pdf-summary>div{
+      border:1px solid #e5e7eb;
+      border-radius:9px;
+      padding:9px;
+    }
+    .pdf-summary-label{font-size:9px;color:#6b7280}
+    .pdf-summary-value{font-size:15px;font-weight:800;margin-top:3px}
+
+    @media(max-width:360px){
+      .sales-quick-actions{gap:5px}
+      .sales-quick-actions .btn{font-size:10px!important;padding:7px 4px!important}
+      .branding-grid{gap:7px}
+      .asset-reset{font-size:10px}
+    }
+
   </style>
 </head>
 
@@ -387,7 +625,10 @@
   <main id="mainApp" class="app hidden">
     <header class="topbar">
       <div class="brand">
-        <div class="brand-mark">M</div>
+        <div class="brand-mark">
+          <img id="appLogoImg" class="app-logo-img hidden" alt="Logo">
+          <span id="appLogoFallback">M</span>
+        </div>
         <div class="brand-copy">
           <div class="brand-title">Mal Uçotu</div>
           <div class="brand-sub">Satış və qazanc izləmə</div>
@@ -397,6 +638,10 @@
         <button id="themeToggle" class="icon-btn" type="button" aria-label="Tema dəyiş">☾</button>
       </div>
     </header>
+
+    <div class="global-search-wrap">
+      <input id="globalSearch" class="input global-search" type="search" placeholder="Satışlarda axtar..." autocomplete="off">
+    </div>
 
     <div id="todayText" class="today"></div>
 
@@ -478,9 +723,14 @@
         <h2>Satış tarixçəsi</h2>
         <div class="section-tools">
           <span id="salesCount" class="count">0 qeyd</span>
-          <button id="addSaleFromSales" class="btn secondary" type="button">+ Satış</button>
           <button id="toggleSalesDelete" class="top-delete" type="button">Sil</button>
         </div>
+      </div>
+
+      <div class="sales-quick-actions">
+        <button id="addSaleFromSales" class="btn secondary" type="button">+ Satış</button>
+        <button id="addLooseSale" class="btn secondary" type="button">+ Sərbəst satış</button>
+        <button id="openPdfExport" class="btn secondary" type="button">PDF</button>
       </div>
 
       <div class="toolbar">
@@ -552,13 +802,97 @@
 
     <section id="categoriesPage" class="hidden">
       <div class="section-head">
-        <h2>Kateqoriyalar</h2>
-        <button id="newCategoryBtn" class="btn" type="button">+ Əlavə et</button>
+        <h2>Parametrlər</h2>
       </div>
-      <div id="categoryList" class="category-list"></div>
 
-      <div class="card" style="padding:14px;margin-top:16px">
-        <div style="font-weight:850;margin-bottom:4px">Hesab</div>
+      <div class="card settings-card">
+        <div class="settings-head">
+          <div>
+            <div class="settings-title">Logo və favicon</div>
+            <div class="meta">Şəkli sürüklə-burax və ya üzərinə bas</div>
+          </div>
+        </div>
+
+        <div class="branding-grid">
+          <div>
+            <div class="label" style="margin-bottom:7px">Logo</div>
+            <button id="logoDropZone" class="asset-drop" type="button">
+              <img id="logoSettingsPreview" class="asset-preview hidden" alt="Logo ön baxış">
+              <span id="logoDropText">Logo seç / sürüklə</span>
+            </button>
+            <input id="logoFileInput" class="hidden" type="file" accept="image/*">
+            <button id="resetLogoBtn" class="btn secondary full asset-reset" type="button">Logonu sıfırla</button>
+          </div>
+
+          <div>
+            <div class="label" style="margin-bottom:7px">Favicon</div>
+            <button id="faviconDropZone" class="asset-drop" type="button">
+              <img id="faviconSettingsPreview" class="asset-preview hidden" alt="Favicon ön baxış">
+              <span id="faviconDropText">Favicon seç / sürüklə</span>
+            </button>
+            <input id="faviconFileInput" class="hidden" type="file" accept="image/*">
+            <button id="resetFaviconBtn" class="btn secondary full asset-reset" type="button">Faviconu sıfırla</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card settings-card">
+        <div class="settings-head">
+          <div>
+            <div class="settings-title">Kateqoriyalar</div>
+            <div class="meta">Məhsulları qruplaşdırmaq üçün</div>
+          </div>
+          <button id="newCategoryBtn" class="btn" type="button">+ Əlavə et</button>
+        </div>
+        <div id="categoryList" class="category-list"></div>
+      </div>
+
+      <div class="card settings-card">
+        <div class="settings-head">
+          <div>
+            <div class="settings-title">Fəaliyyət tarixçəsi</div>
+            <div class="meta">Əlavə, düzəliş və silinmə qeydləri</div>
+          </div>
+          <span id="logCount" class="count">0 qeyd</span>
+        </div>
+
+        <div class="log-filters">
+          <input id="logSearch" class="input" type="search" placeholder="Ada görə axtar..." />
+
+          <div class="row2">
+            <select id="logActionFilter" class="select">
+              <option value="">Bütün əməliyyatlar</option>
+              <option value="insert">Əlavə edildi</option>
+              <option value="update">Düzəliş edildi</option>
+              <option value="delete">Silindi</option>
+            </select>
+
+            <select id="logEntityFilter" class="select">
+              <option value="">Bütün bölmələr</option>
+              <option value="products">Məhsullar</option>
+              <option value="sales">Satışlar</option>
+              <option value="categories">Kateqoriyalar</option>
+              <option value="app_settings">Logo / favicon</option>
+            </select>
+          </div>
+
+          <select id="logDateFilter" class="select">
+            <option value="today">Bu gün</option>
+            <option value="yesterday">Dünən</option>
+            <option value="custom">Tarix seç</option>
+            <option value="all">Bütün tarixlər</option>
+          </select>
+
+          <div id="logDateBox" class="hidden">
+            <input id="logSingleDate" class="input" type="date" />
+          </div>
+        </div>
+
+        <div id="logList" class="log-list"></div>
+      </div>
+
+      <div class="card settings-card">
+        <div class="settings-title">Hesab</div>
         <div class="meta" style="margin-bottom:12px">Şəxsi hesab</div>
         <button id="logoutBtn" class="btn danger full" type="button">Hesabdan çıx</button>
       </div>
@@ -567,7 +901,7 @@
     <nav class="bottom-nav">
       <button class="nav-btn active" data-page="sales" type="button">Satışlar</button>
       <button class="nav-btn" data-page="dashboard" type="button">Məhsullar</button>
-      <button class="nav-btn" data-page="categories" type="button">Kateqoriya</button>
+      <button class="nav-btn" data-page="categories" type="button">Parametrlər</button>
     </nav>
 
     <button id="addProductBtn" class="floating-add hidden" type="button" aria-label="Məhsul əlavə et">+</button>
@@ -579,15 +913,22 @@
         <h3 id="productModalTitle">Məhsul əlavə et</h3>
         <button class="close" data-close="productModal" type="button">×</button>
       </div>
-      <form id="productForm" class="form">
+      <form id="productForm" class="form" novalidate>
         <input id="productId" type="hidden" />
         <div id="imagePreview" class="preview"><span>Şəkil seçilməyib</span></div>
-        <input id="productImage" class="input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
-        <input id="productName" class="input" placeholder="Məhsulun adı" required />
-        <select id="productCategory" class="select" required><option value="">Kateqoriya seç</option></select>
+
+        <div class="image-source-actions">
+          <button id="openProductCamera" class="btn secondary" type="button">📷 Kamera</button>
+          <button id="openProductGallery" class="btn secondary" type="button">🖼 Qalereya</button>
+        </div>
+
+        <input id="productCamera" class="hidden" type="file" accept="image/*" capture="environment" />
+        <input id="productGallery" class="hidden" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+        <input id="productName" class="input" placeholder="Məhsulun adı (boş qala bilər)" />
+        <select id="productCategory" class="select"><option value="">Kateqoriya seç</option></select>
         <div class="row2">
-          <div><label class="label">Satış qiyməti</label><input id="salePrice" class="input" type="number" min="0" step="0.01" inputmode="decimal" required /></div>
-          <div><label class="label">Maya dəyəri</label><input id="costPrice" class="input" type="number" min="0" step="0.01" inputmode="decimal" required /></div>
+          <div><label class="label">Satış qiyməti</label><input id="salePrice" class="input" type="number" min="0" step="0.01" inputmode="decimal" /></div>
+          <div><label class="label">Maya dəyəri</label><input id="costPrice" class="input" type="number" min="0" step="0.01" inputmode="decimal" /></div>
         </div>
         <div class="stat"><div class="label">1 ədəd qazanc</div><div id="profitPreview" class="value profit">₼0</div></div>
         <textarea id="productNote" class="textarea" placeholder="Qeyd (istəyə bağlı)"></textarea>
@@ -602,7 +943,7 @@
         <h3 id="saleModalTitle">Satış qeyd et</h3>
         <button class="close" data-close="saleModal" type="button">×</button>
       </div>
-      <form id="saleForm" class="form">
+      <form id="saleForm" class="form" novalidate>
         <input id="saleProductId" type="hidden" />
 
         <div id="saleProductSelectWrap" class="hidden">
@@ -618,7 +959,7 @@
         </div>
         <div>
           <label class="label">Satılan say</label>
-          <input id="saleQuantity" class="input" type="number" min="1" step="1" value="1" required />
+          <input id="saleQuantity" class="input" type="number" min="1" step="1" value="1" />
         </div>
         <div class="row2">
           <div class="stat"><div class="label">Satış məbləği</div><div id="saleTotalPreview" class="value">₼0</div></div>
@@ -629,14 +970,92 @@
     </div>
   </div>
 
+
+  <div id="looseSaleModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="looseSaleModalTitle">Sərbəst satış</h3>
+        <button class="close" data-close="looseSaleModal" type="button">×</button>
+      </div>
+
+      <form id="looseSaleForm" class="form" novalidate>
+        <input id="looseSaleId" type="hidden" />
+
+        <div id="looseSaleImagePreview" class="preview"><span>Şəkil seçilməyib</span></div>
+        <input id="looseSaleImage" class="input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+
+        <input id="looseSaleName" class="input" placeholder="Satış" value="Satış" />
+
+        <div class="row2">
+          <div>
+            <label class="label">Satış qiyməti</label>
+            <input id="looseSalePrice" class="input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Qeyd edilməyib" />
+          </div>
+          <div>
+            <label class="label">Maya dəyəri</label>
+            <input id="looseSaleCost" class="input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Qeyd edilməyib" />
+          </div>
+        </div>
+
+        <div>
+          <label class="label">Satılan say</label>
+          <input id="looseSaleQuantity" class="input" type="number" min="1" step="1" inputmode="numeric" placeholder="1" />
+        </div>
+
+        <div class="row2">
+          <div class="stat">
+            <div class="label">Satış məbləği</div>
+            <div id="looseSaleTotal" class="value">Qeyd edilməyib</div>
+          </div>
+          <div class="stat">
+            <div class="label">Qazanc</div>
+            <div id="looseSaleProfit" class="value profit">Qeyd edilməyib</div>
+          </div>
+        </div>
+
+        <textarea id="looseSaleNote" class="textarea" placeholder="Qeyd (boş qala bilər)"></textarea>
+        <button id="saveLooseSaleBtn" class="btn full" type="submit">Yadda saxla</button>
+      </form>
+    </div>
+  </div>
+
+
+  <div id="pdfExportModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>PDF export</h3>
+        <button class="close" data-close="pdfExportModal" type="button">×</button>
+      </div>
+
+      <form id="pdfExportForm" class="form">
+        <div class="row2">
+          <div>
+            <label class="label">Başlanğıc tarix</label>
+            <input id="pdfDateFrom" class="input" type="date" required>
+          </div>
+          <div>
+            <label class="label">Son tarix</label>
+            <input id="pdfDateTo" class="input" type="date" required>
+          </div>
+        </div>
+
+        <div class="meta">
+          Yalnız seçilən tarix aralığındakı satışlar PDF-ə daxil ediləcək.
+        </div>
+
+        <button id="exportPdfBtn" class="btn full" type="submit">PDF yarat</button>
+      </form>
+    </div>
+  </div>
+
   <div id="categoryModal" class="modal-backdrop hidden">
     <div class="modal">
       <div class="modal-head">
         <h3>Kateqoriya əlavə et</h3>
         <button class="close" data-close="categoryModal" type="button">×</button>
       </div>
-      <form id="categoryForm" class="form">
-        <input id="categoryName" class="input" placeholder="Məs: Telefonlar" required />
+      <form id="categoryForm" class="form" novalidate>
+        <input id="categoryName" class="input" placeholder="Məs: Telefonlar (boş qala bilər)" />
         <button class="btn full" type="submit">Yadda saxla</button>
       </form>
     </div>
@@ -661,8 +1080,12 @@ let currentUser=null;
 let products=[];
 let categories=[];
 let sales=[];
+let activityLogs=[];
+let appSettings={logo_url:null,favicon_url:null};
 let currentSaleProduct=null;
 let editingImageUrl=null;
+let editingSaleImageUrl=null;
+let pendingProductImageFile=null;
 
 let productDateMode="today";
 let salesDateMode="today";
@@ -845,8 +1268,36 @@ async function loadSales(){
   sales=data||[];
 }
 
+async function loadLogs(){
+  const {data,error}=await sb.from("activity_logs")
+    .select("*")
+    .order("created_at",{ascending:false})
+    .limit(1000);
+  if(error){
+    console.warn("activity_logs:",error.message);
+    activityLogs=[];
+    return;
+  }
+  activityLogs=data||[];
+}
+
+async function loadAppSettings(){
+  const {data,error}=await sb.from("app_settings")
+    .select("logo_url,favicon_url")
+    .maybeSingle();
+
+  if(error){
+    console.warn("app_settings:",error.message);
+    appSettings={logo_url:null,favicon_url:null};
+  }else{
+    appSettings=data||{logo_url:null,favicon_url:null};
+  }
+
+  applyBranding();
+}
+
 async function loadAll(){
-  await Promise.all([loadCategories(),loadProducts(),loadSales()]);
+  await Promise.all([loadCategories(),loadProducts(),loadSales(),loadLogs(),loadAppSettings()]);
   renderAll();
 }
 
@@ -862,7 +1313,7 @@ function renderCategoryOptions(){
   $("salesCategoryFilter").innerHTML='<option value="">Bütün kateqoriyalar</option>'+options;
   $("salesCategoryFilter").value=salesSelected;
 
-  $("productCategory").innerHTML='<option value="">Kateqoriya seç</option>'+options;
+  $("productCategory").innerHTML='<option value="">Kateqoriya seçilməyib</option>'+options;
 
   if($("saleProductSelect")){
     const selected=$("saleProductSelect").value;
@@ -967,6 +1418,24 @@ function renderProducts(){
   fitValues();
 }
 
+function displaySalePrice(sale){
+  return sale.sale_price_provided===false ? "Qeyd edilməyib" : money(sale.total_revenue);
+}
+
+function displayUnitSale(sale){
+  return sale.sale_price_provided===false ? "Qeyd edilməyib" : money(sale.unit_sale_price);
+}
+
+function displayCost(sale){
+  return sale.cost_price_provided===false ? "Qeyd edilməyib" : money(sale.total_cost);
+}
+
+function displayProfit(sale){
+  return (sale.sale_price_provided===false || sale.cost_price_provided===false)
+    ? "Qeyd edilməyib"
+    : money(sale.profit);
+}
+
 function renderSales(){
   const query=$("salesSearchInput").value.trim().toLowerCase();
   const category=$("salesCategoryFilter").value;
@@ -978,7 +1447,7 @@ function renderSales(){
   const selectedDate=$("salesSingleDate").value;
 
   let list=sales.filter(sale=>{
-    const name=String(sale.product_name||sale.products?.name||"").toLowerCase();
+    const name=String(sale.product_name||sale.products?.name||"Satış").toLowerCase();
     const revenue=Number(sale.total_revenue||0);
     const profit=Number(sale.profit||0);
     const qty=Number(sale.quantity||0);
@@ -1019,27 +1488,41 @@ function renderSales(){
 
   $("salesList").innerHTML=list.length?list.map(sale=>`
     <div class="card sale">
-      <div class="sale-top">
+      <div class="${sale.image_url?"sale-with-image":""}">
+        ${sale.image_url?`<img class="sale-thumb" src="${escapeHtml(sale.image_url)}" alt="${escapeHtml(sale.product_name||"Satış")}">`:""}
+
         <div>
-          <div class="sale-name">${escapeHtml(sale.product_name||sale.products?.name||"Məhsul")}</div>
-          <div class="meta">
-            ${formatDate(sale.created_at)} · ${sale.quantity} ədəd
-            ${sale.products?.categories?.name?" · "+escapeHtml(sale.products.categories.name):""}
+          <div class="sale-top">
+            <div>
+              <div class="sale-name">${escapeHtml(sale.product_name||sale.products?.name||"Satış")}</div>
+              <div class="meta">
+                ${formatDate(sale.created_at)} · ${sale.quantity||1} ədəd
+                ${sale.products?.categories?.name?" · "+escapeHtml(sale.products.categories.name):""}
+              </div>
+            </div>
+            <div class="sale-total ${sale.sale_price_provided===false?"not-recorded":""}">${displaySalePrice(sale)}</div>
+          </div>
+
+          <div class="price-row">
+            <span class="badge ${sale.sale_price_provided===false?"not-recorded":""}">Satış ${displayUnitSale(sale)}</span>
+            <span class="badge ${sale.cost_price_provided===false?"not-recorded":""}">Maya ${displayCost(sale)}</span>
+            <span class="badge profit ${(sale.sale_price_provided===false||sale.cost_price_provided===false)?"not-recorded":""}">Qazanc ${displayProfit(sale)}</span>
+          </div>
+
+          ${sale.note?`<div class="meta" style="margin-top:7px">${escapeHtml(sale.note)}</div>`:""}
+
+          <div class="actions">
+            <button class="btn secondary" data-edit-sale="${sale.id}" type="button">Düzəliş</button>
+            ${salesDeleteMode?`<button class="btn danger" data-delete-sale="${sale.id}" type="button">Sil</button>`:""}
           </div>
         </div>
-        <div class="sale-total">${money(sale.total_revenue)}</div>
       </div>
-
-      <div class="price-row">
-        <span class="badge">Maya ${money(sale.total_cost)}</span>
-        <span class="badge profit">Qazanc ${money(sale.profit)}</span>
-      </div>
-
-      ${salesDeleteMode
-        ? `<div class="actions"><button class="btn danger" data-delete-sale="${sale.id}" type="button">Sil</button></div>`
-        : ""}
     </div>
   `).join(""):'<div class="card empty">Bu seçimə uyğun satış yoxdur.</div>';
+
+  document.querySelectorAll("[data-edit-sale]").forEach(button=>{
+    button.addEventListener("click",()=>openEditSale(button.dataset.editSale));
+  });
 
   document.querySelectorAll("[data-delete-sale]").forEach(button=>{
     button.addEventListener("click",()=>deleteSale(button.dataset.deleteSale));
@@ -1066,11 +1549,55 @@ function renderCategories(){
   });
 }
 
+function logActionText(action){
+  return ({insert:"Əlavə edildi",update:"Düzəliş edildi",delete:"Silindi"})[action]||action;
+}
+
+function logEntityText(entity){
+  return ({products:"Məhsullar",sales:"Satışlar",categories:"Kateqoriyalar",app_settings:"Logo / favicon"})[entity]||entity;
+}
+
+function renderLogs(){
+  if(!$("logList"))return;
+
+  const query=$("logSearch").value.trim().toLowerCase();
+  const action=$("logActionFilter").value;
+  const entity=$("logEntityFilter").value;
+  const dateMode=$("logDateFilter").value;
+  const selectedDate=$("logSingleDate").value;
+
+  $("logDateBox").classList.toggle("hidden",dateMode!=="custom");
+
+  let list=activityLogs.filter(log=>{
+    if(query&&!String(log.title||"").toLowerCase().includes(query))return false;
+    if(action&&log.action!==action)return false;
+    if(entity&&log.entity_type!==entity)return false;
+    if(!dateMatches(log.created_at,dateMode,selectedDate))return false;
+    return true;
+  });
+
+  $("logCount").textContent=`${list.length} qeyd`;
+
+  $("logList").innerHTML=list.length?list.map(log=>`
+    <div class="log-item">
+      <div class="log-top">
+        <div class="log-title">${escapeHtml(log.title||"Qeyd")}</div>
+        <div class="log-date">${formatDate(log.created_at)}</div>
+      </div>
+      <div class="log-tags">
+        <span class="log-tag">${escapeHtml(logActionText(log.action))}</span>
+        <span class="log-tag">${escapeHtml(logEntityText(log.entity_type))}</span>
+      </div>
+    </div>
+  `).join(""):'<div class="empty" style="padding:14px">Bu filterə uyğun log yoxdur.</div>';
+}
+
 function renderAll(){
   renderCategoryOptions();
   renderProducts();
   renderSales();
   renderCategories();
+  renderLogs();
   renderStats();
 }
 
@@ -1084,6 +1611,7 @@ function showPage(page){
   });
 
   $("addProductBtn").classList.toggle("hidden",page!=="dashboard");
+  syncGlobalSearch(page);
   closeDropdowns();
   fitValues();
 }
@@ -1092,6 +1620,9 @@ function resetProductForm(){
   $("productForm").reset();
   $("productId").value="";
   editingImageUrl=null;
+  pendingProductImageFile=null;
+  $("productCamera").value="";
+  $("productGallery").value="";
   $("imagePreview").innerHTML="<span>Şəkil seçilməyib</span>";
   $("profitPreview").textContent=money(0);
   $("productModalTitle").textContent="Məhsul əlavə et";
@@ -1125,7 +1656,7 @@ function openEditProduct(id){
   $("productModalTitle").textContent="Məhsulu düzəlt";
   $("productId").value=product.id;
   $("productName").value=product.name;
-  $("productCategory").value=product.category_id;
+  $("productCategory").value=product.category_id||"";
   $("salePrice").value=product.sale_price;
   $("costPrice").value=product.cost_price;
   $("productNote").value=product.note||"";
@@ -1143,11 +1674,18 @@ function openEditProduct(id){
 async function deleteProduct(id){
   if(!confirm("Məhsulu silmək istəyirsiniz? Satış tarixçəsi qalacaq."))return;
 
-  const {error}=await sb.from("products").delete().eq("id",id);
-  if(error){toast(error.message);return}
+  const {data,error}=await sb.from("products").delete().eq("id",id).select("id");
+  if(error){
+    toast(error.message);
+    return;
+  }
 
-  await loadProducts();
-  renderAll();
+  if(!data||!data.length){
+    toast("Silinmədi. Supabase DELETE policy-ni yeniləyin.");
+    return;
+  }
+
+  await loadAll();
   toast("Məhsul silindi");
 }
 
@@ -1183,11 +1721,11 @@ function openSale(id){
 
 function openDirectSale(){
   if(!products.length){
-    toast("Satış əlavə etmək üçün əvvəl məhsul əlavə edin.");
+    toast("Məhsul yoxdur. Sərbəst satış istifadə edin.");
     return;
   }
 
-  currentSaleProduct=null;
+  currentSaleProduct=products[0];
   $("saleModalTitle").textContent="Yeni satış";
   $("saleQuantity").value=1;
   $("saleProductSelectWrap").classList.remove("hidden");
@@ -1196,18 +1734,19 @@ function openDirectSale(){
   $("saleProductSelect").innerHTML='<option value="">Məhsul seç</option>'+
     products.map(product=>`<option value="${product.id}">${escapeHtml(product.name)}</option>`).join("");
 
-  $("saleProductSelect").value="";
-  setSaleProduct(null);
+  $("saleProductSelect").value=currentSaleProduct.id;
+  setSaleProduct(currentSaleProduct);
   openModal("saleModal");
 }
 
 function updateSalePreview(){
   if(!currentSaleProduct){
-    toast("Məhsul seçin.");
+    $("saleTotalPreview").textContent=money(0);
+    $("saleProfitPreview").textContent=money(0);
     return;
   }
 
-  const quantity=Math.max(1,parseInt($("saleQuantity").value||1,10));
+  const quantity=Math.max(1,parseInt($("saleQuantity").value||1,10)||1);
 
   $("saleTotalPreview").textContent=money(Number(currentSaleProduct.sale_price)*quantity);
   $("saleProfitPreview").textContent=money(
@@ -1220,11 +1759,18 @@ function updateSalePreview(){
 async function deleteSale(id){
   if(!confirm("Bu satış qeydini silmək istəyirsiniz?"))return;
 
-  const {error}=await sb.from("sales").delete().eq("id",id);
-  if(error){toast(error.message);return}
+  const {data,error}=await sb.from("sales").delete().eq("id",id).select("id");
+  if(error){
+    toast(error.message);
+    return;
+  }
 
-  await loadSales();
-  renderAll();
+  if(!data||!data.length){
+    toast("Silinmədi. Supabase DELETE policy-ni yeniləyin.");
+    return;
+  }
+
+  await loadAll();
   toast("Satış silindi");
 }
 
@@ -1239,10 +1785,140 @@ async function deleteCategory(id){
   const {error}=await sb.from("categories").delete().eq("id",id);
   if(error){toast(error.message);return}
 
-  await loadCategories();
-  renderAll();
+  await loadAll();
   toast("Kateqoriya silindi");
 }
+
+/* Branding */
+
+function applyBranding(){
+  const logo=appSettings?.logo_url||null;
+  const favicon=appSettings?.favicon_url||null;
+
+  $("appLogoImg").classList.toggle("hidden",!logo);
+  $("appLogoFallback").classList.toggle("hidden",!!logo);
+
+  if(logo){
+    $("appLogoImg").src=logo;
+    $("logoSettingsPreview").src=logo;
+    $("logoSettingsPreview").classList.remove("hidden");
+    $("logoDropText").classList.add("hidden");
+  }else{
+    $("appLogoImg").removeAttribute("src");
+    $("logoSettingsPreview").removeAttribute("src");
+    $("logoSettingsPreview").classList.add("hidden");
+    $("logoDropText").classList.remove("hidden");
+  }
+
+  if(favicon){
+    $("appFavicon").href=favicon;
+    $("faviconSettingsPreview").src=favicon;
+    $("faviconSettingsPreview").classList.remove("hidden");
+    $("faviconDropText").classList.add("hidden");
+  }else{
+    $("faviconSettingsPreview").removeAttribute("src");
+    $("faviconSettingsPreview").classList.add("hidden");
+    $("faviconDropText").classList.remove("hidden");
+  }
+}
+
+async function uploadBrandAsset(file,type){
+  if(!file)return;
+
+  if(!file.type.startsWith("image/")){
+    toast("Yalnız şəkil faylı seçin.");
+    return;
+  }
+
+  if(file.size>5*1024*1024){
+    toast("Şəkil maksimum 5MB ola bilər.");
+    return;
+  }
+
+  const extension=(file.name.split(".").pop()||"png").toLowerCase();
+  const path=`${currentUser.id}/branding/${type}-${Date.now()}.${extension}`;
+
+  const {error:uploadError}=await sb.storage.from("product-images").upload(path,file,{upsert:false});
+  if(uploadError){
+    toast(uploadError.message);
+    return;
+  }
+
+  const url=sb.storage.from("product-images").getPublicUrl(path).data.publicUrl;
+  const payload={
+    user_id:currentUser.id,
+    [type==="logo"?"logo_url":"favicon_url"]:url,
+    updated_at:new Date().toISOString()
+  };
+
+  const {error}=await sb.from("app_settings").upsert(payload,{onConflict:"user_id"});
+  if(error){
+    toast(error.message);
+    return;
+  }
+
+  await loadAppSettings();
+  await loadLogs();
+  renderLogs();
+  toast(type==="logo"?"Logo yeniləndi":"Favicon yeniləndi");
+}
+
+async function resetBrandAsset(type){
+  const payload={
+    user_id:currentUser.id,
+    [type==="logo"?"logo_url":"favicon_url"]:null,
+    updated_at:new Date().toISOString()
+  };
+
+  const {error}=await sb.from("app_settings").upsert(payload,{onConflict:"user_id"});
+  if(error){
+    toast(error.message);
+    return;
+  }
+
+  await loadAppSettings();
+  await loadLogs();
+  renderLogs();
+  toast(type==="logo"?"Logo sıfırlandı":"Favicon sıfırlandı");
+}
+
+function bindAssetDrop(zoneId,inputId,type){
+  const zone=$(zoneId);
+  const input=$(inputId);
+
+  zone.addEventListener("click",()=>input.click());
+  input.addEventListener("change",()=>{
+    const file=input.files?.[0];
+    if(file)uploadBrandAsset(file,type);
+    input.value="";
+  });
+
+  ["dragenter","dragover"].forEach(eventName=>{
+    zone.addEventListener(eventName,event=>{
+      event.preventDefault();
+      zone.classList.add("dragging");
+    });
+  });
+
+  ["dragleave","drop"].forEach(eventName=>{
+    zone.addEventListener(eventName,event=>{
+      event.preventDefault();
+      zone.classList.remove("dragging");
+    });
+  });
+
+  zone.addEventListener("drop",event=>{
+    const file=event.dataTransfer?.files?.[0];
+    if(file)uploadBrandAsset(file,type);
+  });
+}
+
+bindAssetDrop("logoDropZone","logoFileInput","logo");
+bindAssetDrop("faviconDropZone","faviconFileInput","favicon");
+
+$("resetLogoBtn").addEventListener("click",()=>resetBrandAsset("logo"));
+$("resetFaviconBtn").addEventListener("click",()=>resetBrandAsset("favicon"));
+
 
 /* Theme */
 applyTheme(initialTheme());
@@ -1326,13 +2002,6 @@ $("toggleSalesDelete").addEventListener("click",()=>{
 /* Product add/edit */
 function openNewProductModal(){
   resetProductForm();
-
-  if(!categories.length){
-    toast("Əvvəl kateqoriya yaradın.");
-    showPage("categories");
-    return;
-  }
-
   openModal("productModal");
 }
 
@@ -1342,18 +2011,28 @@ $("addSaleFromSales").addEventListener("click",openDirectSale);
 $("salePrice").addEventListener("input",updateProfitPreview);
 $("costPrice").addEventListener("input",updateProfitPreview);
 
-$("productImage").addEventListener("change",()=>{
-  const file=$("productImage").files[0];
+function handleProductImageFile(file){
   if(!file)return;
 
   if(file.size>5*1024*1024){
     toast("Şəkil maksimum 5MB ola bilər.");
-    $("productImage").value="";
     return;
   }
 
+  pendingProductImageFile=file;
   const url=URL.createObjectURL(file);
   $("imagePreview").innerHTML=`<img src="${url}" alt="Ön baxış">`;
+}
+
+$("openProductCamera").addEventListener("click",()=>$("productCamera").click());
+$("openProductGallery").addEventListener("click",()=>$("productGallery").click());
+
+$("productCamera").addEventListener("change",()=>{
+  handleProductImageFile($("productCamera").files?.[0]);
+});
+
+$("productGallery").addEventListener("change",()=>{
+  handleProductImageFile($("productGallery").files?.[0]);
 });
 
 $("productForm").addEventListener("submit",async event=>{
@@ -1363,21 +2042,19 @@ $("productForm").addEventListener("submit",async event=>{
   try{
     const id=$("productId").value;
     let imageUrl=editingImageUrl;
-    const file=$("productImage").files[0];
+    const file=pendingProductImageFile;
 
     if(file)imageUrl=await uploadImage(file);
 
     const payload={
       user_id:currentUser.id,
-      category_id:$("productCategory").value,
-      name:$("productName").value.trim(),
-      sale_price:Number($("salePrice").value),
-      cost_price:Number($("costPrice").value),
+      category_id:$("productCategory").value||null,
+      name:$("productName").value.trim()||"Adsız məhsul",
+      sale_price:Number($("salePrice").value||0),
+      cost_price:Number($("costPrice").value||0),
       note:$("productNote").value.trim()||null,
       image_url:imageUrl||null
     };
-
-    if(!payload.name||!payload.category_id)throw new Error("Məlumatları tam doldurun.");
 
     let error;
 
@@ -1390,8 +2067,7 @@ $("productForm").addEventListener("submit",async event=>{
     if(error)throw error;
 
     closeModal("productModal");
-    await loadProducts();
-    renderAll();
+    await loadAll();
     toast(id?"Məhsul yeniləndi":"Məhsul əlavə edildi");
   }catch(error){
     toast(error.message||"Xəta baş verdi");
@@ -1410,18 +2086,26 @@ $("saleQuantity").addEventListener("input",updateSalePreview);
 
 $("saleForm").addEventListener("submit",async event=>{
   event.preventDefault();
-  if(!currentSaleProduct)return;
+  if(!currentSaleProduct){
+    currentSaleProduct=products[0]||null;
+    if(!currentSaleProduct){
+      toast("Məhsul yoxdur. Sərbəst satış istifadə edin.");
+      return;
+    }
+  }
 
-  const quantity=Math.max(1,parseInt($("saleQuantity").value||1,10));
+  const quantity=Math.max(1,parseInt($("saleQuantity").value||1,10)||1);
   $("saveSaleBtn").disabled=true;
 
   const {error}=await sb.from("sales").insert({
     user_id:currentUser.id,
     product_id:currentSaleProduct.id,
-    product_name:currentSaleProduct.name,
+    product_name:currentSaleProduct.name||"Satış",
     quantity,
-    unit_sale_price:Number(currentSaleProduct.sale_price),
-    unit_cost_price:Number(currentSaleProduct.cost_price)
+    unit_sale_price:Number(currentSaleProduct.sale_price||0),
+    unit_cost_price:Number(currentSaleProduct.cost_price||0),
+    sale_price_provided:true,
+    cost_price_provided:true
   });
 
   $("saveSaleBtn").disabled=false;
@@ -1429,10 +2113,138 @@ $("saleForm").addEventListener("submit",async event=>{
   if(error){toast(error.message);return}
 
   closeModal("saleModal");
-  await loadSales();
-  renderAll();
+  await loadAll();
   toast("Satış qeydə alındı");
 });
+
+/* Loose sale create/edit */
+
+function resetLooseSaleForm(){
+  $("looseSaleForm").reset();
+  $("looseSaleId").value="";
+  $("looseSaleName").value="Satış";
+  editingSaleImageUrl=null;
+  $("looseSaleImagePreview").innerHTML="<span>Şəkil seçilməyib</span>";
+  $("looseSaleModalTitle").textContent="Sərbəst satış";
+  updateLooseSalePreview();
+}
+
+function updateLooseSalePreview(){
+  const saleProvided=$("looseSalePrice").value!=="";
+  const costProvided=$("looseSaleCost").value!=="";
+  const salePrice=Number($("looseSalePrice").value||0);
+  const costPrice=Number($("looseSaleCost").value||0);
+  const quantity=Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1);
+
+  $("looseSaleTotal").textContent=saleProvided?money(salePrice*quantity):"Qeyd edilməyib";
+  $("looseSaleProfit").textContent=(saleProvided&&costProvided)
+    ? money((salePrice-costPrice)*quantity)
+    : "Qeyd edilməyib";
+
+  $("looseSaleTotal").classList.toggle("not-recorded",!saleProvided);
+  $("looseSaleProfit").classList.toggle("not-recorded",!(saleProvided&&costProvided));
+  fitValues();
+}
+
+function openLooseSale(){
+  resetLooseSaleForm();
+  openModal("looseSaleModal");
+}
+
+function openEditSale(id){
+  const sale=sales.find(item=>item.id===id);
+  if(!sale)return;
+
+  resetLooseSaleForm();
+
+  $("looseSaleModalTitle").textContent="Satışı düzəlt";
+  $("looseSaleId").value=sale.id;
+  $("looseSaleName").value=sale.product_name||"Satış";
+  $("looseSaleQuantity").value=sale.quantity||1;
+  $("looseSalePrice").value=sale.sale_price_provided===false?"":Number(sale.unit_sale_price||0);
+  $("looseSaleCost").value=sale.cost_price_provided===false?"":Number(sale.unit_cost_price||0);
+  $("looseSaleNote").value=sale.note||"";
+
+  editingSaleImageUrl=sale.image_url||null;
+
+  if(editingSaleImageUrl){
+    $("looseSaleImagePreview").innerHTML=`<img src="${escapeHtml(editingSaleImageUrl)}" alt="Satış şəkli">`;
+  }
+
+  updateLooseSalePreview();
+  openModal("looseSaleModal");
+}
+
+$("addLooseSale").addEventListener("click",openLooseSale);
+
+["looseSalePrice","looseSaleCost","looseSaleQuantity"].forEach(id=>{
+  $(id).addEventListener("input",updateLooseSalePreview);
+});
+
+$("looseSaleImage").addEventListener("change",()=>{
+  const file=$("looseSaleImage").files[0];
+  if(!file)return;
+
+  if(file.size>5*1024*1024){
+    toast("Şəkil maksimum 5MB ola bilər.");
+    $("looseSaleImage").value="";
+    return;
+  }
+
+  const url=URL.createObjectURL(file);
+  $("looseSaleImagePreview").innerHTML=`<img src="${url}" alt="Ön baxış">`;
+});
+
+$("looseSaleForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+  $("saveLooseSaleBtn").disabled=true;
+
+  try{
+    const id=$("looseSaleId").value;
+    const file=$("looseSaleImage").files[0];
+
+    let imageUrl=editingSaleImageUrl;
+    if(file)imageUrl=await uploadImage(file);
+
+    const salePriceProvided=$("looseSalePrice").value!=="";
+    const costPriceProvided=$("looseSaleCost").value!=="";
+
+    const payload={
+      product_name:$("looseSaleName").value.trim()||"Satış",
+      quantity:Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1),
+      unit_sale_price:Number($("looseSalePrice").value||0),
+      unit_cost_price:Number($("looseSaleCost").value||0),
+      sale_price_provided:salePriceProvided,
+      cost_price_provided:costPriceProvided,
+      image_url:imageUrl||null,
+      note:$("looseSaleNote").value.trim()||null
+    };
+
+    let error;
+
+    if(id){
+      ({error}=await sb.from("sales").update(payload).eq("id",id));
+    }else{
+      ({error}=await sb.from("sales").insert({
+        user_id:currentUser.id,
+        product_id:null,
+        ...payload
+      }));
+    }
+
+    if(error)throw error;
+
+    closeModal("looseSaleModal");
+    await loadAll();
+    showPage("sales");
+    toast(id?"Satış yeniləndi":"Sərbəst satış yadda saxlanıldı");
+  }catch(error){
+    toast(error.message||"Satış yadda saxlanılmadı");
+  }finally{
+    $("saveLooseSaleBtn").disabled=false;
+  }
+});
+
 
 /* Categories */
 $("newCategoryBtn").addEventListener("click",()=>{
@@ -1443,8 +2255,11 @@ $("newCategoryBtn").addEventListener("click",()=>{
 $("categoryForm").addEventListener("submit",async event=>{
   event.preventDefault();
 
-  const name=$("categoryName").value.trim();
-  if(!name)return;
+  const typedName=$("categoryName").value.trim();
+  const generatedName="Kateqoriya "+new Intl.DateTimeFormat("az-AZ",{
+    day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"
+  }).format(new Date());
+  const name=typedName||generatedName;
 
   const {error}=await sb.from("categories").insert({
     user_id:currentUser.id,
@@ -1454,10 +2269,174 @@ $("categoryForm").addEventListener("submit",async event=>{
   if(error){toast(error.message);return}
 
   closeModal("categoryModal");
-  await loadCategories();
-  renderAll();
+  await loadAll();
   toast("Kateqoriya əlavə edildi");
 });
+
+
+/* PDF export */
+
+function dateOnlyInRange(value,from,to){
+  const date=isoLocalDate(new Date(value));
+  return date>=from && date<=to;
+}
+
+function buildPdfReport(list,from,to){
+  const report=document.createElement("div");
+  report.className="pdf-report";
+
+  const revenue=list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
+  const cost=list.reduce((sum,s)=>sum+Number(s.total_cost||0),0);
+  const profit=list.reduce((sum,s)=>sum+Number(s.profit||0),0);
+
+  const logo=appSettings?.logo_url
+    ? `<img class="pdf-report-logo" src="${escapeHtml(appSettings.logo_url)}" alt="Logo">`
+    : `<div style="width:50px;height:50px;border-radius:10px;background:#0f172a;color:#fff;display:grid;place-items:center;font-weight:800">M</div>`;
+
+  report.innerHTML=`
+    <div class="pdf-report-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        ${logo}
+        <div>
+          <h1>Satış hesabatı</h1>
+          <div class="pdf-report-sub">${escapeHtml(from)} - ${escapeHtml(to)}</div>
+        </div>
+      </div>
+      <div class="pdf-report-sub">${list.length} satış</div>
+    </div>
+
+    <div class="pdf-summary">
+      <div><div class="pdf-summary-label">Satış</div><div class="pdf-summary-value">${money(revenue)}</div></div>
+      <div><div class="pdf-summary-label">Maya</div><div class="pdf-summary-value">${money(cost)}</div></div>
+      <div><div class="pdf-summary-label">Qazanc</div><div class="pdf-summary-value">${money(profit)}</div></div>
+    </div>
+
+    <table class="pdf-table">
+      <thead>
+        <tr>
+          <th>Tarix</th>
+          <th>Ad</th>
+          <th>Say</th>
+          <th>Satış</th>
+          <th>Maya</th>
+          <th>Qazanc</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(sale=>`
+          <tr>
+            <td>${escapeHtml(formatDate(sale.created_at))}</td>
+            <td>${escapeHtml(sale.product_name||sale.products?.name||"Satış")}</td>
+            <td>${escapeHtml(sale.quantity||1)}</td>
+            <td>${escapeHtml(displaySalePrice(sale))}</td>
+            <td>${escapeHtml(displayCost(sale))}</td>
+            <td>${escapeHtml(displayProfit(sale))}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+
+  return report;
+}
+
+$("openPdfExport").addEventListener("click",()=>{
+  const today=isoLocalDate(new Date());
+  $("pdfDateFrom").value=today;
+  $("pdfDateTo").value=today;
+  openModal("pdfExportModal");
+});
+
+$("pdfExportForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const from=$("pdfDateFrom").value;
+  const to=$("pdfDateTo").value;
+
+  if(!from||!to){
+    toast("Tarix aralığını seçin.");
+    return;
+  }
+
+  if(from>to){
+    toast("Başlanğıc tarix son tarixdən böyük ola bilməz.");
+    return;
+  }
+
+  const list=sales
+    .filter(sale=>dateOnlyInRange(sale.created_at,from,to))
+    .sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+
+  if(!list.length){
+    toast("Bu tarix aralığında satış yoxdur.");
+    return;
+  }
+
+  $("exportPdfBtn").disabled=true;
+
+  try{
+    const report=buildPdfReport(list,from,to);
+    document.body.appendChild(report);
+
+    await html2pdf().set({
+      margin:8,
+      filename:`satislar-${from}-${to}.pdf`,
+      image:{type:"jpeg",quality:0.96},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
+      jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
+      pagebreak:{mode:["css","legacy"]}
+    }).from(report).save();
+
+    report.remove();
+    closeModal("pdfExportModal");
+  }catch(error){
+    console.error(error);
+    toast("PDF yaradılmadı.");
+  }finally{
+    $("exportPdfBtn").disabled=false;
+    document.querySelectorAll(".pdf-report").forEach(el=>el.remove());
+  }
+});
+
+
+/* Activity log filters */
+["logSearch","logActionFilter","logEntityFilter","logDateFilter","logSingleDate"].forEach(id=>{
+  const el=$(id);
+  el.addEventListener(id==="logSearch"?"input":"change",renderLogs);
+});
+
+
+function syncGlobalSearch(page){
+  const input=$("globalSearch");
+
+  if(page==="sales"){
+    input.placeholder="Satışlarda axtar...";
+    input.value=$("salesSearchInput").value;
+  }else if(page==="dashboard"){
+    input.placeholder="Məhsullarda axtar...";
+    input.value=$("searchInput").value;
+  }else{
+    input.placeholder="Loglarda axtar...";
+    input.value=$("logSearch").value;
+  }
+}
+
+$("globalSearch").addEventListener("input",()=>{
+  const active=document.querySelector(".nav-btn.active")?.dataset.page||"sales";
+  const value=$("globalSearch").value;
+
+  if(active==="sales"){
+    $("salesSearchInput").value=value;
+    renderSales();
+  }else if(active==="dashboard"){
+    $("searchInput").value=value;
+    renderProducts();
+  }else{
+    $("logSearch").value=value;
+    renderLogs();
+  }
+});
+
 
 /* Navbar */
 document.querySelectorAll(".nav-btn").forEach(button=>{
