@@ -13,11 +13,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.View;
+import android.view.WindowInsets;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -31,6 +33,7 @@ public class MainActivity extends Activity {
     private static final long DOUBLE_BACK_EXIT_MS = 2000L;
 
     private WebView webView;
+    private FrameLayout root;
     private ValueCallback<Uri[]> filePathCallback;
     private Uri cameraImageUri;
     private long lastBackPressedAt = 0L;
@@ -42,21 +45,33 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         getWindow().setStatusBarColor(Color.rgb(246, 248, 252));
-        getWindow().setNavigationBarColor(Color.WHITE);
+        getWindow().setNavigationBarColor(Color.rgb(246, 248, 252));
 
-        // Sistemin status/navigation bar sahələrini WebView-in üstünə gətirmə.
-        // Sonra əlavə rahat boşluq veririk.
+        // Android 15 daxil olmaqla bütün cihazlarda sistem barlarını özümüz nəzərə alırıq.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            getWindow().setDecorFitsSystemWindows(true);
+            getWindow().setDecorFitsSystemWindows(false);
         } else {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            );
         }
+
+        root = new FrameLayout(this);
+        root.setBackgroundColor(Color.rgb(246, 248, 252));
 
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(246, 248, 252));
         webView.setClipToPadding(true);
-        webView.setPadding(0, dp(18), 0, dp(26));
-        setContentView(webView);
+
+        FrameLayout.LayoutParams webParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+        );
+        root.addView(webView, webParams);
+        setContentView(root);
+        applyRealSafeSpacing();
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -74,6 +89,12 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 view.loadUrl(url);
                 return true;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                injectAppSpacing();
             }
         });
 
@@ -101,6 +122,48 @@ public class MainActivity extends Activity {
         } else {
             webView.restoreState(savedInstanceState);
         }
+    }
+
+    private void applyRealSafeSpacing() {
+        final int extraTop = dp(26);
+        final int extraBottom = dp(34);
+
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            int topInset;
+            int bottomInset;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                topInset = bars.top;
+                bottomInset = bars.bottom;
+            } else {
+                topInset = insets.getSystemWindowInsetTop();
+                bottomInset = insets.getSystemWindowInsetBottom();
+            }
+
+            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) webView.getLayoutParams();
+            params.topMargin = topInset + extraTop;
+            params.bottomMargin = bottomInset + extraBottom;
+            webView.setLayoutParams(params);
+
+            return insets;
+        });
+        root.requestApplyInsets();
+    }
+
+    private void injectAppSpacing() {
+        String js = "(function(){" +
+                "var id='rustamoff-apk-spacing';" +
+                "var s=document.getElementById(id);" +
+                "if(!s){s=document.createElement('style');s.id=id;document.head.appendChild(s);}" +
+                "s.textContent='" +
+                ".app{padding-top:22px!important;padding-bottom:170px!important;}" +
+                ".bottom-nav{bottom:24px!important;}" +
+                ".floating-add{bottom:108px!important;}" +
+                ".modal-backdrop{padding-top:28px!important;padding-bottom:24px!important;}" +
+                "';" +
+                "})();";
+        webView.evaluateJavascript(js, null);
     }
 
     private int dp(int value) {
@@ -223,7 +286,6 @@ public class MainActivity extends Activity {
 
             startActivityForResult(galleryIntent, FILE_CHOOSER_REQUEST);
         } catch (Exception error) {
-            // Bəzi cihazlarda sistem Photo Picker olmaya bilər — qalereya üçün ehtiyat seçim.
             try {
                 Intent fallback = new Intent(Intent.ACTION_GET_CONTENT);
                 fallback.setType("image/*");
