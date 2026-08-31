@@ -1044,6 +1044,45 @@
       color:var(--muted);
       font-size:18px;
     }
+
+    .multi-sale-image-btn{
+      width:52px;
+      height:52px;
+      padding:0;
+      border:0;
+      border-radius:11px;
+      background:transparent;
+      position:relative;
+      cursor:pointer;
+      overflow:visible;
+    }
+    .multi-sale-image-btn:focus-visible{
+      outline:2px solid var(--text);
+      outline-offset:2px;
+    }
+    .multi-sale-image-btn .multi-sale-thumb{
+      display:block;
+      width:52px;
+      height:52px;
+    }
+    .multi-sale-image-badge{
+      position:absolute;
+      right:-5px;
+      bottom:-5px;
+      min-width:20px;
+      height:20px;
+      padding:0 5px;
+      border-radius:999px;
+      border:2px solid var(--card2);
+      background:var(--primary);
+      color:var(--primaryText);
+      display:grid;
+      place-items:center;
+      font-size:9px;
+      font-weight:900;
+      line-height:1;
+    }
+
     .multi-sale-copy{
       min-width:0;
     }
@@ -1074,6 +1113,72 @@
       }
       .multi-sale-inputs{
         padding-left:0;
+      }
+    }
+
+  
+    .toolbar.with-clear{
+      grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;
+    }
+    .toolbar-clear{
+      min-height:46px;padding:0 13px;border:1px solid var(--line);border-radius:15px;
+      background:var(--card);color:var(--muted);box-shadow:var(--shadow);font-weight:800;
+      transition:transform .15s ease,border-color .15s ease,color .15s ease;
+    }
+    .toolbar-clear:hover{color:var(--text);border-color:color-mix(in srgb,var(--text) 28%,var(--line))}
+    .toolbar-clear:active{transform:scale(.97)}
+    .date-box{padding:0;overflow:hidden;border-radius:18px}
+    .custom-calendar{padding:13px;background:var(--card)}
+    .calendar-head{display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;gap:8px;margin-bottom:11px}
+    .calendar-head>div{text-align:center}
+    .calendar-head .date-label{margin:0 0 2px}
+    .calendar-title{font-size:15px;font-weight:850;text-transform:capitalize}
+    .calendar-nav{width:42px;height:42px;border:1px solid var(--line);border-radius:13px;background:var(--card2);color:var(--text);display:grid;place-items:center;font-size:24px;line-height:1;font-weight:700}
+    .calendar-nav:active{transform:scale(.96)}
+    .calendar-weekdays,.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+    .calendar-weekdays{margin-bottom:5px;color:var(--muted);font-size:10px;font-weight:800;text-align:center}
+    .calendar-weekdays span{min-height:24px;display:grid;place-items:center}
+    .calendar-day{aspect-ratio:1;min-width:0;min-height:34px;border:1px solid transparent;border-radius:11px;background:transparent;color:var(--text);font-size:12px;font-weight:750;display:grid;place-items:center;position:relative}
+    .calendar-day:hover{background:var(--card2);border-color:var(--line)}
+    .calendar-day.today:not(.selected){border-color:var(--line);background:var(--card2)}
+    .calendar-day.selected{background:var(--primary);color:var(--primaryText);box-shadow:0 7px 18px color-mix(in srgb,var(--primary) 20%,transparent)}
+    .calendar-blank{aspect-ratio:1;min-height:34px}
+    .calendar-today{width:100%;min-height:40px;margin-top:10px;border:1px solid var(--line);border-radius:12px;background:var(--card2);color:var(--text);font-weight:800}
+    @media(max-width:430px){
+      .toolbar.with-clear{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:6px}
+      .toolbar-clear{padding:0 9px;font-size:11px}
+      .toolbar.with-clear .drop-btn{padding-left:9px;padding-right:9px;font-size:13px}
+      .calendar-day{min-height:32px}
+    }
+
+  
+    /* Toolbar: Tarix + Filterlər + Təmizlə həmişə eyni sətirdə */
+    .toolbar.with-clear{
+      display:flex!important;
+      flex-wrap:nowrap!important;
+      align-items:stretch;
+      gap:8px;
+    }
+    .toolbar.with-clear > .dropdown{
+      flex:1 1 0;
+      min-width:0;
+    }
+    .toolbar.with-clear > .toolbar-clear{
+      flex:0 0 auto;
+      width:auto!important;
+      white-space:nowrap;
+      align-self:stretch;
+    }
+    @media(max-width:430px){
+      .toolbar.with-clear{gap:6px}
+      .toolbar.with-clear > .toolbar-clear{
+        padding:0 8px;
+        font-size:11px;
+      }
+      .toolbar.with-clear .drop-btn{
+        padding-left:8px;
+        padding-right:8px;
+        font-size:12px;
       }
     }
 
@@ -1134,7 +1239,7 @@
           </div>
         </div>
 
-        <div class="toolbar">
+        <div class="toolbar with-clear">
           <div class="dropdown">
             <button id="productDateBtn" class="drop-btn" type="button" aria-expanded="false">
               <span class="txt">Tarix: <strong id="productDateLabel">Bu gün</strong></span><span class="chev">⌄</span>
@@ -1179,11 +1284,29 @@
               </div>
             </div>
           </div>
+
+          <button id="clearProductToolbar" class="toolbar-clear" type="button" aria-label="Məhsul filterlərini təmizlə">
+            Təmizlə
+          </button>
         </div>
 
         <div id="productDateBox" class="card date-box hidden">
-          <div class="date-label">Tarix seç</div>
-          <input id="productSingleDate" class="input" type="date" />
+          <input id="productSingleDate" type="hidden" />
+          <div id="productCalendar" class="custom-calendar" data-calendar-kind="product">
+            <div class="calendar-head">
+              <button id="productCalendarPrev" class="calendar-nav" type="button" aria-label="Əvvəlki ay">‹</button>
+              <div>
+                <div class="date-label">Tarix seç</div>
+                <div id="productCalendarTitle" class="calendar-title"></div>
+              </div>
+              <button id="productCalendarNext" class="calendar-nav" type="button" aria-label="Növbəti ay">›</button>
+            </div>
+            <div class="calendar-weekdays" aria-hidden="true">
+              <span>B.e</span><span>Ç.a</span><span>Ç</span><span>C.a</span><span>C</span><span>Ş</span><span>B</span>
+            </div>
+            <div id="productCalendarGrid" class="calendar-grid"></div>
+            <button id="productCalendarToday" class="calendar-today" type="button">Bu gün</button>
+          </div>
         </div>
 
         <div id="productList" class="product-list"></div>
@@ -1205,7 +1328,7 @@
         <button id="openPdfExport" class="btn secondary" type="button">PDF</button>
       </div>
 
-      <div class="toolbar">
+      <div class="toolbar with-clear">
         <div class="dropdown">
           <button id="salesDateBtn" class="drop-btn" type="button" aria-expanded="false">
             <span class="txt">Tarix: <strong id="salesDateLabel">Bu gün</strong></span><span class="chev">⌄</span>
@@ -1257,11 +1380,29 @@
             </div>
           </div>
         </div>
+
+        <button id="clearSalesToolbar" class="toolbar-clear" type="button" aria-label="Satış filterlərini təmizlə">
+          Təmizlə
+        </button>
       </div>
 
       <div id="salesDateBox" class="card date-box hidden">
-        <div class="date-label">Tarix seç</div>
-        <input id="salesSingleDate" class="input" type="date" />
+        <input id="salesSingleDate" type="hidden" />
+        <div id="salesCalendar" class="custom-calendar" data-calendar-kind="sales">
+          <div class="calendar-head">
+            <button id="salesCalendarPrev" class="calendar-nav" type="button" aria-label="Əvvəlki ay">‹</button>
+            <div>
+              <div class="date-label">Tarix seç</div>
+              <div id="salesCalendarTitle" class="calendar-title"></div>
+            </div>
+            <button id="salesCalendarNext" class="calendar-nav" type="button" aria-label="Növbəti ay">›</button>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>B.e</span><span>Ç.a</span><span>Ç</span><span>C.a</span><span>C</span><span>Ş</span><span>B</span>
+          </div>
+          <div id="salesCalendarGrid" class="calendar-grid"></div>
+          <button id="salesCalendarToday" class="calendar-today" type="button">Bu gün</button>
+        </div>
       </div>
 
       <div class="summary-grid">
@@ -1426,6 +1567,7 @@
       </div>
 
       <input id="multiSaleSearch" class="input" type="search" placeholder="Məhsul axtar..." autocomplete="off">
+      <input id="multiSaleImagePicker" class="hidden" type="file" accept="image/*" multiple>
 
       <div id="multiSaleProductList" class="multi-sale-list"></div>
 
@@ -1512,12 +1654,17 @@
           <div id="saleProductPrices" class="meta"></div>
         </div>
         <div>
+          <label class="label">Satıldığı qiymət</label>
+          <input id="salePriceOverride" class="input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Məhsulun satış qiyməti" />
+          <div id="salePriceFallbackHint" class="meta" style="margin-top:5px"></div>
+        </div>
+        <div>
           <label class="label">Satılan say</label>
           <input id="saleQuantity" class="input" type="number" min="1" step="1" value="1" />
         </div>
         <div class="row2">
-          <div class="stat"><div class="label">Satış məbləği</div><div id="saleTotalPreview" class="value">₼0</div></div>
-          <div class="stat"><div class="label">Qazanc</div><div id="saleProfitPreview" class="value profit">₼0</div></div>
+          <div class="stat"><div class="label">Satış məbləği</div><div id="saleTotalPreview" class="value not-recorded">Qeyd edilməyib</div></div>
+          <div class="stat"><div class="label">Qazanc</div><div id="saleProfitPreview" class="value profit not-recorded">Qeyd edilməyib</div></div>
         </div>
         <button id="saveSaleBtn" class="btn full" type="submit">Satışı təsdiqlə</button>
       </form>
@@ -1670,9 +1817,11 @@ let lightboxTouchStartY=0;
 
 let productDateMode="today";
 let salesDateMode="today";
+let calendarView={product:new Date(),sales:new Date()};
 let saleEntryMode="loose";
 let categoryCreateContext="settings";
 let multiSaleDraft=new Map();
+let multiSaleImageTargetId=null;
 
 /* Delete buttons are intentionally not persisted. Refresh => hidden again. */
 let productDeleteMode=false;
@@ -1782,6 +1931,73 @@ function dateMatches(value,mode,selectedDate){
   return selectedDate ? date===selectedDate : false;
 }
 
+
+function parseIsoLocalDate(value){
+  const parts=String(value||"").split("-").map(Number);
+  if(parts.length!==3 || parts.some(Number.isNaN))return new Date();
+  return new Date(parts[0],parts[1]-1,parts[2]);
+}
+
+function shortAzDate(value){
+  if(!value)return "Tarix seç";
+  return new Intl.DateTimeFormat("az-AZ",{day:"2-digit",month:"2-digit",year:"numeric"}).format(parseIsoLocalDate(value));
+}
+
+function setCalendarView(kind,value){
+  const date=value?parseIsoLocalDate(value):new Date();
+  calendarView[kind]=new Date(date.getFullYear(),date.getMonth(),1);
+}
+
+function renderCustomCalendar(kind){
+  const isProduct=kind==="product";
+  const input=$(isProduct?"productSingleDate":"salesSingleDate");
+  const title=$(isProduct?"productCalendarTitle":"salesCalendarTitle");
+  const grid=$(isProduct?"productCalendarGrid":"salesCalendarGrid");
+  if(!input||!title||!grid)return;
+
+  const view=calendarView[kind]||new Date();
+  const year=view.getFullYear();
+  const month=view.getMonth();
+  title.textContent=new Intl.DateTimeFormat("az-AZ",{month:"long",year:"numeric"}).format(view);
+
+  const firstDay=new Date(year,month,1);
+  const mondayOffset=(firstDay.getDay()+6)%7;
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const selected=input.value||"";
+  const today=isoLocalDate(new Date());
+
+  let markup="";
+  for(let i=0;i<mondayOffset;i++)markup+='<span class="calendar-blank" aria-hidden="true"></span>';
+
+  for(let day=1;day<=daysInMonth;day++){
+    const iso=isoLocalDate(new Date(year,month,day));
+    const classes=["calendar-day",iso===today?"today":"",iso===selected?"selected":""].filter(Boolean).join(" ");
+    markup+=`<button class="${classes}" type="button" data-calendar-date="${iso}" aria-label="${shortAzDate(iso)}">${day}</button>`;
+  }
+  grid.innerHTML=markup;
+}
+
+function selectCalendarDate(kind,value){
+  const isProduct=kind==="product";
+  const input=$(isProduct?"productSingleDate":"salesSingleDate");
+  const label=$(isProduct?"productDateLabel":"salesDateLabel");
+  if(!input||!label)return;
+
+  input.value=value;
+  setCalendarView(kind,value);
+  renderCustomCalendar(kind);
+  label.textContent=shortAzDate(value);
+
+  if(isProduct){productDateMode="custom";renderProducts();}
+  else{salesDateMode="custom";renderSales();}
+}
+
+function moveCalendarMonth(kind,direction){
+  const view=calendarView[kind]||new Date();
+  calendarView[kind]=new Date(view.getFullYear(),view.getMonth()+direction,1);
+  renderCustomCalendar(kind);
+}
+
 function setProductDate(mode){
   productDateMode=mode;
 
@@ -1794,8 +2010,11 @@ function setProductDate(mode){
 
   $("productDateBox").classList.toggle("hidden",mode!=="custom");
 
-  if(mode==="custom"&&!$("productSingleDate").value){
-    $("productSingleDate").value=isoLocalDate(new Date());
+  if(mode==="custom"){
+    if(!$("productSingleDate").value)$("productSingleDate").value=isoLocalDate(new Date());
+    setCalendarView("product",$("productSingleDate").value);
+    renderCustomCalendar("product");
+    $("productDateLabel").textContent=shortAzDate($("productSingleDate").value);
   }
 
   closeDropdowns();
@@ -1814,8 +2033,11 @@ function setSalesDate(mode){
 
   $("salesDateBox").classList.toggle("hidden",mode!=="custom");
 
-  if(mode==="custom"&&!$("salesSingleDate").value){
-    $("salesSingleDate").value=isoLocalDate(new Date());
+  if(mode==="custom"){
+    if(!$("salesSingleDate").value)$("salesSingleDate").value=isoLocalDate(new Date());
+    setCalendarView("sales",$("salesSingleDate").value);
+    renderCustomCalendar("sales");
+    $("salesDateLabel").textContent=shortAzDate($("salesSingleDate").value);
   }
 
   closeDropdowns();
@@ -2590,14 +2812,19 @@ function resetProductForm(){
   $("productImagePicker").value="";
   renderProductImagePreviews();
 
-  $("profitPreview").textContent=money(0);
+  $("profitPreview").textContent="Qeyd edilməyib";
+  $("profitPreview").classList.add("not-recorded");
   $("productModalTitle").textContent="Məhsul əlavə et";
 }
 
 function updateProfitPreview(){
-  $("profitPreview").textContent=money(
-    Number($("salePrice").value||0)-Number($("costPrice").value||0)
-  );
+  const saleProvided=$("salePrice").value!=="";
+  const costProvided=$("costPrice").value!=="";
+
+  $("profitPreview").textContent=(saleProvided&&costProvided)
+    ? money(Number($("salePrice").value||0)-Number($("costPrice").value||0))
+    : "Qeyd edilməyib";
+  $("profitPreview").classList.toggle("not-recorded",!(saleProvided&&costProvided));
   fitValues();
 }
 
@@ -2624,8 +2851,8 @@ function openEditProduct(id){
   $("productName").value=product.name;
   $("productCategory").value=product.category_id||"";
   syncProductCategoryCustom();
-  $("salePrice").value=product.sale_price;
-  $("costPrice").value=product.cost_price;
+  $("salePrice").value=Number(product.sale_price||0)===0?"":product.sale_price;
+  $("costPrice").value=Number(product.cost_price||0)===0?"":product.cost_price;
   $("productNote").value=product.note||"";
 
   editingImageUrls=productImages(product);
@@ -2653,6 +2880,11 @@ async function deleteProduct(id){
   toast("Məhsul silindi");
 }
 
+function recordedMoney(value){
+  const number=Number(value||0);
+  return number>0?money(number):"Qeyd edilməyib";
+}
+
 function setSaleProduct(product){
   currentSaleProduct=product||null;
 
@@ -2660,14 +2892,26 @@ function setSaleProduct(product){
     $("saleProductId").value="";
     $("saleProductName").textContent="Məhsul seçilməyib";
     $("saleProductPrices").textContent="";
-    $("saleTotalPreview").textContent=money(0);
-    $("saleProfitPreview").textContent=money(0);
+    $("salePriceOverride").value="";
+    $("salePriceFallbackHint").textContent="";
+    $("saleTotalPreview").textContent="Qeyd edilməyib";
+    $("saleProfitPreview").textContent="Qeyd edilməyib";
+    $("saleTotalPreview").classList.add("not-recorded");
+    $("saleProfitPreview").classList.add("not-recorded");
     return;
   }
 
+  const productSalePrice=Number(product.sale_price||0);
+  const productCostPrice=Number(product.cost_price||0);
+
   $("saleProductId").value=product.id;
   $("saleProductName").textContent=product.name;
-  $("saleProductPrices").textContent=`Satış: ${money(product.sale_price)} · Maya: ${money(product.cost_price)}`;
+  $("saleProductPrices").textContent=`Satış: ${recordedMoney(productSalePrice)} · Maya: ${recordedMoney(productCostPrice)}`;
+  $("salePriceOverride").value="";
+  $("salePriceOverride").placeholder=productSalePrice>0?money(productSalePrice):"Qeyd edilməyib";
+  $("salePriceFallbackHint").textContent=productSalePrice>0
+    ? `Boş saxlasanız ${money(productSalePrice)} istifadə olunacaq.`
+    : "Məhsulda satış qiyməti qeyd edilməyib.";
   updateSalePreview();
 }
 
@@ -2679,6 +2923,7 @@ function openSale(id){
   $("saleProductSelectWrap").classList.add("hidden");
   $("saleProductInfo").classList.remove("hidden");
   $("saleQuantity").value=1;
+  $("salePriceOverride").value="";
   setSaleProduct(product);
   openModal("saleModal");
 }
@@ -2692,6 +2937,7 @@ function openDirectSale(){
   currentSaleProduct=products[0];
   $("saleModalTitle").textContent="Yeni satış";
   $("saleQuantity").value=1;
+  $("salePriceOverride").value="";
   $("saleProductSelectWrap").classList.remove("hidden");
   $("saleProductInfo").classList.remove("hidden");
 
@@ -2703,20 +2949,43 @@ function openDirectSale(){
   openModal("saleModal");
 }
 
+function getSaleEffectivePrice(){
+  if(!currentSaleProduct)return {price:0,provided:false,overrideProvided:false};
+
+  const overrideProvided=$("salePriceOverride").value!=="";
+  const productPrice=Number(currentSaleProduct.sale_price||0);
+  const price=overrideProvided
+    ? Math.max(0,Number($("salePriceOverride").value||0))
+    : productPrice;
+
+  return {
+    price,
+    overrideProvided,
+    provided:overrideProvided || productPrice>0
+  };
+}
+
 function updateSalePreview(){
   if(!currentSaleProduct){
-    $("saleTotalPreview").textContent=money(0);
-    $("saleProfitPreview").textContent=money(0);
+    $("saleTotalPreview").textContent="Qeyd edilməyib";
+    $("saleProfitPreview").textContent="Qeyd edilməyib";
+    $("saleTotalPreview").classList.add("not-recorded");
+    $("saleProfitPreview").classList.add("not-recorded");
     return;
   }
 
   const quantity=Math.max(1,parseInt($("saleQuantity").value||1,10)||1);
+  const {price,provided}=getSaleEffectivePrice();
+  const cost=Number(currentSaleProduct.cost_price||0);
+  const costProvided=cost>0;
 
-  $("saleTotalPreview").textContent=money(Number(currentSaleProduct.sale_price)*quantity);
-  $("saleProfitPreview").textContent=money(
-    (Number(currentSaleProduct.sale_price)-Number(currentSaleProduct.cost_price))*quantity
-  );
+  $("saleTotalPreview").textContent=provided?money(price*quantity):"Qeyd edilməyib";
+  $("saleProfitPreview").textContent=(provided&&costProvided)
+    ? money((price-cost)*quantity)
+    : "Qeyd edilməyib";
 
+  $("saleTotalPreview").classList.toggle("not-recorded",!provided);
+  $("saleProfitPreview").classList.toggle("not-recorded",!(provided&&costProvided));
   fitValues();
 }
 
@@ -2962,22 +3231,38 @@ document.querySelectorAll("[data-sales-date]").forEach(button=>{
   button.addEventListener("click",()=>setSalesDate(button.dataset.salesDate));
 });
 
-$("productSingleDate").addEventListener("change",renderProducts);
-$("salesSingleDate").addEventListener("change",renderSales);
+$("productCalendarPrev").addEventListener("click",()=>moveCalendarMonth("product",-1));
+$("productCalendarNext").addEventListener("click",()=>moveCalendarMonth("product",1));
+$("productCalendarToday").addEventListener("click",()=>selectCalendarDate("product",isoLocalDate(new Date())));
+$("salesCalendarPrev").addEventListener("click",()=>moveCalendarMonth("sales",-1));
+$("salesCalendarNext").addEventListener("click",()=>moveCalendarMonth("sales",1));
+$("salesCalendarToday").addEventListener("click",()=>selectCalendarDate("sales",isoLocalDate(new Date())));
+$("productCalendarGrid").addEventListener("click",event=>{
+  const button=event.target.closest("[data-calendar-date]");
+  if(button)selectCalendarDate("product",button.dataset.calendarDate);
+});
+$("salesCalendarGrid").addEventListener("click",event=>{
+  const button=event.target.closest("[data-calendar-date]");
+  if(button)selectCalendarDate("sales",button.dataset.calendarDate);
+});
 
 /* Product filters */
 ["searchInput","categoryFilter","productPriceFilter","productProfitFilter","productSort"].forEach(id=>{
   $(id).addEventListener(id==="searchInput"?"input":"change",renderProducts);
 });
 
-$("resetProductFilters").addEventListener("click",()=>{
+function clearProductFilters(){
   $("searchInput").value="";
   $("categoryFilter").value="";
   $("productPriceFilter").value="";
   $("productProfitFilter").value="";
   $("productSort").value="newest";
+  if(document.querySelector(".nav-btn.active")?.dataset.page==="dashboard")$("globalSearch").value="";
+  closeDropdowns();
   renderProducts();
-});
+}
+$("resetProductFilters").addEventListener("click",clearProductFilters);
+$("clearProductToolbar").addEventListener("click",clearProductFilters);
 
 /* Sales filters */
 ["salesSearchInput","salesCategoryFilter","salesMinAmount","salesMaxAmount","salesProfitFilter","salesQtyFilter","salesSort"].forEach(id=>{
@@ -2987,7 +3272,7 @@ $("resetProductFilters").addEventListener("click",()=>{
   );
 });
 
-$("resetSalesFilters").addEventListener("click",()=>{
+function clearSalesFilters(){
   $("salesSearchInput").value="";
   $("salesCategoryFilter").value="";
   $("salesMinAmount").value="";
@@ -2995,8 +3280,12 @@ $("resetSalesFilters").addEventListener("click",()=>{
   $("salesProfitFilter").value="";
   $("salesQtyFilter").value="";
   $("salesSort").value="newest";
+  if(document.querySelector(".nav-btn.active")?.dataset.page==="sales")$("globalSearch").value="";
+  closeDropdowns();
   renderSales();
-});
+}
+$("resetSalesFilters").addEventListener("click",clearSalesFilters);
+$("clearSalesToolbar").addEventListener("click",clearSalesFilters);
 
 /* Delete mode: hidden by default and not saved anywhere */
 $("toggleProductDelete").addEventListener("click",()=>{
@@ -3043,9 +3332,17 @@ function renderMultiSaleProducts(){
                  ${selected?"checked":""}
                  aria-label="${escapeHtml(product.name)} seç">
 
-          ${images.length
-            ? `<img class="multi-sale-thumb" src="${escapeHtml(images[0])}" alt="${escapeHtml(product.name)}">`
-            : `<div class="multi-sale-thumb multi-sale-thumb-placeholder">▧</div>`}
+          ${(()=>{
+            const customPreviews=selected?(draft.imagePreviewUrls||[]):[];
+            const previewUrl=customPreviews[0]||images[0]||"";
+            const customCount=customPreviews.length;
+            return `<button class="multi-sale-image-btn" type="button" data-multi-image="${product.id}" aria-label="Satış üçün şəkil seç">
+              ${previewUrl
+                ? `<img class="multi-sale-thumb" src="${escapeHtml(previewUrl)}" alt="${escapeHtml(product.name)}">`
+                : `<span class="multi-sale-thumb multi-sale-thumb-placeholder">＋</span>`}
+              ${customCount?`<span class="multi-sale-image-badge">${customCount}</span>`:""}
+            </button>`;
+          })()}
 
           <div class="multi-sale-copy">
             <div class="multi-sale-name">${escapeHtml(product.name||"Adsız məhsul")}</div>
@@ -3077,8 +3374,8 @@ function renderMultiSaleProducts(){
                    step="0.01"
                    inputmode="decimal"
                    data-multi-price="${product.id}"
-                   value="${selected?(draft.salePrice??""):defaultPrice}"
-                   placeholder="${defaultPrice}"
+                   value="${selected?(draft.salePrice??""):""}"
+                   placeholder="${defaultPrice>0?money(defaultPrice):"Qeyd edilməyib"}"
                    ${selected?"":"disabled"}>
           </div>
         </div>
@@ -3095,14 +3392,40 @@ function renderMultiSaleProducts(){
       if(input.checked){
         multiSaleDraft.set(productId,{
           quantity:1,
-          salePrice:Number(product.sale_price||0)
+          salePrice:null,
+          imageFiles:[],
+          imagePreviewUrls:[]
         });
       }else{
+        const oldDraft=multiSaleDraft.get(productId);
+        (oldDraft?.imagePreviewUrls||[]).forEach(url=>URL.revokeObjectURL(url));
         multiSaleDraft.delete(productId);
       }
 
       updateMultiSaleSelectedCount();
       renderMultiSaleProducts();
+    });
+  });
+
+  document.querySelectorAll("[data-multi-image]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const productId=button.dataset.multiImage;
+      const product=products.find(item=>item.id===productId);
+      if(!product)return;
+
+      if(!multiSaleDraft.has(productId)){
+        multiSaleDraft.set(productId,{
+          quantity:1,
+          salePrice:null,
+          imageFiles:[],
+          imagePreviewUrls:[]
+        });
+        updateMultiSaleSelectedCount();
+      }
+
+      multiSaleImageTargetId=productId;
+      $("multiSaleImagePicker").value="";
+      $("multiSaleImagePicker").click();
     });
   });
 
@@ -3123,13 +3446,51 @@ function renderMultiSaleProducts(){
   });
 }
 
+function clearMultiSaleDraft(){
+  for(const draft of multiSaleDraft.values()){
+    (draft.imagePreviewUrls||[]).forEach(url=>URL.revokeObjectURL(url));
+  }
+  multiSaleDraft.clear();
+  multiSaleImageTargetId=null;
+}
+
+$("multiSaleImagePicker").addEventListener("change",()=>{
+  const productId=multiSaleImageTargetId;
+  const draft=multiSaleDraft.get(productId);
+  if(!draft)return;
+
+  const files=Array.from($("multiSaleImagePicker").files||[]);
+  if(!files.length)return;
+
+  const valid=[];
+  for(const file of files){
+    if(!file.type.startsWith("image/")){
+      toast("Yalnız şəkil faylı seçin.");
+      continue;
+    }
+    if(file.size>5*1024*1024){
+      toast("Hər şəkil maksimum 5 MB ola bilər.");
+      continue;
+    }
+    valid.push(file);
+    if(valid.length===5)break;
+  }
+
+  if(!valid.length)return;
+
+  (draft.imagePreviewUrls||[]).forEach(url=>URL.revokeObjectURL(url));
+  draft.imageFiles=valid;
+  draft.imagePreviewUrls=valid.map(file=>URL.createObjectURL(file));
+  renderMultiSaleProducts();
+});
+
 function openMultiSaleModal(){
   if(!products.length){
     toast("Məhsullar siyahısı boşdur.");
     return;
   }
 
-  multiSaleDraft.clear();
+  clearMultiSaleDraft();
   $("multiSaleSearch").value="";
   updateMultiSaleSelectedCount();
   renderMultiSaleProducts();
@@ -3159,7 +3520,19 @@ $("confirmMultiSale").addEventListener("click",async()=>{
       : Math.max(0,Number(draft.salePrice));
 
     const quantity=Math.max(1,parseInt(draft.quantity||1,10)||1);
-    const images=productImages(product);
+    const productSaleImages=productImages(product);
+    const customUrls=[];
+
+    for(const file of (draft.imageFiles||[])){
+      const url=await uploadImage(file);
+      if(url)customUrls.push(url);
+    }
+
+    // Satış üçün seçilən şəkillər həmişə öndə qalır. Məhsulda 5 şəkil olsa belə
+    // custom satış şəkli itmir; məhsulun şəkillərinə isə heç bir update edilmir.
+    const images=[...customUrls,...productSaleImages]
+      .filter((url,index,array)=>url&&array.indexOf(url)===index)
+      .slice(0,5);
 
     payloads.push({
       user_id:currentUser.id,
@@ -3189,7 +3562,7 @@ $("confirmMultiSale").addEventListener("click",async()=>{
     if(error)throw error;
 
     closeModal("multiSaleModal");
-    multiSaleDraft.clear();
+    clearMultiSaleDraft();
     await loadAll();
     showPage("sales");
     toast(`${payloads.length} satış əlavə edildi`);
@@ -3344,7 +3717,9 @@ $("saleProductSelect").addEventListener("change",()=>{
   setSaleProduct(product||null);
 });
 
-$("saleQuantity").addEventListener("input",updateSalePreview);
+["saleQuantity","salePriceOverride"].forEach(id=>{
+  $(id).addEventListener("input",updateSalePreview);
+});
 
 $("saleForm").addEventListener("submit",async event=>{
   event.preventDefault();
@@ -3357,17 +3732,24 @@ $("saleForm").addEventListener("submit",async event=>{
   }
 
   const quantity=Math.max(1,parseInt($("saleQuantity").value||1,10)||1);
+  const {price:effectiveSalePrice,provided:salePriceProvided}=getSaleEffectivePrice();
+  const costPrice=Number(currentSaleProduct.cost_price||0);
+  const costPriceProvided=costPrice>0;
   $("saveSaleBtn").disabled=true;
 
+  const images=productImages(currentSaleProduct);
   const {error}=await sb.from("sales").insert({
     user_id:currentUser.id,
     product_id:currentSaleProduct.id,
+    category_id:currentSaleProduct.category_id||null,
     product_name:currentSaleProduct.name||"Satış",
     quantity,
-    unit_sale_price:Number(currentSaleProduct.sale_price||0),
-    unit_cost_price:Number(currentSaleProduct.cost_price||0),
-    sale_price_provided:true,
-    cost_price_provided:true
+    unit_sale_price:effectiveSalePrice,
+    unit_cost_price:costPrice,
+    sale_price_provided:salePriceProvided,
+    cost_price_provided:costPriceProvided,
+    image_url:images[0]||null,
+    image_urls:images
   });
 
   $("saveSaleBtn").disabled=false;
@@ -3449,8 +3831,8 @@ function openEditSale(id){
   $("looseSaleId").value=sale.id;
   $("looseSaleName").value=sale.product_name||"Satış";
   $("looseSaleQuantity").value=sale.quantity||1;
-  $("looseSalePrice").value=sale.sale_price_provided===false?"":Number(sale.unit_sale_price||0);
-  $("looseSaleCost").value=sale.cost_price_provided===false?"":Number(sale.unit_cost_price||0);
+  $("looseSalePrice").value=(sale.sale_price_provided===false||Number(sale.unit_sale_price||0)===0)?"":Number(sale.unit_sale_price||0);
+  $("looseSaleCost").value=(sale.cost_price_provided===false||Number(sale.unit_cost_price||0)===0)?"":Number(sale.unit_cost_price||0);
   $("looseSaleNote").value=sale.note||"";
   $("looseSaleCategory").value=sale.category_id||sale.products?.category_id||findShalvarCategory()?.id||"";
 
