@@ -605,6 +605,183 @@
       .asset-reset{font-size:10px}
     }
 
+  
+    .product-image-preview-grid{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:7px;
+      min-height:76px;
+    }
+    .product-image-empty{
+      grid-column:1/-1;
+      min-height:76px;
+      border:1px dashed var(--line);
+      border-radius:14px;
+      background:var(--card2);
+      color:var(--muted);
+      display:grid;
+      place-items:center;
+      font-size:12px;
+    }
+    .product-preview-item{
+      position:relative;
+      min-width:0;
+      aspect-ratio:1/1;
+      border-radius:12px;
+      overflow:hidden;
+      border:1px solid var(--line);
+      background:var(--card2);
+    }
+    .product-preview-item.main-image{
+      outline:2px solid var(--text);
+      outline-offset:1px;
+    }
+    .product-preview-item img{
+      width:100%;
+      height:100%;
+      display:block;
+      object-fit:cover;
+      cursor:zoom-in;
+    }
+    .product-preview-main-label{
+      position:absolute;
+      left:4px;
+      bottom:4px;
+      z-index:2;
+      padding:3px 5px;
+      border-radius:999px;
+      background:rgba(15,23,42,.86);
+      color:#fff;
+      font-size:8px;
+      font-weight:800;
+      pointer-events:none;
+    }
+    .product-preview-remove{
+      position:absolute;
+      top:4px;
+      right:4px;
+      z-index:3;
+      width:25px;
+      height:25px;
+      padding:0;
+      border-radius:999px;
+      background:rgba(15,23,42,.88);
+      color:#fff;
+      display:grid;
+      place-items:center;
+      font-size:15px;
+      line-height:1;
+    }
+
+    .product-image-wrap{
+      position:relative;
+      width:76px;
+      height:76px;
+    }
+    .product-image-wrap .product-img{
+      width:100%;
+      height:100%;
+    }
+    .clickable-image{cursor:zoom-in}
+    .product-image-badge{
+      position:absolute;
+      right:4px;
+      bottom:4px;
+      z-index:2;
+      min-width:23px;
+      height:22px;
+      padding:0 6px;
+      border-radius:999px;
+      background:rgba(15,23,42,.86);
+      color:#fff;
+      display:grid;
+      place-items:center;
+      font-size:9px;
+      font-weight:850;
+      pointer-events:none;
+    }
+
+    .image-lightbox{
+      position:fixed;
+      inset:0;
+      z-index:250;
+      background:rgba(2,6,23,.95);
+      display:grid;
+      grid-template-columns:54px minmax(0,1fr) 54px;
+      align-items:center;
+      padding:18px 8px;
+      touch-action:pan-y;
+      user-select:none;
+    }
+    .image-lightbox.hidden{display:none!important}
+    .lightbox-content{
+      min-width:0;
+      min-height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      cursor:zoom-out;
+    }
+    .lightbox-content img{
+      display:block;
+      max-width:100%;
+      max-height:calc(100vh - 90px);
+      object-fit:contain;
+      border-radius:14px;
+      cursor:default;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+    .lightbox-close{
+      position:absolute;
+      top:max(12px,env(safe-area-inset-top));
+      right:14px;
+      z-index:4;
+      width:44px;
+      height:44px;
+      border-radius:14px;
+      background:rgba(255,255,255,.13);
+      color:#fff;
+      font-size:28px;
+    }
+    .lightbox-nav{
+      width:44px;
+      height:54px;
+      border-radius:14px;
+      background:rgba(255,255,255,.13);
+      color:#fff;
+      font-size:36px;
+      display:grid;
+      place-items:center;
+      justify-self:center;
+      z-index:3;
+    }
+    .lightbox-counter{
+      color:#fff;
+      font-size:12px;
+      background:rgba(255,255,255,.13);
+      border-radius:999px;
+      padding:6px 10px;
+    }
+
+    @media(max-width:400px){
+      .product-image-preview-grid{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+      }
+      .image-lightbox{
+        grid-template-columns:42px minmax(0,1fr) 42px;
+        padding-left:3px;
+        padding-right:3px;
+      }
+      .lightbox-nav{
+        width:38px;
+        height:50px;
+        font-size:31px;
+      }
+    }
+
   </style>
 </head>
 
@@ -907,6 +1084,18 @@
     <button id="addProductBtn" class="floating-add hidden" type="button" aria-label="Məhsul əlavə et">+</button>
   </main>
 
+  <div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Şəkil ön baxış">
+    <button id="lightboxClose" class="lightbox-close" type="button" aria-label="Bağla">×</button>
+    <button id="lightboxPrev" class="lightbox-nav" type="button" aria-label="Əvvəlki şəkil">‹</button>
+
+    <div id="lightboxContent" class="lightbox-content">
+      <img id="lightboxImage" alt="Böyük şəkil">
+      <div id="lightboxCounter" class="lightbox-counter">1 / 1</div>
+    </div>
+
+    <button id="lightboxNext" class="lightbox-nav" type="button" aria-label="Növbəti şəkil">›</button>
+  </div>
+
   <div id="productModal" class="modal-backdrop hidden">
     <div class="modal">
       <div class="modal-head">
@@ -915,15 +1104,20 @@
       </div>
       <form id="productForm" class="form" novalidate>
         <input id="productId" type="hidden" />
-        <div id="imagePreview" class="preview"><span>Şəkil seçilməyib</span></div>
+        <div>
+          <div class="label" style="margin-bottom:7px">
+            Şəkillər <span id="productImageCount">(0/5)</span>
+            <span class="meta" style="margin-left:5px">1-ci şəkil əsasdır</span>
+          </div>
 
-        <div class="image-source-actions">
-          <button id="openProductCamera" class="btn secondary" type="button">📷 Kamera</button>
-          <button id="openProductGallery" class="btn secondary" type="button">🖼 Qalereya</button>
+          <div id="imagePreview" class="product-image-preview-grid">
+            <div class="product-image-empty">Şəkil seçilməyib</div>
+          </div>
         </div>
 
-        <input id="productCamera" class="hidden" type="file" accept="image/*" capture="environment" />
-        <input id="productGallery" class="hidden" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+        <button id="openProductImagePicker" class="btn secondary full" type="button">＋ Şəkil əlavə et</button>
+        <div class="meta">Mobil telefonda Kamera / Foto qalereyası / Fayl seçimi açılacaq. Maksimum 5 şəkil.</div>
+        <input id="productImagePicker" class="hidden" type="file" accept="image/*" multiple />
         <input id="productName" class="input" placeholder="Məhsulun adı (boş qala bilər)" />
         <select id="productCategory" class="select"><option value="">Kateqoriya seç</option></select>
         <div class="row2">
@@ -1083,9 +1277,15 @@ let sales=[];
 let activityLogs=[];
 let appSettings={logo_url:null,favicon_url:null};
 let currentSaleProduct=null;
-let editingImageUrl=null;
+let editingImageUrls=[];
 let editingSaleImageUrl=null;
-let pendingProductImageFile=null;
+let pendingProductImageFiles=[];
+let pendingProductPreviewUrls=[];
+
+let lightboxImages=[];
+let lightboxIndex=0;
+let lightboxTouchStartX=0;
+let lightboxTouchStartY=0;
 
 let productDateMode="today";
 let salesDateMode="today";
@@ -1336,6 +1536,142 @@ function renderStats(){
   fitValues();
 }
 
+
+function productImages(product){
+  if(Array.isArray(product?.image_urls) && product.image_urls.length){
+    return product.image_urls.filter(Boolean).slice(0,5);
+  }
+  return product?.image_url ? [product.image_url] : [];
+}
+
+function openImageLightbox(images,startIndex=0){
+  const clean=(Array.isArray(images)?images:[images]).filter(Boolean).slice(0,5);
+  if(!clean.length)return;
+
+  lightboxImages=clean;
+  lightboxIndex=Math.max(0,Math.min(Number(startIndex)||0,lightboxImages.length-1));
+  renderImageLightbox();
+  $("imageLightbox").classList.remove("hidden");
+  document.body.style.overflow="hidden";
+}
+
+function renderImageLightbox(){
+  if(!lightboxImages.length)return;
+
+  $("lightboxImage").src=lightboxImages[lightboxIndex];
+  $("lightboxCounter").textContent=`${lightboxIndex+1} / ${lightboxImages.length}`;
+
+  const multiple=lightboxImages.length>1;
+  $("lightboxPrev").classList.toggle("hidden",!multiple);
+  $("lightboxNext").classList.toggle("hidden",!multiple);
+  $("lightboxCounter").classList.toggle("hidden",!multiple);
+}
+
+function moveImageLightbox(direction){
+  if(lightboxImages.length<2)return;
+  lightboxIndex=(lightboxIndex+direction+lightboxImages.length)%lightboxImages.length;
+  renderImageLightbox();
+}
+
+function closeImageLightbox(){
+  $("imageLightbox").classList.add("hidden");
+  $("lightboxImage").removeAttribute("src");
+  lightboxImages=[];
+  lightboxIndex=0;
+  document.body.style.overflow="";
+}
+
+function currentProductPreviewEntries(){
+  return [
+    ...editingImageUrls.map((url,index)=>({kind:"existing",url,index})),
+    ...pendingProductImageFiles.map((file,index)=>({
+      kind:"pending",
+      url:pendingProductPreviewUrls[index],
+      index
+    }))
+  ].slice(0,5);
+}
+
+function renderProductImagePreviews(){
+  const entries=currentProductPreviewEntries();
+  $("productImageCount").textContent=`(${entries.length}/5)`;
+
+  if(!entries.length){
+    $("imagePreview").innerHTML='<div class="product-image-empty">Şəkil seçilməyib</div>';
+    return;
+  }
+
+  $("imagePreview").innerHTML=entries.map((entry,displayIndex)=>`
+    <div class="product-preview-item ${displayIndex===0?"main-image":""}">
+      <img src="${escapeHtml(entry.url)}"
+           alt="Şəkil ${displayIndex+1}"
+           data-product-preview-index="${displayIndex}">
+      ${displayIndex===0?'<span class="product-preview-main-label">Əsas</span>':""}
+      <button class="product-preview-remove"
+              type="button"
+              data-remove-image-kind="${entry.kind}"
+              data-remove-image-index="${entry.index}"
+              aria-label="Şəkli sil">×</button>
+    </div>
+  `).join("");
+
+  const currentImages=entries.map(entry=>entry.url);
+
+  document.querySelectorAll("[data-product-preview-index]").forEach(image=>{
+    image.addEventListener("click",()=>{
+      openImageLightbox(currentImages,Number(image.dataset.productPreviewIndex)||0);
+    });
+  });
+
+  document.querySelectorAll("[data-remove-image-kind]").forEach(button=>{
+    button.addEventListener("click",event=>{
+      event.stopPropagation();
+
+      const index=Number(button.dataset.removeImageIndex);
+
+      if(button.dataset.removeImageKind==="existing"){
+        editingImageUrls.splice(index,1);
+      }else{
+        const previewUrl=pendingProductPreviewUrls[index];
+        if(previewUrl)URL.revokeObjectURL(previewUrl);
+        pendingProductImageFiles.splice(index,1);
+        pendingProductPreviewUrls.splice(index,1);
+      }
+
+      renderProductImagePreviews();
+    });
+  });
+}
+
+function addProductImageFiles(files){
+  const incoming=Array.from(files||[]);
+  if(!incoming.length)return;
+
+  let remaining=5-(editingImageUrls.length+pendingProductImageFiles.length);
+  if(remaining<=0){
+    toast("Maksimum 5 şəkil əlavə etmək olar.");
+    return;
+  }
+
+  if(incoming.length>remaining){
+    toast(`Yalnız ${remaining} şəkil əlavə olundu. Maksimum 5 şəkil mümkündür.`);
+  }
+
+  for(const file of incoming.slice(0,remaining)){
+    if(!file.type.startsWith("image/"))continue;
+
+    if(file.size>5*1024*1024){
+      toast(`${file.name||"Şəkil"} 5MB-dan böyükdür və əlavə olunmadı.`);
+      continue;
+    }
+
+    pendingProductImageFiles.push(file);
+    pendingProductPreviewUrls.push(URL.createObjectURL(file));
+  }
+
+  renderProductImagePreviews();
+}
+
 function renderProducts(){
   const query=$("searchInput").value.trim().toLowerCase();
   const category=$("categoryFilter").value;
@@ -1380,8 +1716,16 @@ function renderProducts(){
     const profit=Number(product.sale_price)-Number(product.cost_price);
 
     return `<div class="card product">
-      ${product.image_url
-        ? `<img class="product-img" src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name)}">`
+      ${productImages(product).length
+        ? `<div class="product-image-wrap">
+             <img class="product-img clickable-image"
+                  src="${escapeHtml(productImages(product)[0])}"
+                  alt="${escapeHtml(product.name)}"
+                  data-open-product-images="${product.id}">
+             ${productImages(product).length>1
+               ? `<span class="product-image-badge">${productImages(product).length}</span>`
+               : ""}
+           </div>`
         : `<div class="product-img placeholder">▧</div>`}
 
       <div class="product-main">
@@ -1402,6 +1746,13 @@ function renderProducts(){
       </div>
     </div>`;
   }).join(""):'<div class="card empty">Bu seçimə uyğun məhsul yoxdur.</div>';
+
+  document.querySelectorAll("[data-open-product-images]").forEach(image=>{
+    image.addEventListener("click",()=>{
+      const product=products.find(item=>item.id===image.dataset.openProductImages);
+      if(product)openImageLightbox(productImages(product),0);
+    });
+  });
 
   document.querySelectorAll("[data-sale]").forEach(button=>{
     button.addEventListener("click",()=>openSale(button.dataset.sale));
@@ -1601,7 +1952,10 @@ function renderAll(){
   renderStats();
 }
 
-function showPage(page){
+function showPage(page,options={}){
+  const validPages=["sales","dashboard","categories"];
+  if(!validPages.includes(page))page="sales";
+
   ["dashboard","sales","categories"].forEach(name=>{
     $(name+"Page").classList.toggle("hidden",name!==page);
   });
@@ -1614,16 +1968,27 @@ function showPage(page){
   syncGlobalSearch(page);
   closeDropdowns();
   fitValues();
+
+  if(options.history!==false){
+    const current=history.state?.page;
+    if(current!==page){
+      history.pushState({page},"",`#${page}`);
+    }
+  }
 }
 
 function resetProductForm(){
   $("productForm").reset();
   $("productId").value="";
-  editingImageUrl=null;
-  pendingProductImageFile=null;
-  $("productCamera").value="";
-  $("productGallery").value="";
-  $("imagePreview").innerHTML="<span>Şəkil seçilməyib</span>";
+
+  pendingProductPreviewUrls.forEach(url=>URL.revokeObjectURL(url));
+  pendingProductPreviewUrls=[];
+  pendingProductImageFiles=[];
+  editingImageUrls=[];
+
+  $("productImagePicker").value="";
+  renderProductImagePreviews();
+
   $("profitPreview").textContent=money(0);
   $("productModalTitle").textContent="Məhsul əlavə et";
 }
@@ -1661,11 +2026,8 @@ function openEditProduct(id){
   $("costPrice").value=product.cost_price;
   $("productNote").value=product.note||"";
 
-  editingImageUrl=product.image_url||null;
-
-  if(product.image_url){
-    $("imagePreview").innerHTML=`<img src="${escapeHtml(product.image_url)}" alt="Məhsul şəkli">`;
-  }
+  editingImageUrls=productImages(product);
+  renderProductImagePreviews();
 
   updateProfitPreview();
   openModal("productModal");
@@ -1920,6 +2282,54 @@ $("resetLogoBtn").addEventListener("click",()=>resetBrandAsset("logo"));
 $("resetFaviconBtn").addEventListener("click",()=>resetBrandAsset("favicon"));
 
 
+
+/* Product image lightbox */
+$("lightboxClose").addEventListener("click",closeImageLightbox);
+$("lightboxPrev").addEventListener("click",event=>{
+  event.stopPropagation();
+  moveImageLightbox(-1);
+});
+$("lightboxNext").addEventListener("click",event=>{
+  event.stopPropagation();
+  moveImageLightbox(1);
+});
+
+$("lightboxImage").addEventListener("click",event=>event.stopPropagation());
+
+$("imageLightbox").addEventListener("click",event=>{
+  if(event.target===$("imageLightbox") || event.target===$("lightboxContent")){
+    closeImageLightbox();
+  }
+});
+
+$("imageLightbox").addEventListener("touchstart",event=>{
+  const touch=event.changedTouches?.[0];
+  if(!touch)return;
+  lightboxTouchStartX=touch.clientX;
+  lightboxTouchStartY=touch.clientY;
+},{passive:true});
+
+$("imageLightbox").addEventListener("touchend",event=>{
+  const touch=event.changedTouches?.[0];
+  if(!touch)return;
+
+  const dx=touch.clientX-lightboxTouchStartX;
+  const dy=touch.clientY-lightboxTouchStartY;
+
+  if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.2){
+    moveImageLightbox(dx<0?1:-1);
+  }
+},{passive:true});
+
+document.addEventListener("keydown",event=>{
+  if($("imageLightbox").classList.contains("hidden"))return;
+
+  if(event.key==="Escape")closeImageLightbox();
+  if(event.key==="ArrowLeft")moveImageLightbox(-1);
+  if(event.key==="ArrowRight")moveImageLightbox(1);
+});
+
+
 /* Theme */
 applyTheme(initialTheme());
 $("themeToggle").addEventListener("click",()=>{
@@ -2011,28 +2421,18 @@ $("addSaleFromSales").addEventListener("click",openDirectSale);
 $("salePrice").addEventListener("input",updateProfitPreview);
 $("costPrice").addEventListener("input",updateProfitPreview);
 
-function handleProductImageFile(file){
-  if(!file)return;
-
-  if(file.size>5*1024*1024){
-    toast("Şəkil maksimum 5MB ola bilər.");
+$("openProductImagePicker").addEventListener("click",()=>{
+  if(editingImageUrls.length+pendingProductImageFiles.length>=5){
+    toast("Maksimum 5 şəkil əlavə etmək olar.");
     return;
   }
 
-  pendingProductImageFile=file;
-  const url=URL.createObjectURL(file);
-  $("imagePreview").innerHTML=`<img src="${url}" alt="Ön baxış">`;
-}
-
-$("openProductCamera").addEventListener("click",()=>$("productCamera").click());
-$("openProductGallery").addEventListener("click",()=>$("productGallery").click());
-
-$("productCamera").addEventListener("change",()=>{
-  handleProductImageFile($("productCamera").files?.[0]);
+  $("productImagePicker").value="";
+  $("productImagePicker").click();
 });
 
-$("productGallery").addEventListener("change",()=>{
-  handleProductImageFile($("productGallery").files?.[0]);
+$("productImagePicker").addEventListener("change",()=>{
+  addProductImageFiles($("productImagePicker").files);
 });
 
 $("productForm").addEventListener("submit",async event=>{
@@ -2041,10 +2441,15 @@ $("productForm").addEventListener("submit",async event=>{
 
   try{
     const id=$("productId").value;
-    let imageUrl=editingImageUrl;
-    const file=pendingProductImageFile;
 
-    if(file)imageUrl=await uploadImage(file);
+    const uploadedUrls=[];
+    for(const file of pendingProductImageFiles){
+      const url=await uploadImage(file);
+      if(url)uploadedUrls.push(url);
+    }
+
+    const imageUrls=[...editingImageUrls,...uploadedUrls].filter(Boolean).slice(0,5);
+    const imageUrl=imageUrls[0]||null;
 
     const payload={
       user_id:currentUser.id,
@@ -2053,7 +2458,8 @@ $("productForm").addEventListener("submit",async event=>{
       sale_price:Number($("salePrice").value||0),
       cost_price:Number($("costPrice").value||0),
       note:$("productNote").value.trim()||null,
-      image_url:imageUrl||null
+      image_url:imageUrl,
+      image_urls:imageUrls
     };
 
     let error;
@@ -2438,6 +2844,48 @@ $("globalSearch").addEventListener("input",()=>{
 });
 
 
+
+function visibleModalId(){
+  const modal=document.querySelector(".modal-backdrop:not(.hidden)");
+  return modal?.id||null;
+}
+
+function closeTopLayerForBack(){
+  if(!$("imageLightbox").classList.contains("hidden")){
+    closeImageLightbox();
+    return true;
+  }
+
+  const modalId=visibleModalId();
+  if(modalId){
+    closeModal(modalId);
+    return true;
+  }
+
+  const openPanel=document.querySelector(".drop-panel:not(.hidden)");
+  if(openPanel){
+    closeDropdowns();
+    return true;
+  }
+
+  return false;
+}
+
+window.addEventListener("popstate",event=>{
+  if(closeTopLayerForBack()){
+    history.pushState(
+      {page:document.querySelector(".nav-btn.active")?.dataset.page||"sales"},
+      "",
+      location.hash||"#sales"
+    );
+    return;
+  }
+
+  const page=event.state?.page || location.hash.replace("#","") || "sales";
+  showPage(page,{history:false});
+});
+
+
 /* Navbar */
 document.querySelectorAll(".nav-btn").forEach(button=>{
   button.addEventListener("click",()=>showPage(button.dataset.page));
@@ -2469,7 +2917,8 @@ $("authForm").addEventListener("submit",async event=>{
   showApp();
   setToday();
   await loadAll();
-  showPage("sales");
+  history.replaceState({page:"sales"},"","#sales");
+  showPage("sales",{history:false});
 });
 
 $("logoutBtn").addEventListener("click",async()=>{
@@ -2489,6 +2938,7 @@ addEventListener("resize",fitValues);
   const {data:{session}}=await sb.auth.getSession();
 
   if(!session){
+    history.replaceState({page:"sales"},"","#sales");
     showAuth();
     return;
   }
@@ -2503,7 +2953,13 @@ addEventListener("resize",fitValues);
   showApp();
   setToday();
   await loadAll();
-  showPage("sales");
+
+  const initialPage=["sales","dashboard","categories"].includes(location.hash.replace("#",""))
+    ? location.hash.replace("#","")
+    : "sales";
+
+  history.replaceState({page:initialPage},"",`#${initialPage}`);
+  showPage(initialPage,{history:false});
 })();
 </script>
 </body>
