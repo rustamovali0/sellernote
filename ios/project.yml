@@ -1,0 +1,30 @@
+name: RustamoffJeans
+options:
+  bundleIdPrefix: com.rustamoff
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+targets:
+  RustamoffJeans:
+    type: application
+    platform: iOS
+    sources:
+      - path: RustamoffJeans
+        excludes:
+          - Assets.xcassets
+    resources:
+      - path: RustamoffJeans/Assets.xcassets
+      - path: RustamoffJeans/LaunchScreen.storyboard
+    info:
+      path: RustamoffJeans/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rustamoff.jeans
+        PRODUCT_NAME: "Rustamoff jeans"
+        TARGETED_DEVICE_FAMILY: "1"
+        IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
