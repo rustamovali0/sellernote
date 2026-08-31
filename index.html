@@ -339,6 +339,34 @@
       .modal-backdrop{align-items:center}
       .modal{border-radius:24px;margin:20px}
     }
+  
+    #salesPage .section-tools{
+      max-width:72%;
+      gap:6px;
+    }
+    #addSaleFromSales{
+      min-height:38px;
+      padding:7px 9px;
+      font-size:11px;
+      white-space:nowrap;
+    }
+    @media(max-width:380px){
+      #salesPage .section-head{
+        align-items:flex-start;
+      }
+      #salesPage .section-tools{
+        max-width:74%;
+        flex-wrap:wrap;
+        justify-content:flex-end;
+      }
+      #addSaleFromSales{
+        order:2;
+      }
+      #toggleSalesDelete{
+        order:3;
+      }
+    }
+
   </style>
 </head>
 
@@ -372,7 +400,7 @@
 
     <div id="todayText" class="today"></div>
 
-    <section id="dashboardPage">
+    <section id="dashboardPage" class="hidden">
       <div class="stats">
         <div class="stat"><div class="label">Məhsullar</div><div id="statProducts" class="value">0</div><div class="sub">qeydiyyatda</div></div>
         <div class="stat"><div class="label">Satış</div><div id="statRevenue" class="value">₼0</div><div class="sub">ümumi gəlir</div></div>
@@ -445,11 +473,12 @@
       </div>
     </section>
 
-    <section id="salesPage" class="hidden">
+    <section id="salesPage">
       <div class="section-head">
         <h2>Satış tarixçəsi</h2>
         <div class="section-tools">
           <span id="salesCount" class="count">0 qeyd</span>
+          <button id="addSaleFromSales" class="btn secondary" type="button">+ Satış</button>
           <button id="toggleSalesDelete" class="top-delete" type="button">Sil</button>
         </div>
       </div>
@@ -536,12 +565,12 @@
     </section>
 
     <nav class="bottom-nav">
-      <button class="nav-btn active" data-page="dashboard" type="button">Ana səhifə</button>
-      <button class="nav-btn" data-page="sales" type="button">Satışlar</button>
+      <button class="nav-btn active" data-page="sales" type="button">Satışlar</button>
+      <button class="nav-btn" data-page="dashboard" type="button">Məhsullar</button>
       <button class="nav-btn" data-page="categories" type="button">Kateqoriya</button>
     </nav>
 
-    <button id="addProductBtn" class="floating-add" type="button" aria-label="Məhsul əlavə et">+</button>
+    <button id="addProductBtn" class="floating-add hidden" type="button" aria-label="Məhsul əlavə et">+</button>
   </main>
 
   <div id="productModal" class="modal-backdrop hidden">
@@ -570,12 +599,20 @@
   <div id="saleModal" class="modal-backdrop hidden">
     <div class="modal">
       <div class="modal-head">
-        <h3>Satış qeyd et</h3>
+        <h3 id="saleModalTitle">Satış qeyd et</h3>
         <button class="close" data-close="saleModal" type="button">×</button>
       </div>
       <form id="saleForm" class="form">
         <input id="saleProductId" type="hidden" />
-        <div class="card" style="padding:13px">
+
+        <div id="saleProductSelectWrap" class="hidden">
+          <label class="label">Məhsul seç</label>
+          <select id="saleProductSelect" class="select">
+            <option value="">Məhsul seç</option>
+          </select>
+        </div>
+
+        <div id="saleProductInfo" class="card" style="padding:13px">
           <div id="saleProductName" style="font-weight:850"></div>
           <div id="saleProductPrices" class="meta"></div>
         </div>
@@ -826,6 +863,13 @@ function renderCategoryOptions(){
   $("salesCategoryFilter").value=salesSelected;
 
   $("productCategory").innerHTML='<option value="">Kateqoriya seç</option>'+options;
+
+  if($("saleProductSelect")){
+    const selected=$("saleProductSelect").value;
+    $("saleProductSelect").innerHTML='<option value="">Məhsul seç</option>'+
+      products.map(product=>`<option value="${product.id}">${escapeHtml(product.name)}</option>`).join("");
+    if(products.some(product=>product.id===selected)) $("saleProductSelect").value=selected;
+  }
 }
 
 function renderStats(){
@@ -1107,22 +1151,61 @@ async function deleteProduct(id){
   toast("Məhsul silindi");
 }
 
+function setSaleProduct(product){
+  currentSaleProduct=product||null;
+
+  if(!product){
+    $("saleProductId").value="";
+    $("saleProductName").textContent="Məhsul seçilməyib";
+    $("saleProductPrices").textContent="";
+    $("saleTotalPreview").textContent=money(0);
+    $("saleProfitPreview").textContent=money(0);
+    return;
+  }
+
+  $("saleProductId").value=product.id;
+  $("saleProductName").textContent=product.name;
+  $("saleProductPrices").textContent=`Satış: ${money(product.sale_price)} · Maya: ${money(product.cost_price)}`;
+  updateSalePreview();
+}
+
 function openSale(id){
   const product=products.find(item=>item.id===id);
   if(!product)return;
 
-  currentSaleProduct=product;
-  $("saleProductId").value=product.id;
+  $("saleModalTitle").textContent="Satış qeyd et";
+  $("saleProductSelectWrap").classList.add("hidden");
+  $("saleProductInfo").classList.remove("hidden");
   $("saleQuantity").value=1;
-  $("saleProductName").textContent=product.name;
-  $("saleProductPrices").textContent=`Satış: ${money(product.sale_price)} · Maya: ${money(product.cost_price)}`;
+  setSaleProduct(product);
+  openModal("saleModal");
+}
 
-  updateSalePreview();
+function openDirectSale(){
+  if(!products.length){
+    toast("Satış əlavə etmək üçün əvvəl məhsul əlavə edin.");
+    return;
+  }
+
+  currentSaleProduct=null;
+  $("saleModalTitle").textContent="Yeni satış";
+  $("saleQuantity").value=1;
+  $("saleProductSelectWrap").classList.remove("hidden");
+  $("saleProductInfo").classList.remove("hidden");
+
+  $("saleProductSelect").innerHTML='<option value="">Məhsul seç</option>'+
+    products.map(product=>`<option value="${product.id}">${escapeHtml(product.name)}</option>`).join("");
+
+  $("saleProductSelect").value="";
+  setSaleProduct(null);
   openModal("saleModal");
 }
 
 function updateSalePreview(){
-  if(!currentSaleProduct)return;
+  if(!currentSaleProduct){
+    toast("Məhsul seçin.");
+    return;
+  }
 
   const quantity=Math.max(1,parseInt($("saleQuantity").value||1,10));
 
@@ -1241,7 +1324,7 @@ $("toggleSalesDelete").addEventListener("click",()=>{
 });
 
 /* Product add/edit */
-$("addProductBtn").addEventListener("click",()=>{
+function openNewProductModal(){
   resetProductForm();
 
   if(!categories.length){
@@ -1251,7 +1334,10 @@ $("addProductBtn").addEventListener("click",()=>{
   }
 
   openModal("productModal");
-});
+}
+
+$("addProductBtn").addEventListener("click",openNewProductModal);
+$("addSaleFromSales").addEventListener("click",openDirectSale);
 
 $("salePrice").addEventListener("input",updateProfitPreview);
 $("costPrice").addEventListener("input",updateProfitPreview);
@@ -1315,6 +1401,11 @@ $("productForm").addEventListener("submit",async event=>{
 });
 
 /* Sale */
+$("saleProductSelect").addEventListener("change",()=>{
+  const product=products.find(item=>item.id===$("saleProductSelect").value);
+  setSaleProduct(product||null);
+});
+
 $("saleQuantity").addEventListener("input",updateSalePreview);
 
 $("saleForm").addEventListener("submit",async event=>{
@@ -1399,6 +1490,7 @@ $("authForm").addEventListener("submit",async event=>{
   showApp();
   setToday();
   await loadAll();
+  showPage("sales");
 });
 
 $("logoutBtn").addEventListener("click",async()=>{
@@ -1432,6 +1524,7 @@ addEventListener("resize",fitValues);
   showApp();
   setToday();
   await loadAll();
+  showPage("sales");
 })();
 </script>
 </body>
