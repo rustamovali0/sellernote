@@ -1721,7 +1721,7 @@ async function loadProducts(){
 
 async function loadSales(){
   const {data,error}=await sb.from("sales")
-    .select("*, categories(name), products(name, category_id, categories(name))")
+    .select("*, products(name, category_id, categories(name))")
     .order("created_at",{ascending:false});
   if(error){toast(error.message);return}
   sales=data||[];
@@ -2184,6 +2184,14 @@ function addLooseSaleImageFiles(files){
   renderLooseSaleImagePreviews();
 }
 
+function saleCategoryName(sale){
+  const categoryId=sale.category_id||sale.products?.category_id||null;
+  if(!categoryId)return sale.products?.categories?.name||"";
+  return categories.find(category=>category.id===categoryId)?.name
+    || sale.products?.categories?.name
+    || "";
+}
+
 function displaySalePrice(sale){
   return sale.sale_price_provided===false ? "Qeyd edilməyib" : money(sale.total_revenue);
 }
@@ -2273,8 +2281,8 @@ function renderSales(){
               <div class="sale-name">${escapeHtml(sale.product_name||sale.products?.name||"Satış")}</div>
               <div class="meta">
                 ${formatDate(sale.created_at)} · ${sale.quantity||1} ədəd
-                ${(sale.categories?.name||sale.products?.categories?.name)
-                  ?" · "+escapeHtml(sale.categories?.name||sale.products?.categories?.name)
+                ${saleCategoryName(sale)
+                  ?" · "+escapeHtml(saleCategoryName(sale))
                   :""}
               </div>
             </div>
