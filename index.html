@@ -1187,6 +1187,44 @@
       font-size:clamp(19px,5.6vw,24px);
     }
 
+  
+    .confirm-modal{
+      max-width:440px;
+    }
+    .confirm-head{
+      align-items:flex-start;
+    }
+    .confirm-head h3{
+      margin:0 0 6px;
+    }
+    .confirm-message{
+      margin:0;
+      color:var(--muted);
+      line-height:1.45;
+      font-size:14px;
+    }
+    .confirm-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top:18px;
+    }
+    .btn.danger{
+      background:#ef4444;
+      color:#fff;
+      border-color:#ef4444;
+      box-shadow:0 10px 24px rgba(239,68,68,.2);
+    }
+    .btn.danger:hover{
+      filter:brightness(.98);
+    }
+    @media(max-width:520px){
+      .confirm-actions{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+      }
+    }
+
   </style>
 </head>
 
@@ -1786,6 +1824,24 @@
     </div>
   </div>
 
+
+  <div id="appConfirmModal" class="modal-backdrop hidden">
+    <div class="modal confirm-modal">
+      <div class="modal-head confirm-head">
+        <div>
+          <h3 id="appConfirmTitle">Təsdiq</h3>
+          <p id="appConfirmMessage" class="confirm-message">Davam etmək istəyirsiniz?</p>
+        </div>
+        <button class="close" id="appConfirmClose" type="button" aria-label="Bağla">×</button>
+      </div>
+
+      <div class="confirm-actions">
+        <button id="appConfirmCancel" class="btn secondary" type="button">İmtina</button>
+        <button id="appConfirmOk" class="btn danger" type="button">Sil</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 const SUPABASE_URL="https://ldahrwkjwckghkwovqua.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_0ICHNWlwXe8bXlVHgduOXA_hNNYcl66";
@@ -1898,6 +1954,44 @@ function fitValues(){
 
 function openModal(id){$(id).classList.remove("hidden")}
 function closeModal(id){$(id).classList.add("hidden")}
+
+let confirmResolve=null;
+
+function finishAppConfirm(result=false){
+  closeModal("appConfirmModal");
+  if(confirmResolve){
+    const resolve=confirmResolve;
+    confirmResolve=null;
+    resolve(result);
+  }
+}
+
+function appConfirm(message,options={}){
+  $("appConfirmTitle").textContent=options.title||"Təsdiq";
+  $("appConfirmMessage").textContent=message||"Davam etmək istəyirsiniz?";
+  $("appConfirmCancel").textContent=options.cancelText||"İmtina";
+  $("appConfirmOk").textContent=options.confirmText||"Təsdiq et";
+  $("appConfirmOk").classList.toggle("danger",options.tone!=="default");
+  openModal("appConfirmModal");
+
+  return new Promise(resolve=>{
+    confirmResolve=resolve;
+  });
+}
+
+$("appConfirmCancel").addEventListener("click",()=>finishAppConfirm(false));
+$("appConfirmOk").addEventListener("click",()=>finishAppConfirm(true));
+$("appConfirmClose").addEventListener("click",()=>finishAppConfirm(false));
+$("appConfirmModal").addEventListener("click",event=>{
+  if(event.target===$("appConfirmModal"))finishAppConfirm(false);
+});
+document.addEventListener("keydown",event=>{
+  if(event.key==="Escape" && !$("appConfirmModal").classList.contains("hidden")){
+    finishAppConfirm(false);
+  }
+});
+
+
 
 function closeDropdowns(except=null){
   document.querySelectorAll(".drop-panel").forEach(panel=>{
@@ -2899,7 +2993,12 @@ function openEditProduct(id){
 }
 
 async function deleteProduct(id){
-  if(!confirm("Məhsulu silmək istəyirsiniz? Satış tarixçəsi qalacaq."))return;
+  if(!await appConfirm("Məhsulu silmək istəyirsiniz? Satış tarixçəsi qalacaq.",{
+    title:"Məhsulu sil",
+    confirmText:"Sil",
+    cancelText:"İmtina",
+    tone:"danger"
+  }))return;
 
   const {data,error}=await sb.from("products").delete().eq("id",id).select("id");
   if(error){
@@ -3026,7 +3125,12 @@ function updateSalePreview(){
 }
 
 async function deleteSale(id){
-  if(!confirm("Bu satış qeydini silmək istəyirsiniz?"))return;
+  if(!await appConfirm("Bu satış qeydini silmək istəyirsiniz?",{
+    title:"Satışı sil",
+    confirmText:"Sil",
+    cancelText:"İmtina",
+    tone:"danger"
+  }))return;
 
   const {data,error}=await sb.from("sales").delete().eq("id",id).select("id");
   if(error){
@@ -3049,7 +3153,12 @@ async function deleteCategory(id){
     return;
   }
 
-  if(!confirm("Kateqoriyanı silmək istəyirsiniz?"))return;
+  if(!await appConfirm("Kateqoriyanı silmək istəyirsiniz?",{
+    title:"Kateqoriyanı sil",
+    confirmText:"Sil",
+    cancelText:"İmtina",
+    tone:"danger"
+  }))return;
 
   const {error}=await sb.from("categories").delete().eq("id",id);
   if(error){toast(error.message);return}
