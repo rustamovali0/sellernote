@@ -63,9 +63,13 @@
     <form id="authForm" class="form">
       <input id="email" class="input" type="email" placeholder="Email" required />
       <input id="password" class="input" type="password" placeholder="Şifrə" minlength="6" required />
+      <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted)">
+        <input id="rememberEmail" type="checkbox" />
+        Email-i yadda saxla
+      </label>
       <button id="authSubmit" class="btn full" type="submit">Daxil ol</button>
     </form>
-    <div class="auth-note">Hər istifadəçi yalnız öz məlumatlarını görür.</div>
+    <div class="auth-note">Hər istifadəçi yalnız öz məlumatlarını görür. Login sessiyası brauzerdə saxlanılır; şifrə localStorage-də saxlanılmır.</div>
   </div>
 </div>
 
@@ -91,6 +95,45 @@
       <div class="card filters">
         <input id="searchInput" class="input" type="search" placeholder="Məhsul adına görə axtar..." />
         <select id="categoryFilter" class="select"><option value="">Bütün kateqoriyalar</option></select>
+
+        <select id="productDateFilter" class="select">
+          <option value="today" selected>Bu gün</option>
+          <option value="yesterday">Dünən</option>
+          <option value="7days">Son 7 gün</option>
+          <option value="30days">Son 30 gün</option>
+          <option value="thismonth">Bu ay</option>
+          <option value="lastmonth">Keçən ay</option>
+          <option value="custom">Xüsusi tarix aralığı</option>
+          <option value="all">Bütün tarixlər</option>
+        </select>
+
+        <div id="productCustomDates" class="row2 hidden">
+          <div><label class="label">Başlanğıc</label><input id="productDateFrom" class="input" type="date"></div>
+          <div><label class="label">Son</label><input id="productDateTo" class="input" type="date"></div>
+        </div>
+
+        <select id="productPriceFilter" class="select">
+          <option value="">Qiymət: hamısı</option>
+          <option value="under50">₼50-dən aşağı</option>
+          <option value="50to100">₼50–₼100</option>
+          <option value="100to300">₼100–₼300</option>
+          <option value="300plus">₼300+</option>
+        </select>
+
+        <select id="productProfitFilter" class="select">
+          <option value="">Qazanc: hamısı</option>
+          <option value="positive">Qazancı müsbət</option>
+          <option value="zero">Qazanc 0</option>
+          <option value="negative">Zərər edən</option>
+        </select>
+
+        <select id="productSort" class="select">
+          <option value="newest">Ən yeni</option>
+          <option value="oldest">Ən köhnə</option>
+          <option value="price_desc">Qiymət: yüksəkdən aşağı</option>
+          <option value="price_asc">Qiymət: aşağıdan yüksək</option>
+          <option value="profit_desc">Qazanc: yüksəkdən aşağı</option>
+        </select>
       </div>
       <div id="productList" class="product-list"></div>
     </div>
@@ -98,6 +141,68 @@
 
   <section id="salesPage" class="hidden">
     <div class="section-head"><h2>Satış tarixçəsi</h2><span id="salesCount"></span></div>
+
+    <div class="card filters" style="margin-bottom:10px">
+      <input id="salesSearchInput" class="input" type="search" placeholder="Məhsul adına görə axtar..." />
+      <select id="salesDateFilter" class="select">
+        <option value="today" selected>Bu gün</option>
+        <option value="yesterday">Dünən</option>
+        <option value="7days">Son 7 gün</option>
+        <option value="30days">Son 30 gün</option>
+        <option value="thismonth">Bu ay</option>
+        <option value="lastmonth">Keçən ay</option>
+        <option value="custom">Xüsusi tarix aralığı</option>
+        <option value="all">Bütün tarixlər</option>
+      </select>
+
+      <div id="salesCustomDates" class="row2 hidden">
+        <div><label class="label">Başlanğıc</label><input id="salesDateFrom" class="input" type="date"></div>
+        <div><label class="label">Son</label><input id="salesDateTo" class="input" type="date"></div>
+      </div>
+
+      <select id="salesCategoryFilter" class="select">
+        <option value="">Bütün kateqoriyalar</option>
+      </select>
+
+      <div class="row2">
+        <input id="salesMinAmount" class="input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Min məbləğ">
+        <input id="salesMaxAmount" class="input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Max məbləğ">
+      </div>
+
+      <select id="salesProfitFilter" class="select">
+        <option value="">Qazanc: hamısı</option>
+        <option value="positive">Qazanc var</option>
+        <option value="zero">Qazanc 0</option>
+        <option value="negative">Zərər</option>
+      </select>
+
+      <select id="salesQtyFilter" class="select">
+        <option value="">Say: hamısı</option>
+        <option value="1">1 ədəd</option>
+        <option value="2to5">2–5 ədəd</option>
+        <option value="6to10">6–10 ədəd</option>
+        <option value="10plus">10+ ədəd</option>
+      </select>
+
+      <select id="salesSort" class="select">
+        <option value="newest">Ən yeni</option>
+        <option value="oldest">Ən köhnə</option>
+        <option value="revenue_desc">Məbləğ: yüksəkdən aşağı</option>
+        <option value="revenue_asc">Məbləğ: aşağıdan yüksək</option>
+        <option value="profit_desc">Qazanc: yüksəkdən aşağı</option>
+        <option value="profit_asc">Qazanc: aşağıdan yüksək</option>
+        <option value="qty_desc">Say: yüksəkdən aşağı</option>
+        <option value="qty_asc">Say: aşağıdan yüksək</option>
+      </select>
+
+      <button id="resetSalesFilters" class="btn secondary full" type="button">Filterləri sıfırla</button>
+    </div>
+
+    <div id="salesSummary" class="grid" style="margin-bottom:10px">
+      <div class="stat"><div class="label">Filter satış</div><div class="value" id="filterRevenue">₼0.00</div></div>
+      <div class="stat"><div class="label">Filter qazanc</div><div class="value profit" id="filterProfit">₼0.00</div></div>
+    </div>
+
     <div id="salesList" class="sales-list"></div>
   </section>
 
@@ -185,7 +290,14 @@
 <script>
 const SUPABASE_URL = "https://ldahrwkjwckghkwovqua.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_0ICHNWlwXe8bXlVHgduOXA_hNNYcl66";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage
+  }
+});
 
 let currentUser = null;
 let products = [];
@@ -233,6 +345,10 @@ $("authForm").addEventListener("submit", async e=>{
   e.preventDefault();
   const email = $("email").value.trim();
   const password = $("password").value;
+
+  if ($("rememberEmail").checked) localStorage.setItem("mal_ucotu_email", email);
+  else localStorage.removeItem("mal_ucotu_email");
+
   $("authSubmit").disabled = true;
   try{
     if(authMode==="login"){
@@ -284,7 +400,7 @@ async function loadProducts(){
 }
 
 async function loadSales(){
-  const {data,error}=await sb.from("sales").select("*, products(name)").order("created_at",{ascending:false});
+  const {data,error}=await sb.from("sales").select("*, products(name, category_id, categories(name))").order("created_at",{ascending:false});
   if(error){toast(error.message);return;}
   sales=data||[];
 }
@@ -302,12 +418,95 @@ function renderCategoryOptions(){
   $("categoryFilter").innerHTML='<option value="">Bütün kateqoriyalar</option>'+categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
   $("categoryFilter").value=selectedFilter;
   $("productCategory").innerHTML='<option value="">Kateqoriya seç</option>'+categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+
+  const salesCatSelected = $("salesCategoryFilter") ? $("salesCategoryFilter").value : "";
+  if ($("salesCategoryFilter")) {
+    $("salesCategoryFilter").innerHTML='<option value="">Bütün kateqoriyalar</option>'+categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+    $("salesCategoryFilter").value = salesCatSelected;
+  }
+}
+
+
+function startOfDay(d){
+  const x=new Date(d);
+  x.setHours(0,0,0,0);
+  return x;
+}
+function endOfDay(d){
+  const x=new Date(d);
+  x.setHours(23,59,59,999);
+  return x;
+}
+function dateRangeMatch(value, preset, fromValue, toValue){
+  if(preset==="all") return true;
+  const d=new Date(value);
+  const now=new Date();
+  let from=null,to=null;
+
+  if(preset==="today"){
+    from=startOfDay(now); to=endOfDay(now);
+  }else if(preset==="yesterday"){
+    const y=new Date(now); y.setDate(y.getDate()-1);
+    from=startOfDay(y); to=endOfDay(y);
+  }else if(preset==="7days"){
+    from=startOfDay(now); from.setDate(from.getDate()-6); to=endOfDay(now);
+  }else if(preset==="30days"){
+    from=startOfDay(now); from.setDate(from.getDate()-29); to=endOfDay(now);
+  }else if(preset==="thismonth"){
+    from=new Date(now.getFullYear(),now.getMonth(),1,0,0,0,0);
+    to=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999);
+  }else if(preset==="lastmonth"){
+    from=new Date(now.getFullYear(),now.getMonth()-1,1,0,0,0,0);
+    to=new Date(now.getFullYear(),now.getMonth(),0,23,59,59,999);
+  }else if(preset==="custom"){
+    if(fromValue) from=startOfDay(new Date(fromValue+"T00:00:00"));
+    if(toValue) to=endOfDay(new Date(toValue+"T00:00:00"));
+    if(!from && !to) return true;
+  }
+
+  if(from && d<from) return false;
+  if(to && d>to) return false;
+  return true;
 }
 
 function renderProducts(){
   const q=$("searchInput").value.trim().toLowerCase();
   const cat=$("categoryFilter").value;
-  const filtered=products.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!cat||p.category_id===cat));
+  const datePreset=$("productDateFilter").value;
+  const from=$("productDateFrom").value;
+  const to=$("productDateTo").value;
+  const priceFilter=$("productPriceFilter").value;
+  const profitFilter=$("productProfitFilter").value;
+  const sort=$("productSort").value;
+
+  let filtered=products.filter(p=>{
+    const price=Number(p.sale_price||0);
+    const profit=Number(p.sale_price||0)-Number(p.cost_price||0);
+
+    if(q && !p.name.toLowerCase().includes(q)) return false;
+    if(cat && p.category_id!==cat) return false;
+    if(!dateRangeMatch(p.created_at,datePreset,from,to)) return false;
+
+    if(priceFilter==="under50" && !(price<50)) return false;
+    if(priceFilter==="50to100" && !(price>=50 && price<=100)) return false;
+    if(priceFilter==="100to300" && !(price>=100 && price<=300)) return false;
+    if(priceFilter==="300plus" && !(price>=300)) return false;
+
+    if(profitFilter==="positive" && !(profit>0)) return false;
+    if(profitFilter==="zero" && Math.abs(profit)>0.000001) return false;
+    if(profitFilter==="negative" && !(profit<0)) return false;
+
+    return true;
+  });
+
+  filtered.sort((a,b)=>{
+    if(sort==="oldest") return new Date(a.created_at)-new Date(b.created_at);
+    if(sort==="price_desc") return Number(b.sale_price)-Number(a.sale_price);
+    if(sort==="price_asc") return Number(a.sale_price)-Number(b.sale_price);
+    if(sort==="profit_desc") return (Number(b.sale_price)-Number(b.cost_price))-(Number(a.sale_price)-Number(a.cost_price));
+    return new Date(b.created_at)-new Date(a.created_at);
+  });
+
   $("productCount").textContent=`${filtered.length} məhsul`;
   $("productList").innerHTML=filtered.length?filtered.map(p=>{
     const profit=Number(p.sale_price)-Number(p.cost_price);
@@ -328,15 +527,21 @@ function renderProducts(){
         </div>
       </div>
     </div>`;
-  }).join(""):'<div class="card empty">Məhsul tapılmadı.</div>';
+  }).join(""):'<div class="card empty">Bu filterə uyğun məhsul tapılmadı.</div>';
 
   document.querySelectorAll("[data-sale]").forEach(b=>b.addEventListener("click",()=>openSale(b.dataset.sale)));
   document.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openEditProduct(b.dataset.edit)));
   document.querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>deleteProduct(b.dataset.delete)));
 }
 
-$("searchInput").addEventListener("input",renderProducts);
-$("categoryFilter").addEventListener("change",renderProducts);
+["searchInput","categoryFilter","productDateFilter","productDateFrom","productDateTo","productPriceFilter","productProfitFilter","productSort"]
+.forEach(id=>{
+  const el=$(id);
+  el.addEventListener(id==="searchInput"?"input":"change",()=>{
+    if(id==="productDateFilter") $("productCustomDates").classList.toggle("hidden",el.value!=="custom");
+    renderProducts();
+  });
+});
 
 function renderCategories(){
   $("categoryList").innerHTML=categories.length?categories.map(c=>{
@@ -347,11 +552,114 @@ function renderCategories(){
 }
 
 function renderSales(){
-  $("salesCount").textContent=`${sales.length} qeyd`;
-  $("salesList").innerHTML=sales.length?sales.map(s=>`<div class="card sale">
-    <div class="sale-top"><div><div class="sale-name">${escapeHtml(s.product_name||s.products?.name||"Məhsul")}</div><div class="meta">${formatDate(s.created_at)} · ${s.quantity} ədəd</div></div><div class="sale-total">${money(s.total_revenue)}</div></div>
-    <div class="price-row"><span class="badge">Maya ${money(s.total_cost)}</span><span class="badge profit">Qazanc ${money(s.profit)}</span></div>
-  </div>`).join(""):'<div class="card empty">Satış qeydiyyatı yoxdur.</div>';
+  const q=$("salesSearchInput").value.trim().toLowerCase();
+  const datePreset=$("salesDateFilter").value;
+  const from=$("salesDateFrom").value;
+  const to=$("salesDateTo").value;
+  const sort=$("salesSort").value;
+  const category=$("salesCategoryFilter").value;
+  const minAmount=$("salesMinAmount").value === "" ? null : Number($("salesMinAmount").value);
+  const maxAmount=$("salesMaxAmount").value === "" ? null : Number($("salesMaxAmount").value);
+  const profitFilter=$("salesProfitFilter").value;
+  const qtyFilter=$("salesQtyFilter").value;
+
+  let filtered=sales.filter(s=>{
+    const name=String(s.product_name||s.products?.name||"").toLowerCase();
+    const revenue=Number(s.total_revenue||0);
+    const profit=Number(s.profit||0);
+    const qty=Number(s.quantity||0);
+    const productCategoryId=s.products?.category_id || "";
+
+    if(q && !name.includes(q)) return false;
+    if(!dateRangeMatch(s.created_at,datePreset,from,to)) return false;
+    if(category && productCategoryId !== category) return false;
+
+    if(minAmount !== null && revenue < minAmount) return false;
+    if(maxAmount !== null && revenue > maxAmount) return false;
+
+    if(profitFilter==="positive" && !(profit>0)) return false;
+    if(profitFilter==="zero" && Math.abs(profit)>0.000001) return false;
+    if(profitFilter==="negative" && !(profit<0)) return false;
+
+    if(qtyFilter==="1" && qty!==1) return false;
+    if(qtyFilter==="2to5" && !(qty>=2 && qty<=5)) return false;
+    if(qtyFilter==="6to10" && !(qty>=6 && qty<=10)) return false;
+    if(qtyFilter==="10plus" && !(qty>=10)) return false;
+
+    return true;
+  });
+
+  filtered.sort((a,b)=>{
+    if(sort==="oldest") return new Date(a.created_at)-new Date(b.created_at);
+    if(sort==="revenue_desc") return Number(b.total_revenue)-Number(a.total_revenue);
+    if(sort==="revenue_asc") return Number(a.total_revenue)-Number(b.total_revenue);
+    if(sort==="profit_desc") return Number(b.profit)-Number(a.profit);
+    if(sort==="profit_asc") return Number(a.profit)-Number(b.profit);
+    if(sort==="qty_desc") return Number(b.quantity)-Number(a.quantity);
+    if(sort==="qty_asc") return Number(a.quantity)-Number(b.quantity);
+    return new Date(b.created_at)-new Date(a.created_at);
+  });
+
+  $("salesCount").textContent=`${filtered.length} qeyd`;
+  $("filterRevenue").textContent=money(filtered.reduce((a,s)=>a+Number(s.total_revenue||0),0));
+  $("filterProfit").textContent=money(filtered.reduce((a,s)=>a+Number(s.profit||0),0));
+
+  $("salesList").innerHTML=filtered.length?filtered.map(s=>`<div class="card sale">
+    <div class="sale-top">
+      <div>
+        <div class="sale-name">${escapeHtml(s.product_name||s.products?.name||"Məhsul")}</div>
+        <div class="meta">${formatDate(s.created_at)} · ${s.quantity} ədəd${s.products?.categories?.name ? " · "+escapeHtml(s.products.categories.name) : ""}</div>
+      </div>
+      <div class="sale-total">${money(s.total_revenue)}</div>
+    </div>
+    <div class="price-row">
+      <span class="badge">Maya ${money(s.total_cost)}</span>
+      <span class="badge profit">Qazanc ${money(s.profit)}</span>
+    </div>
+    <div class="actions">
+      <button class="btn danger" type="button" data-deletesale="${s.id}">Satışı sil</button>
+    </div>
+  </div>`).join(""):'<div class="card empty">Bu filterə uyğun satış yoxdur.</div>';
+
+  document.querySelectorAll("[data-deletesale]").forEach(btn=>{
+    btn.addEventListener("click",()=>deleteSale(btn.dataset.deletesale));
+  });
+}
+
+["salesSearchInput","salesDateFilter","salesDateFrom","salesDateTo","salesCategoryFilter","salesMinAmount","salesMaxAmount","salesProfitFilter","salesQtyFilter","salesSort"].forEach(id=>{
+  const el=$(id);
+  const eventName = ["salesSearchInput","salesMinAmount","salesMaxAmount"].includes(id) ? "input" : "change";
+  el.addEventListener(eventName,()=>{
+    if(id==="salesDateFilter") $("salesCustomDates").classList.toggle("hidden",el.value!=="custom");
+    renderSales();
+  });
+});
+
+$("resetSalesFilters").addEventListener("click",()=>{
+  $("salesSearchInput").value="";
+  $("salesDateFilter").value="today";
+  $("salesDateFrom").value="";
+  $("salesDateTo").value="";
+  $("salesCategoryFilter").value="";
+  $("salesMinAmount").value="";
+  $("salesMaxAmount").value="";
+  $("salesProfitFilter").value="";
+  $("salesQtyFilter").value="";
+  $("salesSort").value="newest";
+  $("salesCustomDates").classList.add("hidden");
+  renderSales();
+});
+
+async function deleteSale(id){
+  if(!confirm("Bu satış qeydini silmək istəyirsiniz?")) return;
+  const {error}=await sb.from("sales").delete().eq("id",id);
+  if(error){
+    toast(error.message || "Satış silinmədi");
+    return;
+  }
+  toast("Satış qeydi silindi");
+  await loadSales();
+  renderAll();
 }
 
 function renderStats(){
@@ -501,6 +809,13 @@ function showPage(page){
   $("fab").classList.toggle("hidden",page!=="dashboard");
 }
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
+
+
+const rememberedEmail=localStorage.getItem("mal_ucotu_email");
+if(rememberedEmail){
+  $("email").value=rememberedEmail;
+  $("rememberEmail").checked=true;
+}
 
 (async()=>{
   const {data:{session}}=await sb.auth.getSession();
