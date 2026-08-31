@@ -2,6 +2,7 @@ package com.rustamoff.jeans;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ContentValues;
 import android.content.Intent;
@@ -12,7 +13,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.View;
-import android.view.WindowInsets;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -26,6 +26,7 @@ import java.util.List;
 public class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 1001;
     private static final int MEDIA_PERMISSION_REQUEST = 1002;
+    private static final int CAMERA_PERMISSION_REQUEST = 1003;
     private static final String APP_URL = "https://sellernote-xi.vercel.app/#sales";
     private static final long DOUBLE_BACK_EXIT_MS = 2000L;
 
@@ -34,6 +35,7 @@ public class MainActivity extends Activity {
     private Uri cameraImageUri;
     private long lastBackPressedAt = 0L;
     private boolean backCheckInProgress = false;
+    private boolean openCameraAfterPermission = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,21 +43,20 @@ public class MainActivity extends Activity {
 
         getWindow().setStatusBarColor(Color.rgb(246, 248, 252));
         getWindow().setNavigationBarColor(Color.WHITE);
+
+        // Sistemin status/navigation bar sahələrini WebView-in üstünə gətirmə.
+        // Sonra əlavə rahat boşluq veririk.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            getWindow().setDecorFitsSystemWindows(false);
+            getWindow().setDecorFitsSystemWindows(true);
         } else {
-            getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            );
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         }
 
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(246, 248, 252));
         webView.setClipToPadding(true);
+        webView.setPadding(0, dp(18), 0, dp(26));
         setContentView(webView);
-        applySafeAreaSpacing();
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -87,40 +88,19 @@ public class MainActivity extends Activity {
                     filePathCallback.onReceiveValue(null);
                 }
                 filePathCallback = filePathCallbackValue;
-
-                if (needsMediaPermissionRequest()) {
-                    requestMediaPermissions();
-                } else {
-                    launchImageChooser();
-                }
+                showImageSourceDialog();
                 return true;
             }
         });
+
+        // Tətbiqə ilk girişdə kamera və şəkil icazələrini istə.
+        requestStartupMediaPermissions();
 
         if (savedInstanceState == null) {
             webView.loadUrl(APP_URL);
         } else {
             webView.restoreState(savedInstanceState);
         }
-    }
-
-    private void applySafeAreaSpacing() {
-        final int extra = dp(8);
-        webView.setOnApplyWindowInsetsListener((view, insets) -> {
-            int top;
-            int bottom;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
-                top = bars.top;
-                bottom = bars.bottom;
-            } else {
-                top = insets.getSystemWindowInsetTop();
-                bottom = insets.getSystemWindowInsetBottom();
-            }
-            view.setPadding(0, top + extra, 0, bottom + extra);
-            return insets;
-        });
-        webView.requestApplyInsets();
     }
 
     private int dp(int value) {
@@ -143,11 +123,7 @@ public class MainActivity extends Activity {
         return checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
     }
 
-    private boolean needsMediaPermissionRequest() {
-        return !hasCameraPermission() || !hasGalleryPermission() || !hasLegacyWritePermission();
-    }
-
-    private void requestMediaPermissions() {
+    private void requestStartupMediaPermissions() {
         List<String> permissions = new ArrayList<>();
 
         if (!hasCameraPermission()) {
@@ -167,52 +143,111 @@ public class MainActivity extends Activity {
             }
         }
 
-        if (permissions.isEmpty()) {
-            launchImageChooser();
+        if (!permissions.isEmpty()) {
+            requestPermissions(permissions.toArray(new String[0]), MEDIA_PERMISSION_REQUEST);
+        }
+    }
+
+    private void showImageSourceDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Şəkil əlavə et")
+                .setItems(new CharSequence[]{"Kamera", "Qalereya"}, (dialog, which) -> {
+                    if (which == 0) {
+                        openCameraChoice();
+                    } else {
+                        launchGallery();
+                    }
+                })
+                .setNegativeButton("Bağla", (dialog, which) -> cancelFileChooser())
+                .setOnCancelListener(dialog -> cancelFileChooser())
+                .show();
+    }
+
+    private void cancelFileChooser() {
+        if (filePathCallback != null) {
+            filePathCallback.onReceiveValue(null);
+            filePathCallback = null;
+        }
+        cameraImageUri = null;
+    }
+
+    private void openCameraChoice() {
+        if (hasCameraPermission()) {
+            launchCamera();
             return;
         }
 
-        requestPermissions(permissions.toArray(new String[0]), MEDIA_PERMISSION_REQUEST);
+        openCameraAfterPermission = true;
+        requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (requestCode != MEDIA_PERMISSION_REQUEST) return;
-
-        if (!hasCameraPermission()) {
-            Toast.makeText(this, "Kamera icazəsi verilməyib. Qalereyadan şəkil seçə bilərsiniz.", Toast.LENGTH_SHORT).show();
+        if (requestCode == CAMERA_PERMISSION_REQUEST) {
+            boolean granted = hasCameraPermission();
+            if (openCameraAfterPermission && granted && filePathCallback != null) {
+                openCameraAfterPermission = false;
+                launchCamera();
+            } else {
+                openCameraAfterPermission = false;
+                Toast.makeText(this, "Kamera icazəsi verilmədi.", Toast.LENGTH_SHORT).show();
+                if (filePathCallback != null) {
+                    showImageSourceDialog();
+                }
+            }
+            return;
         }
 
-        if (filePathCallback != null) {
-            launchImageChooser();
+        if (requestCode == MEDIA_PERMISSION_REQUEST) {
+            if (!hasCameraPermission()) {
+                Toast.makeText(this, "Kamera üçün icazə verilməyib.", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
-    private void launchImageChooser() {
+    private void launchGallery() {
         try {
-            Intent galleryIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            galleryIntent.addCategory(Intent.CATEGORY_OPENABLE);
-            galleryIntent.setType("image/*");
-            galleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            Intent galleryIntent;
 
-            Intent chooser = Intent.createChooser(galleryIntent, "Şəkil seç");
-
-            if (hasCameraPermission()) {
-                Intent cameraIntent = createCameraIntent();
-                if (cameraIntent != null && cameraIntent.resolveActivity(getPackageManager()) != null) {
-                    chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{cameraIntent});
-                }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                galleryIntent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+                galleryIntent.setType("image/*");
+                galleryIntent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, 5);
+            } else {
+                galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                galleryIntent.setType("image/*");
+                galleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
             }
 
-            startActivityForResult(chooser, FILE_CHOOSER_REQUEST);
+            startActivityForResult(galleryIntent, FILE_CHOOSER_REQUEST);
         } catch (Exception error) {
-            if (filePathCallback != null) {
-                filePathCallback.onReceiveValue(null);
-                filePathCallback = null;
+            // Bəzi cihazlarda sistem Photo Picker olmaya bilər — qalereya üçün ehtiyat seçim.
+            try {
+                Intent fallback = new Intent(Intent.ACTION_GET_CONTENT);
+                fallback.setType("image/*");
+                fallback.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                startActivityForResult(fallback, FILE_CHOOSER_REQUEST);
+            } catch (Exception secondError) {
+                Toast.makeText(this, "Qalereya açıla bilmədi.", Toast.LENGTH_SHORT).show();
+                cancelFileChooser();
             }
-            Toast.makeText(this, "Şəkil seçimi açıla bilmədi.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void launchCamera() {
+        try {
+            Intent cameraIntent = createCameraIntent();
+            if (cameraIntent != null && cameraIntent.resolveActivity(getPackageManager()) != null) {
+                startActivityForResult(cameraIntent, FILE_CHOOSER_REQUEST);
+            } else {
+                Toast.makeText(this, "Kamera tətbiqi tapılmadı.", Toast.LENGTH_SHORT).show();
+                showImageSourceDialog();
+            }
+        } catch (Exception error) {
+            Toast.makeText(this, "Kamera açıla bilmədi.", Toast.LENGTH_SHORT).show();
+            showImageSourceDialog();
         }
     }
 
