@@ -2,12 +2,12 @@ package com.rustamoff.jeans;
 
 import android.app.Activity;
 import android.content.ClipData;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.view.View;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -69,12 +69,12 @@ public class MainActivity extends Activity {
                 Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                 try {
                     String fileName = "rustamoff_" + System.currentTimeMillis() + ".jpg";
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
+                    values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
                     cameraImageUri = getContentResolver().insert(
                             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                            new android.content.ContentValues() {{
-                                put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
-                                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-                            }}
+                            values
                     );
                     if (cameraImageUri != null) {
                         cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri);
