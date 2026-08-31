@@ -782,6 +782,84 @@
       }
     }
 
+  
+    .sale-type-modal{
+      max-width:440px;
+    }
+    .sale-type-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    .sale-type-option{
+      min-width:0;
+      min-height:132px;
+      padding:16px 12px;
+      border:1px solid var(--line);
+      border-radius:17px;
+      background:var(--card2);
+      color:var(--text);
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      justify-content:center;
+      gap:10px;
+      text-align:left;
+    }
+    .sale-type-option:active{
+      transform:scale(.985);
+    }
+    .sale-type-icon{
+      width:42px;
+      height:42px;
+      border-radius:13px;
+      background:var(--primary);
+      color:var(--primaryText);
+      display:grid;
+      place-items:center;
+      font-size:20px;
+      flex:0 0 auto;
+    }
+    .sale-type-option strong{
+      display:block;
+      font-size:15px;
+      margin-bottom:4px;
+    }
+    .sale-type-option small{
+      display:block;
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.35;
+    }
+    @media(max-width:360px){
+      .sale-type-grid{grid-template-columns:1fr}
+      .sale-type-option{
+        min-height:92px;
+        flex-direction:row;
+        align-items:center;
+      }
+    }
+
+  
+    .floating-add{
+      padding:0!important;
+      display:flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      line-height:1!important;
+      font-size:0!important;
+      text-align:center!important;
+    }
+    .floating-add::before{
+      content:"+";
+      display:block;
+      font-family:Arial,Helvetica,sans-serif;
+      font-size:32px;
+      font-weight:400;
+      line-height:1;
+      transform:translateY(-1px);
+    }
+
   </style>
 </head>
 
@@ -1082,7 +1160,35 @@
     </nav>
 
     <button id="addProductBtn" class="floating-add hidden" type="button" aria-label="Məhsul əlavə et">+</button>
+    <button id="salesAddBtn" class="floating-add" type="button" aria-label="Satış əlavə et">+</button>
   </main>
+
+  <div id="saleTypeModal" class="modal-backdrop hidden">
+    <div class="modal sale-type-modal">
+      <div class="modal-head">
+        <h3>Əlavə et</h3>
+        <button class="close" data-close="saleTypeModal" type="button">×</button>
+      </div>
+
+      <div class="sale-type-grid">
+        <button id="chooseRegularSale" class="sale-type-option" type="button">
+          <span class="sale-type-icon">🛒</span>
+          <span>
+            <strong>Satış</strong>
+            <small>Mövcud məhsuldan satış et</small>
+          </span>
+        </button>
+
+        <button id="chooseLooseSale" class="sale-type-option" type="button">
+          <span class="sale-type-icon">＋</span>
+          <span>
+            <strong>Sərbəst satış</strong>
+            <small>Məhsullar bölməsinə əlavə etmədən</small>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Şəkil ön baxış">
     <button id="lightboxClose" class="lightbox-close" type="button" aria-label="Bağla">×</button>
@@ -1175,8 +1281,20 @@
       <form id="looseSaleForm" class="form" novalidate>
         <input id="looseSaleId" type="hidden" />
 
-        <div id="looseSaleImagePreview" class="preview"><span>Şəkil seçilməyib</span></div>
-        <input id="looseSaleImage" class="input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+        <div>
+          <div class="label" style="margin-bottom:7px">
+            Şəkillər <span id="looseSaleImageCount">(0/5)</span>
+            <span class="meta" style="margin-left:5px">1-ci şəkil əsasdır</span>
+          </div>
+
+          <div id="looseSaleImagePreview" class="product-image-preview-grid">
+            <div class="product-image-empty">Şəkil seçilməyib</div>
+          </div>
+        </div>
+
+        <button id="openLooseSaleImagePicker" class="btn secondary full" type="button">＋ Şəkil əlavə et</button>
+        <div class="meta">Maksimum 5 şəkil. Birinci şəkil əsas şəkildir.</div>
+        <input id="looseSaleImagePicker" class="hidden" type="file" accept="image/*" multiple />
 
         <input id="looseSaleName" class="input" placeholder="Satış" value="Satış" />
 
@@ -1278,7 +1396,9 @@ let activityLogs=[];
 let appSettings={logo_url:null,favicon_url:null};
 let currentSaleProduct=null;
 let editingImageUrls=[];
-let editingSaleImageUrl=null;
+let editingSaleImageUrls=[];
+let pendingSaleImageFiles=[];
+let pendingSalePreviewUrls=[];
 let pendingProductImageFiles=[];
 let pendingProductPreviewUrls=[];
 
@@ -1289,6 +1409,7 @@ let lightboxTouchStartY=0;
 
 let productDateMode="today";
 let salesDateMode="today";
+let saleEntryMode="loose";
 
 /* Delete buttons are intentionally not persisted. Refresh => hidden again. */
 let productDeleteMode=false;
@@ -1769,6 +1890,106 @@ function renderProducts(){
   fitValues();
 }
 
+
+function saleImages(sale){
+  if(Array.isArray(sale?.image_urls) && sale.image_urls.length){
+    return sale.image_urls.filter(Boolean).slice(0,5);
+  }
+  return sale?.image_url ? [sale.image_url] : [];
+}
+
+function currentLooseSalePreviewEntries(){
+  return [
+    ...editingSaleImageUrls.map((url,index)=>({kind:"existing",url,index})),
+    ...pendingSaleImageFiles.map((file,index)=>({
+      kind:"pending",
+      url:pendingSalePreviewUrls[index],
+      index
+    }))
+  ].slice(0,5);
+}
+
+function renderLooseSaleImagePreviews(){
+  const entries=currentLooseSalePreviewEntries();
+  $("looseSaleImageCount").textContent=`(${entries.length}/5)`;
+
+  if(!entries.length){
+    $("looseSaleImagePreview").innerHTML='<div class="product-image-empty">Şəkil seçilməyib</div>';
+    return;
+  }
+
+  $("looseSaleImagePreview").innerHTML=entries.map((entry,displayIndex)=>`
+    <div class="product-preview-item ${displayIndex===0?"main-image":""}">
+      <img src="${escapeHtml(entry.url)}"
+           alt="Satış şəkli ${displayIndex+1}"
+           data-loose-preview-index="${displayIndex}">
+      ${displayIndex===0?'<span class="product-preview-main-label">Əsas</span>':""}
+      <button class="product-preview-remove"
+              type="button"
+              data-remove-loose-kind="${entry.kind}"
+              data-remove-loose-index="${entry.index}"
+              aria-label="Şəkli sil">×</button>
+    </div>
+  `).join("");
+
+  const images=entries.map(entry=>entry.url);
+
+  document.querySelectorAll("[data-loose-preview-index]").forEach(image=>{
+    image.addEventListener("click",()=>{
+      openImageLightbox(images,Number(image.dataset.loosePreviewIndex)||0);
+    });
+  });
+
+  document.querySelectorAll("[data-remove-loose-kind]").forEach(button=>{
+    button.addEventListener("click",event=>{
+      event.stopPropagation();
+      const index=Number(button.dataset.removeLooseIndex);
+
+      if(button.dataset.removeLooseKind==="existing"){
+        editingSaleImageUrls.splice(index,1);
+      }else{
+        const url=pendingSalePreviewUrls[index];
+        if(url)URL.revokeObjectURL(url);
+        pendingSaleImageFiles.splice(index,1);
+        pendingSalePreviewUrls.splice(index,1);
+      }
+
+      renderLooseSaleImagePreviews();
+    });
+  });
+}
+
+function addLooseSaleImageFiles(files){
+  const incoming=Array.from(files||[]);
+  if(!incoming.length)return;
+
+  const currentCount=editingSaleImageUrls.length+pendingSaleImageFiles.length;
+  const remaining=5-currentCount;
+
+  if(remaining<=0){
+    toast("Sərbəst satışda maksimum 5 şəkil əlavə etmək olar.");
+    return;
+  }
+
+  if(incoming.length>remaining){
+    toast(`Yalnız ${remaining} şəkil əlavə olundu. Maksimum 5 şəkil mümkündür.`);
+  }
+
+  for(const file of incoming.slice(0,remaining)){
+    if(!file.type.startsWith("image/"))continue;
+
+    if(file.size>5*1024*1024){
+      toast(`${file.name||"Şəkil"} 5MB-dan böyükdür və əlavə olunmadı.`);
+      continue;
+    }
+
+    pendingSaleImageFiles.push(file);
+    pendingSalePreviewUrls.push(URL.createObjectURL(file));
+  }
+
+  renderLooseSaleImagePreviews();
+}
+
 function displaySalePrice(sale){
   return sale.sale_price_provided===false ? "Qeyd edilməyib" : money(sale.total_revenue);
 }
@@ -1839,8 +2060,18 @@ function renderSales(){
 
   $("salesList").innerHTML=list.length?list.map(sale=>`
     <div class="card sale">
-      <div class="${sale.image_url?"sale-with-image":""}">
-        ${sale.image_url?`<img class="sale-thumb" src="${escapeHtml(sale.image_url)}" alt="${escapeHtml(sale.product_name||"Satış")}">`:""}
+      <div class="${saleImages(sale).length?"sale-with-image":""}">
+        ${saleImages(sale).length
+          ? `<div style="position:relative;width:58px;height:58px">
+               <img class="sale-thumb clickable-image"
+                    src="${escapeHtml(saleImages(sale)[0])}"
+                    alt="${escapeHtml(sale.product_name||"Satış")}"
+                    data-open-sale-images="${sale.id}">
+               ${saleImages(sale).length>1
+                 ? `<span class="product-image-badge">${saleImages(sale).length}</span>`
+                 : ""}
+             </div>`
+          : ""}
 
         <div>
           <div class="sale-top">
@@ -1870,6 +2101,13 @@ function renderSales(){
       </div>
     </div>
   `).join(""):'<div class="card empty">Bu seçimə uyğun satış yoxdur.</div>';
+
+  document.querySelectorAll("[data-open-sale-images]").forEach(image=>{
+    image.addEventListener("click",()=>{
+      const sale=sales.find(item=>item.id===image.dataset.openSaleImages);
+      if(sale)openImageLightbox(saleImages(sale),0);
+    });
+  });
 
   document.querySelectorAll("[data-edit-sale]").forEach(button=>{
     button.addEventListener("click",()=>openEditSale(button.dataset.editSale));
@@ -1965,6 +2203,7 @@ function showPage(page,options={}){
   });
 
   $("addProductBtn").classList.toggle("hidden",page!=="dashboard");
+  $("salesAddBtn").classList.toggle("hidden",page!=="sales");
   syncGlobalSearch(page);
   closeDropdowns();
   fitValues();
@@ -2416,7 +2655,23 @@ function openNewProductModal(){
 }
 
 $("addProductBtn").addEventListener("click",openNewProductModal);
-$("addSaleFromSales").addEventListener("click",openDirectSale);
+$("addSaleFromSales").addEventListener("click",()=>{
+  openSaleEntry("regular");
+});
+
+$("salesAddBtn").addEventListener("click",()=>{
+  openModal("saleTypeModal");
+});
+
+$("chooseRegularSale").addEventListener("click",()=>{
+  closeModal("saleTypeModal");
+  openSaleEntry("regular");
+});
+
+$("chooseLooseSale").addEventListener("click",()=>{
+  closeModal("saleTypeModal");
+  openSaleEntry("loose");
+});
 
 $("salePrice").addEventListener("input",updateProfitPreview);
 $("costPrice").addEventListener("input",updateProfitPreview);
@@ -2529,8 +2784,15 @@ function resetLooseSaleForm(){
   $("looseSaleForm").reset();
   $("looseSaleId").value="";
   $("looseSaleName").value="Satış";
-  editingSaleImageUrl=null;
-  $("looseSaleImagePreview").innerHTML="<span>Şəkil seçilməyib</span>";
+
+  pendingSalePreviewUrls.forEach(url=>URL.revokeObjectURL(url));
+  pendingSalePreviewUrls=[];
+  pendingSaleImageFiles=[];
+  editingSaleImageUrls=[];
+
+  $("looseSaleImagePicker").value="";
+  renderLooseSaleImagePreviews();
+
   $("looseSaleModalTitle").textContent="Sərbəst satış";
   updateLooseSalePreview();
 }
@@ -2552,9 +2814,23 @@ function updateLooseSalePreview(){
   fitValues();
 }
 
-function openLooseSale(){
+function openSaleEntry(mode="loose"){
   resetLooseSaleForm();
+  saleEntryMode=mode==="regular"?"regular":"loose";
+
+  if(saleEntryMode==="regular"){
+    $("looseSaleModalTitle").textContent="Satış əlavə et";
+    $("saveLooseSaleBtn").textContent="Satış və məhsul əlavə et";
+  }else{
+    $("looseSaleModalTitle").textContent="Sərbəst satış";
+    $("saveLooseSaleBtn").textContent="Yadda saxla";
+  }
+
   openModal("looseSaleModal");
+}
+
+function openLooseSale(){
+  openSaleEntry("loose");
 }
 
 function openEditSale(id){
@@ -2562,8 +2838,10 @@ function openEditSale(id){
   if(!sale)return;
 
   resetLooseSaleForm();
+  saleEntryMode="edit";
 
   $("looseSaleModalTitle").textContent="Satışı düzəlt";
+  $("saveLooseSaleBtn").textContent="Yadda saxla";
   $("looseSaleId").value=sale.id;
   $("looseSaleName").value=sale.product_name||"Satış";
   $("looseSaleQuantity").value=sale.quantity||1;
@@ -2571,11 +2849,8 @@ function openEditSale(id){
   $("looseSaleCost").value=sale.cost_price_provided===false?"":Number(sale.unit_cost_price||0);
   $("looseSaleNote").value=sale.note||"";
 
-  editingSaleImageUrl=sale.image_url||null;
-
-  if(editingSaleImageUrl){
-    $("looseSaleImagePreview").innerHTML=`<img src="${escapeHtml(editingSaleImageUrl)}" alt="Satış şəkli">`;
-  }
+  editingSaleImageUrls=saleImages(sale);
+  renderLooseSaleImagePreviews();
 
   updateLooseSalePreview();
   openModal("looseSaleModal");
@@ -2587,65 +2862,126 @@ $("addLooseSale").addEventListener("click",openLooseSale);
   $(id).addEventListener("input",updateLooseSalePreview);
 });
 
-$("looseSaleImage").addEventListener("change",()=>{
-  const file=$("looseSaleImage").files[0];
-  if(!file)return;
-
-  if(file.size>5*1024*1024){
-    toast("Şəkil maksimum 5MB ola bilər.");
-    $("looseSaleImage").value="";
+$("openLooseSaleImagePicker").addEventListener("click",()=>{
+  if(editingSaleImageUrls.length+pendingSaleImageFiles.length>=5){
+    toast("Sərbəst satışda maksimum 5 şəkil əlavə etmək olar.");
     return;
   }
 
-  const url=URL.createObjectURL(file);
-  $("looseSaleImagePreview").innerHTML=`<img src="${url}" alt="Ön baxış">`;
+  $("looseSaleImagePicker").value="";
+  $("looseSaleImagePicker").click();
+});
+
+$("looseSaleImagePicker").addEventListener("change",()=>{
+  addLooseSaleImageFiles($("looseSaleImagePicker").files);
 });
 
 $("looseSaleForm").addEventListener("submit",async event=>{
   event.preventDefault();
   $("saveLooseSaleBtn").disabled=true;
 
+  let createdProductId=null;
+
   try{
     const id=$("looseSaleId").value;
-    const file=$("looseSaleImage").files[0];
 
-    let imageUrl=editingSaleImageUrl;
-    if(file)imageUrl=await uploadImage(file);
+    const uploadedUrls=[];
+    for(const file of pendingSaleImageFiles){
+      const url=await uploadImage(file);
+      if(url)uploadedUrls.push(url);
+    }
+
+    const imageUrls=[...editingSaleImageUrls,...uploadedUrls].filter(Boolean).slice(0,5);
+    const imageUrl=imageUrls[0]||null;
 
     const salePriceProvided=$("looseSalePrice").value!=="";
     const costPriceProvided=$("looseSaleCost").value!=="";
 
-    const payload={
-      product_name:$("looseSaleName").value.trim()||"Satış",
-      quantity:Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1),
-      unit_sale_price:Number($("looseSalePrice").value||0),
-      unit_cost_price:Number($("looseSaleCost").value||0),
+    const name=$("looseSaleName").value.trim()||"Satış";
+    const quantity=Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1);
+    const salePrice=Number($("looseSalePrice").value||0);
+    const costPrice=Number($("looseSaleCost").value||0);
+    const note=$("looseSaleNote").value.trim()||null;
+
+    const salePayload={
+      product_name:name,
+      quantity,
+      unit_sale_price:salePrice,
+      unit_cost_price:costPrice,
       sale_price_provided:salePriceProvided,
       cost_price_provided:costPriceProvided,
-      image_url:imageUrl||null,
-      note:$("looseSaleNote").value.trim()||null
+      image_url:imageUrl,
+      image_urls:imageUrls,
+      note
     };
 
-    let error;
-
     if(id){
-      ({error}=await sb.from("sales").update(payload).eq("id",id));
-    }else{
-      ({error}=await sb.from("sales").insert({
-        user_id:currentUser.id,
-        product_id:null,
-        ...payload
-      }));
+      const {error}=await sb.from("sales").update(salePayload).eq("id",id);
+      if(error)throw error;
+
+      closeModal("looseSaleModal");
+      await loadAll();
+      showPage("sales");
+      toast("Satış yeniləndi");
+      return;
     }
+
+    if(saleEntryMode==="regular"){
+      const productPayload={
+        user_id:currentUser.id,
+        category_id:null,
+        name,
+        sale_price:salePrice,
+        cost_price:costPrice,
+        note,
+        image_url:imageUrl,
+        image_urls:imageUrls
+      };
+
+      const {data:productData,error:productError}=await sb
+        .from("products")
+        .insert(productPayload)
+        .select("id")
+        .single();
+
+      if(productError)throw productError;
+
+      createdProductId=productData.id;
+
+      const {error:saleError}=await sb.from("sales").insert({
+        user_id:currentUser.id,
+        product_id:createdProductId,
+        ...salePayload
+      });
+
+      if(saleError){
+        await sb.from("products").delete().eq("id",createdProductId);
+        createdProductId=null;
+        throw saleError;
+      }
+
+      closeModal("looseSaleModal");
+      await loadAll();
+      showPage("sales");
+      toast("Satış və məhsul əlavə edildi");
+      return;
+    }
+
+    const {error}=await sb.from("sales").insert({
+      user_id:currentUser.id,
+      product_id:null,
+      ...salePayload
+    });
 
     if(error)throw error;
 
     closeModal("looseSaleModal");
     await loadAll();
     showPage("sales");
-    toast(id?"Satış yeniləndi":"Sərbəst satış yadda saxlanıldı");
+    toast("Sərbəst satış yadda saxlanıldı");
   }catch(error){
-    toast(error.message||"Satış yadda saxlanılmadı");
+    console.error(error);
+    toast(error.message||"Yadda saxlanılmadı");
   }finally{
     $("saveLooseSaleBtn").disabled=false;
   }
