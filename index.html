@@ -2091,8 +2091,15 @@ function selectCalendarDate(kind,value){
   renderCustomCalendar(kind);
   label.textContent=shortAzDate(value);
 
-  if(isProduct){productDateMode="custom";renderProducts();}
-  else{salesDateMode="custom";renderSales();}
+  if(isProduct){
+    productDateMode="custom";
+    $("productDateBox").classList.add("hidden");
+    renderProducts();
+  }else{
+    salesDateMode="custom";
+    $("salesDateBox").classList.add("hidden");
+    renderSales();
+  }
 }
 
 function moveCalendarMonth(kind,direction){
