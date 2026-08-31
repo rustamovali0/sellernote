@@ -17,6 +17,91 @@ document.addEventListener("DOMContentLoaded", ()=>{
   }
 });
 
+
+const productFilterToggle = document.getElementById("toggleProductFilters");
+if(productFilterToggle){
+  productFilterToggle.addEventListener("click",()=>{
+    const panel=document.getElementById("productFilterPanel");
+    const isOpen=!panel.classList.contains("hidden");
+    panel.classList.toggle("hidden",isOpen);
+    productFilterToggle.setAttribute("aria-expanded",String(!isOpen));
+    productFilterToggle.textContent=isOpen ? "Filterlər" : "Filterləri bağla";
+  });
+}
+
+const navAddProduct=document.getElementById("navAddProduct");
+if(navAddProduct){
+  navAddProduct.addEventListener("click",()=>{
+    const oldFab=document.getElementById("fab");
+    if(oldFab) oldFab.click();
+    else if(typeof openProductModal==="function") openProductModal();
+    else if(typeof openAddProduct==="function") openAddProduct();
+  });
+}
+
+
+function buildCustomSelect(select){
+  if(!select || select.dataset.customized==="1") return;
+  select.dataset.customized="1";
+
+  const wrap=document.createElement("div");
+  wrap.className="custom-select";
+
+  const btn=document.createElement("button");
+  btn.type="button";
+  btn.className="custom-select-btn";
+
+  const label=document.createElement("span");
+  const arrow=document.createElement("span");
+  arrow.textContent="⌄";
+
+  btn.append(label,arrow);
+
+  const menu=document.createElement("div");
+  menu.className="custom-select-menu hidden";
+
+  function refresh(){
+    const selected=select.options[select.selectedIndex];
+    label.textContent=selected ? selected.textContent : "Seç";
+    menu.innerHTML="";
+    Array.from(select.options).forEach(opt=>{
+      const item=document.createElement("button");
+      item.type="button";
+      item.className="custom-select-option"+(opt.value===select.value?" active":"");
+      item.textContent=opt.textContent;
+      item.addEventListener("click",()=>{
+        select.value=opt.value;
+        select.dispatchEvent(new Event("change",{bubbles:true}));
+        refresh();
+        menu.classList.add("hidden");
+      });
+      menu.appendChild(item);
+    });
+  }
+
+  btn.addEventListener("click",e=>{
+    e.stopPropagation();
+    document.querySelectorAll(".custom-select-menu").forEach(m=>{
+      if(m!==menu) m.classList.add("hidden");
+    });
+    menu.classList.toggle("hidden");
+  });
+
+  select.addEventListener("change",refresh);
+  select.parentNode.insertBefore(wrap,select);
+  wrap.append(select,btn,menu);
+  refresh();
+}
+
+function initCustomSelects(){
+  document.querySelectorAll("select.custom-select-source").forEach(buildCustomSelect);
+}
+initCustomSelects();
+
+document.addEventListener("click",()=>{
+  document.querySelectorAll(".custom-select-menu").forEach(m=>m.classList.add("hidden"));
+});
+
 </script>
   <style>
     :root{
@@ -251,6 +336,181 @@ document.addEventListener("DOMContentLoaded", ()=>{
     .bottom-nav{bottom:18px}
   }
 
+
+  /* Prevent text overflow */
+  *, *::before, *::after{box-sizing:border-box}
+  body, .app, .card, .stat, .section, .topbar, .bottom-nav{min-width:0}
+  .section-head, .brand-wrap, .sale-top, .product > div{min-width:0}
+  .section-head h2, .section-head span, .brand-title, .brand-subtitle,
+  .stat .label, .stat .value, .stat .sub, .product-name, .sale-name,
+  .meta, .badge, .nav-btn{
+    overflow-wrap:anywhere;
+    word-break:break-word;
+  }
+
+  .stats, .grid{
+    min-width:0;
+  }
+  .stat{
+    min-width:0;
+    overflow:hidden;
+  }
+  .stat .value{
+    font-size:clamp(17px,4vw,24px);
+    line-height:1.1;
+    max-width:100%;
+  }
+  .stat .label,.stat .sub{
+    font-size:clamp(10px,2.5vw,12px);
+  }
+
+  .section-head{
+    gap:8px;
+    align-items:flex-start;
+  }
+  .section-head h2{
+    flex:1 1 auto;
+    min-width:0;
+  }
+  .section-head span{
+    flex:0 1 auto;
+    max-width:48%;
+    text-align:right;
+    white-space:normal;
+  }
+
+  .bottom-nav{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) 54px minmax(0,1fr) !important;
+    align-items:center;
+    width:min(calc(100% - 20px),500px) !important;
+    gap:3px !important;
+  }
+  .nav-btn{
+    min-width:0;
+    padding:8px 3px !important;
+    font-size:clamp(10px,2.7vw,12px) !important;
+    line-height:1.15;
+    white-space:normal;
+    text-align:center;
+  }
+  .nav-add{
+    width:50px;
+    height:50px;
+    border:none;
+    border-radius:16px;
+    background:var(--primary);
+    color:var(--primary-contrast);
+    font-size:28px;
+    line-height:1;
+    display:grid;
+    place-items:center;
+    box-shadow:var(--shadow-soft);
+    cursor:pointer;
+    justify-self:center;
+  }
+
+  /* Custom dropdown */
+  .custom-select-source{
+    position:absolute !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+    width:1px !important;
+    height:1px !important;
+  }
+  .custom-select{
+    position:relative;
+    width:100%;
+    min-width:0;
+  }
+  .custom-select-btn{
+    width:100%;
+    min-height:46px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:11px 13px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:var(--card-2);
+    color:var(--text);
+    text-align:left;
+    cursor:pointer;
+    min-width:0;
+  }
+  .custom-select-btn span:first-child{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .custom-select-menu{
+    position:absolute;
+    z-index:80;
+    left:0;
+    right:0;
+    top:calc(100% + 6px);
+    max-height:260px;
+    overflow:auto;
+    padding:6px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:var(--card);
+    box-shadow:var(--shadow);
+  }
+  .custom-select-menu.hidden{display:none}
+  .custom-select-option{
+    width:100%;
+    border:0;
+    background:transparent;
+    color:var(--text);
+    text-align:left;
+    padding:11px 12px;
+    border-radius:10px;
+    cursor:pointer;
+    overflow-wrap:anywhere;
+  }
+  .custom-select-option.active{
+    background:var(--primary);
+    color:var(--primary-contrast);
+  }
+
+  @media (max-width:420px){
+    .app{padding-left:10px;padding-right:10px}
+    .stats,.grid{gap:7px}
+    .stat{padding:10px}
+    .bottom-nav{width:calc(100% - 12px) !important}
+    .nav-add{width:46px;height:46px;border-radius:14px}
+  }
+
+
+  /* Bottom navigation text visibility fix */
+  .bottom-nav .nav-btn{
+    color:var(--muted) !important;
+    background:transparent !important;
+    opacity:1 !important;
+    font-weight:600;
+  }
+
+  .bottom-nav .nav-btn.active{
+    color:var(--primary-contrast) !important;
+    background:var(--primary) !important;
+    font-weight:800 !important;
+  }
+
+  .bottom-nav .nav-add{
+    color:var(--primary-contrast) !important;
+    background:var(--primary) !important;
+  }
+
+  html[data-theme="dark"] .bottom-nav .nav-btn:not(.active){
+    color:#cbd5e1 !important;
+  }
+
+  html[data-theme="light"] .bottom-nav .nav-btn:not(.active){
+    color:#64748b !important;
+  }
+
 </style>
 </head>
 <body>
@@ -288,49 +548,68 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
     <div class="section">
       <div class="section-head"><h2>Məhsullar</h2><span id="productCount">0 məhsul</span></div>
-      <div class="card filters">
-        <input id="searchInput" class="input" type="search" placeholder="Məhsul adına görə axtar..." />
-        <select id="categoryFilter" class="select"><option value="">Bütün kateqoriyalar</option></select>
 
-        <select id="productDateFilter" class="select">
+      <div class="card" style="padding:12px;margin-bottom:10px">
+        <div class="section-head" style="margin-bottom:8px">
+          <h2 style="font-size:14px">Tarix</h2>
+          <span>məhsul əlavə olunma tarixi</span>
+        </div>
+        <select id="productDateFilter" class="select custom-select-source">
           <option value="today" selected>Bu gün</option>
           <option value="yesterday">Dünən</option>
           <option value="7days">Son 7 gün</option>
           <option value="30days">Son 30 gün</option>
           <option value="thismonth">Bu ay</option>
           <option value="lastmonth">Keçən ay</option>
-          <option value="custom">Xüsusi tarix aralığı</option>
+          <option value="custom">Tarix seç</option>
           <option value="all">Bütün tarixlər</option>
         </select>
 
-        <div id="productCustomDates" class="row2 hidden">
+        <div id="productCustomDates" class="row2 hidden" style="margin-top:8px">
           <div><label class="label">Başlanğıc</label><input id="productDateFrom" class="input" type="date"></div>
           <div><label class="label">Son</label><input id="productDateTo" class="input" type="date"></div>
         </div>
-
-        <select id="productPriceFilter" class="select">
-          <option value="">Qiymət: hamısı</option>
-          <option value="under50">₼50-dən aşağı</option>
-          <option value="50to100">₼50–₼100</option>
-          <option value="100to300">₼100–₼300</option>
-          <option value="300plus">₼300+</option>
-        </select>
-
-        <select id="productProfitFilter" class="select">
-          <option value="">Qazanc: hamısı</option>
-          <option value="positive">Qazancı müsbət</option>
-          <option value="zero">Qazanc 0</option>
-          <option value="negative">Zərər edən</option>
-        </select>
-
-        <select id="productSort" class="select">
-          <option value="newest">Ən yeni</option>
-          <option value="oldest">Ən köhnə</option>
-          <option value="price_desc">Qiymət: yüksəkdən aşağı</option>
-          <option value="price_asc">Qiymət: aşağıdan yüksək</option>
-          <option value="profit_desc">Qazanc: yüksəkdən aşağı</option>
-        </select>
       </div>
+
+      <div class="card" style="padding:12px;margin-bottom:10px">
+        <button id="toggleProductFilters" class="btn secondary full" type="button" aria-expanded="false">
+          Filterlər
+        </button>
+
+        <div id="productFilterPanel" class="hidden" style="margin-top:10px">
+          <div class="form">
+            <input id="searchInput" class="input" type="search" placeholder="Məhsul adına görə axtar..." />
+
+            <select id="categoryFilter" class="select custom-select-source">
+              <option value="">Bütün kateqoriyalar</option>
+            </select>
+
+            <select id="productPriceFilter" class="select custom-select-source">
+              <option value="">Qiymət: hamısı</option>
+              <option value="under50">₼50-dən aşağı</option>
+              <option value="50to100">₼50–₼100</option>
+              <option value="100to300">₼100–₼300</option>
+              <option value="300plus">₼300+</option>
+            </select>
+
+            <select id="productProfitFilter" class="select custom-select-source">
+              <option value="">Qazanc: hamısı</option>
+              <option value="positive">Qazancı müsbət</option>
+              <option value="zero">Qazanc 0</option>
+              <option value="negative">Zərər edən</option>
+            </select>
+
+            <select id="productSort" class="select custom-select-source">
+              <option value="newest">Ən yeni</option>
+              <option value="oldest">Ən köhnə</option>
+              <option value="price_desc">Qiymət: yüksəkdən aşağı</option>
+              <option value="price_asc">Qiymət: aşağıdan yüksək</option>
+              <option value="profit_desc">Qazanc: yüksəkdən aşağı</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div id="productList" class="product-list"></div>
     </div>
   </section>
@@ -439,13 +718,13 @@ document.addEventListener("DOMContentLoaded", ()=>{
     </div>
   </section>
 
-  <button id="fab" class="fab" aria-label="Məhsul əlavə et">+</button>
+  
 
   <nav class="bottom-nav">
     <button class="nav-btn active" data-page="dashboard">Ana səhifə</button>
     <button class="nav-btn" data-page="sales">Satışlar</button>
+    <button id="navAddProduct" class="nav-add" type="button" aria-label="Məhsul əlavə et">+</button>
     <button class="nav-btn" data-page="categories">Kateqoriya</button>
-    <button class="nav-btn" data-page="profile">Hesab</button>
   </nav>
 </div>
 
