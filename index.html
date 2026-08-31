@@ -1182,6 +1182,11 @@
       }
     }
 
+  
+    #filterRevenue,#filterProfit{
+      font-size:clamp(19px,5.6vw,24px);
+    }
+
   </style>
 </head>
 
@@ -1225,9 +1230,9 @@
     <section id="dashboardPage" class="hidden">
       <div class="stats">
         <div class="stat"><div class="label">Məhsullar</div><div id="statProducts" class="value">0</div><div class="sub">qeydiyyatda</div></div>
-        <div class="stat"><div class="label">Satış</div><div id="statRevenue" class="value">₼0</div><div class="sub">ümumi gəlir</div></div>
-        <div class="stat"><div class="label">Maya</div><div id="statCost" class="value">₼0</div><div class="sub">satılan mallar</div></div>
-        <div class="stat"><div class="label">Xalis qazanc</div><div id="statProfit" class="value profit">₼0</div><div class="sub">gəlir − maya</div></div>
+        <div class="stat"><div class="label">Satış</div><div id="statRevenue" class="value">0 ₼</div><div class="sub">ümumi gəlir</div></div>
+        <div class="stat"><div class="label">Maya</div><div id="statCost" class="value">0 ₼</div><div class="sub">satılan mallar</div></div>
+        <div class="stat"><div class="label">Xalis qazanc</div><div id="statProfit" class="value profit">0 ₼</div><div class="sub">gəlir − maya</div></div>
       </div>
 
       <div class="section">
@@ -1262,10 +1267,10 @@
                 <select id="categoryFilter" class="select"><option value="">Bütün kateqoriyalar</option></select>
                 <select id="productPriceFilter" class="select">
                   <option value="">Qiymət: hamısı</option>
-                  <option value="under50">₼50-dən aşağı</option>
-                  <option value="50to100">₼50–₼100</option>
-                  <option value="100to300">₼100–₼300</option>
-                  <option value="300plus">₼300+</option>
+                  <option value="under50">50 ₼-dən aşağı</option>
+                  <option value="50to100">50 ₼–100 ₼</option>
+                  <option value="100to300">100 ₼–300 ₼</option>
+                  <option value="300plus">300 ₼+</option>
                 </select>
                 <select id="productProfitFilter" class="select">
                   <option value="">Qazanc: hamısı</option>
@@ -1406,8 +1411,8 @@
       </div>
 
       <div class="summary-grid">
-        <div class="stat"><div class="label">Filter satış</div><div id="filterRevenue" class="value">₼0</div></div>
-        <div class="stat"><div class="label">Filter qazanc</div><div id="filterProfit" class="value profit">₼0</div></div>
+        <div class="stat"><div id="salesSummaryRevenueLabel" class="label">Bu günün satışı</div><div id="filterRevenue" class="value">0 ₼</div></div>
+        <div class="stat"><div id="salesSummaryProfitLabel" class="label">Bu günün qazancı</div><div id="filterProfit" class="value profit">0 ₼</div></div>
       </div>
 
       <div id="salesList" class="sales-list"></div>
@@ -1626,7 +1631,7 @@
           <div><label class="label">Satış qiyməti</label><input id="salePrice" class="input" type="number" min="0" step="0.01" inputmode="decimal" /></div>
           <div><label class="label">Maya dəyəri</label><input id="costPrice" class="input" type="number" min="0" step="0.01" inputmode="decimal" /></div>
         </div>
-        <div class="stat"><div class="label">1 ədəd qazanc</div><div id="profitPreview" class="value profit">₼0</div></div>
+        <div class="stat"><div class="label">1 ədəd qazanc</div><div id="profitPreview" class="value profit">0 ₼</div></div>
         <textarea id="productNote" class="textarea" placeholder="Qeyd (istəyə bağlı)"></textarea>
         <button id="saveProductBtn" class="btn full" type="submit">Yadda saxla</button>
       </form>
@@ -1833,10 +1838,10 @@ const escapeHtml=s=>String(s??"").replace(/[&<>"']/g,m=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
 }[m]));
 
-const money=n=>"₼"+new Intl.NumberFormat("az-AZ",{
+const money=n=>new Intl.NumberFormat("az-AZ",{
   minimumFractionDigits:0,
   maximumFractionDigits:2
-}).format(Number(n||0));
+}).format(Number(n||0))+" ₼";
 
 function toast(message){
   $("toast").textContent=message;
@@ -2019,6 +2024,36 @@ function setProductDate(mode){
 
   closeDropdowns();
   renderProducts();
+}
+
+function updateSalesSummaryLabels(){
+  let revenueLabel="Bu günün satışı";
+  let profitLabel="Bu günün qazancı";
+
+  if(salesDateMode==="yesterday"){
+    revenueLabel="Dünənin satışı";
+    profitLabel="Dünənin qazancı";
+  }else if(salesDateMode==="custom"){
+    const value=$("salesSingleDate").value;
+    if(value){
+      const date=parseIsoLocalDate(value);
+      const label=new Intl.DateTimeFormat("az-AZ",{
+        day:"numeric",
+        month:"long"
+      }).format(date);
+      revenueLabel=`${label} satışı`;
+      profitLabel=`${label} qazancı`;
+    }else{
+      revenueLabel="Seçilən tarixin satışı";
+      profitLabel="Seçilən tarixin qazancı";
+    }
+  }else if(salesDateMode==="all"){
+    revenueLabel="Bütün satışlar";
+    profitLabel="Ümumi qazanc";
+  }
+
+  $("salesSummaryRevenueLabel").textContent=revenueLabel;
+  $("salesSummaryProfitLabel").textContent=profitLabel;
 }
 
 function setSalesDate(mode){
@@ -2637,6 +2672,7 @@ function renderSales(){
   });
 
   $("salesCount").textContent=`${list.length} qeyd`;
+  updateSalesSummaryLabels();
   $("filterRevenue").textContent=money(list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0));
   $("filterProfit").textContent=money(list.reduce((sum,s)=>sum+Number(s.profit||0),0));
 
