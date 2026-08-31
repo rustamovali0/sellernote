@@ -864,6 +864,7 @@
     .floating-add.hidden{
       display:none!important;
     }
+
     .product-category-row{
       display:grid;
       grid-template-columns:minmax(0,1fr) auto;
@@ -873,6 +874,125 @@
     .product-category-row .btn{
       min-height:46px;
       white-space:nowrap;
+    }
+    .custom-category-select{
+      position:relative;
+      min-width:0;
+    }
+    .custom-category-trigger{
+      width:100%;
+      min-height:46px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:var(--card2);
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:0 13px;
+      text-align:left;
+      font:inherit;
+      transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
+    }
+    .custom-category-trigger:hover{
+      border-color:color-mix(in srgb,var(--text) 20%,var(--line));
+    }
+    .custom-category-trigger.open{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 11%,transparent);
+      background:var(--card);
+    }
+    .custom-category-trigger-label{
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-weight:700;
+    }
+    .custom-category-chevron{
+      flex:0 0 auto;
+      width:24px;
+      height:24px;
+      border-radius:8px;
+      display:grid;
+      place-items:center;
+      background:var(--card);
+      border:1px solid var(--line);
+      font-size:16px;
+      line-height:1;
+      transition:transform .16s ease;
+    }
+    .custom-category-trigger.open .custom-category-chevron{
+      transform:rotate(180deg);
+    }
+    .custom-category-menu{
+      position:absolute;
+      z-index:130;
+      left:0;
+      right:0;
+      top:calc(100% + 7px);
+      max-height:230px;
+      overflow:auto;
+      padding:6px;
+      border:1px solid var(--line);
+      border-radius:15px;
+      background:var(--card);
+      box-shadow:var(--shadowStrong);
+      transform-origin:top center;
+      animation:categoryMenuIn .14s ease-out;
+    }
+    @keyframes categoryMenuIn{
+      from{opacity:0;transform:translateY(-4px) scale(.99)}
+      to{opacity:1;transform:translateY(0) scale(1)}
+    }
+    .custom-category-option{
+      width:100%;
+      min-height:42px;
+      border:0;
+      border-radius:11px;
+      background:transparent;
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:9px 10px;
+      text-align:left;
+      font:inherit;
+      font-size:13px;
+    }
+    .custom-category-option:hover{
+      background:var(--card2);
+    }
+    .custom-category-option.active{
+      background:var(--primary);
+      color:var(--primaryText);
+      font-weight:800;
+    }
+    .custom-category-check{
+      width:20px;
+      height:20px;
+      border-radius:7px;
+      display:grid;
+      place-items:center;
+      flex:0 0 auto;
+      font-size:12px;
+      border:1px solid var(--line);
+    }
+    .custom-category-option.active .custom-category-check{
+      border-color:color-mix(in srgb,var(--primaryText) 50%,transparent);
+      background:color-mix(in srgb,var(--primaryText) 13%,transparent);
+    }
+    @media(max-width:420px){
+      .product-category-row{
+        grid-template-columns:minmax(0,1fr) auto;
+      }
+      .product-category-row .btn{
+        padding-left:10px;
+        padding-right:10px;
+        font-size:12px;
+      }
     }
 
   
@@ -1349,9 +1469,14 @@
         <input id="productImagePicker" class="hidden" type="file" accept="image/*" multiple />
         <input id="productName" class="input" placeholder="Məhsulun adı (boş qala bilər)" />
         <div class="product-category-row">
-          <div>
+          <div class="custom-category-select" id="productCategoryCustom">
             <label class="label">Kateqoriya</label>
-            <select id="productCategory" class="select"><option value="">Kateqoriya seç</option></select>
+            <select id="productCategory" class="hidden" aria-hidden="true" tabindex="-1"><option value="">Kateqoriya seç</option></select>
+            <button id="productCategoryTrigger" class="custom-category-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+              <span id="productCategoryLabel" class="custom-category-trigger-label">Kateqoriya seçilməyib</span>
+              <span class="custom-category-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div id="productCategoryMenu" class="custom-category-menu hidden" role="listbox"></div>
           </div>
           <button id="addProductCategoryBtn" class="btn secondary" type="button">+ Kateqoriya</button>
         </div>
@@ -1799,6 +1924,38 @@ async function ensureShalvarCategory(){
   return data.id;
 }
 
+function closeProductCategoryMenu(){
+  $("productCategoryMenu").classList.add("hidden");
+  $("productCategoryTrigger").classList.remove("open");
+  $("productCategoryTrigger").setAttribute("aria-expanded","false");
+}
+
+function syncProductCategoryCustom(){
+  if(!$("productCategory")||!$("productCategoryMenu"))return;
+
+  const selectedId=$("productCategory").value||"";
+  const selected=categories.find(category=>category.id===selectedId)||null;
+
+  $("productCategoryLabel").textContent=selected?.name||"Kateqoriya seçilməyib";
+
+  const optionRows=[
+    {id:"",name:"Kateqoriya seçilməyib"},
+    ...categories.map(category=>({id:category.id,name:category.name}))
+  ];
+
+  $("productCategoryMenu").innerHTML=optionRows.map(option=>{
+    const active=option.id===selectedId;
+    return `<button type="button"
+                    class="custom-category-option ${active?"active":""}"
+                    data-product-category-option="${escapeHtml(option.id)}"
+                    role="option"
+                    aria-selected="${active?"true":"false"}">
+              <span>${escapeHtml(option.name)}</span>
+              <span class="custom-category-check">${active?"✓":""}</span>
+            </button>`;
+  }).join("");
+}
+
 function renderCategoryOptions(){
   const productSelected=$("categoryFilter").value;
   const salesSelected=$("salesCategoryFilter").value;
@@ -1817,6 +1974,7 @@ function renderCategoryOptions(){
     const defaultCategory=findShalvarCategory();
     if(defaultCategory)$("productCategory").value=defaultCategory.id;
   }
+  syncProductCategoryCustom();
 
   if($("looseSaleCategory")){
     const selected=$("looseSaleCategory").value;
@@ -2465,6 +2623,7 @@ function openEditProduct(id){
   $("productId").value=product.id;
   $("productName").value=product.name;
   $("productCategory").value=product.category_id||"";
+  syncProductCategoryCustom();
   $("salePrice").value=product.sale_price;
   $("costPrice").value=product.cost_price;
   $("productNote").value=product.note||"";
@@ -3043,6 +3202,10 @@ $("confirmMultiSale").addEventListener("click",async()=>{
 });
 
 
+document.addEventListener("keydown",event=>{
+  if(event.key==="Escape")closeProductCategoryMenu();
+});
+
 /* Product add/edit */
 function openNewProductModal(){
   closeModal("saleTypeModal");
@@ -3050,9 +3213,34 @@ function openNewProductModal(){
 
   const defaultCategory=findShalvarCategory();
   if(defaultCategory)$("productCategory").value=defaultCategory.id;
+  syncProductCategoryCustom();
 
   openModal("productModal");
 }
+
+$("productCategoryTrigger").addEventListener("click",event=>{
+  event.stopPropagation();
+  const willOpen=$("productCategoryMenu").classList.contains("hidden");
+  closeProductCategoryMenu();
+  if(willOpen){
+    syncProductCategoryCustom();
+    $("productCategoryMenu").classList.remove("hidden");
+    $("productCategoryTrigger").classList.add("open");
+    $("productCategoryTrigger").setAttribute("aria-expanded","true");
+  }
+});
+
+$("productCategoryMenu").addEventListener("click",event=>{
+  const option=event.target.closest("[data-product-category-option]");
+  if(!option)return;
+  $("productCategory").value=option.dataset.productCategoryOption||"";
+  syncProductCategoryCustom();
+  closeProductCategoryMenu();
+});
+
+document.addEventListener("click",event=>{
+  if(!event.target.closest("#productCategoryCustom"))closeProductCategoryMenu();
+});
 
 $("addProductBtn").addEventListener("click",openNewProductModal);
 
@@ -3435,6 +3623,7 @@ $("categoryForm").addEventListener("submit",async event=>{
 
   if(categoryCreateContext==="product" && data?.id){
     $("productCategory").value=data.id;
+    syncProductCategoryCustom();
   }
 
   categoryCreateContext="settings";
@@ -3716,12 +3905,8 @@ addEventListener("resize",fitValues);
   setToday();
   await loadAll();
 
-  const initialPage=["sales","dashboard","categories"].includes(location.hash.replace("#",""))
-    ? location.hash.replace("#","")
-    : "sales";
-
-  history.replaceState({page:initialPage},"",`#${initialPage}`);
-  showPage(initialPage,{history:false});
+  history.replaceState({page:"sales"},"","#sales");
+  showPage("sales",{history:false});
 })();
 </script>
 </body>
