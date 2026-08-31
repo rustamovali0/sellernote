@@ -511,6 +511,90 @@ document.addEventListener("click",()=>{
     color:#64748b !important;
   }
 
+
+  /* Refined bottom navigation */
+  .bottom-nav{
+    position:fixed !important;
+    left:50% !important;
+    transform:translateX(-50%) !important;
+    bottom:16px !important;
+    width:min(calc(100% - 28px),500px) !important;
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:5px !important;
+    padding:7px !important;
+    border:1px solid var(--line) !important;
+    border-radius:20px !important;
+    background:var(--glass) !important;
+    box-shadow:var(--shadow) !important;
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    z-index:30 !important;
+  }
+  .bottom-nav .nav-btn{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:46px !important;
+    padding:8px 5px !important;
+    border-radius:14px !important;
+    background:transparent !important;
+    color:var(--muted) !important;
+    font-size:12px !important;
+    line-height:1.15 !important;
+    font-weight:650 !important;
+    white-space:normal !important;
+    overflow:visible !important;
+  }
+  .bottom-nav .nav-btn.active{
+    background:var(--primary) !important;
+    color:var(--primary-contrast) !important;
+    font-weight:800 !important;
+  }
+
+  .floating-add{
+    position:fixed;
+    right:max(18px,calc((100vw - 560px)/2 + 18px));
+    bottom:92px;
+    z-index:35;
+    width:58px;
+    height:58px;
+    padding:0;
+    border:1px solid var(--line);
+    border-radius:18px;
+    display:grid;
+    place-items:center;
+    background:var(--primary);
+    color:var(--primary-contrast);
+    font-size:32px;
+    font-weight:400;
+    line-height:1;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    transition:transform .15s ease;
+  }
+  .floating-add:active{transform:scale(.96)}
+
+  /* Cleaner dashboard spacing */
+  .section{margin-top:18px}
+  .section > .card{margin-bottom:10px}
+  #productList{display:grid;gap:10px}
+  .product{border-radius:20px !important}
+  .stats .stat{border-radius:18px !important}
+
+  @media(max-width:420px){
+    .bottom-nav{
+      width:calc(100% - 16px) !important;
+      bottom:8px !important;
+    }
+    .floating-add{
+      right:14px;
+      bottom:78px;
+      width:54px;
+      height:54px;
+      border-radius:17px;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -723,9 +807,9 @@ document.addEventListener("click",()=>{
   <nav class="bottom-nav">
     <button class="nav-btn active" data-page="dashboard">Ana səhifə</button>
     <button class="nav-btn" data-page="sales">Satışlar</button>
-    <button id="navAddProduct" class="nav-add" type="button" aria-label="Məhsul əlavə et">+</button>
     <button class="nav-btn" data-page="categories">Kateqoriya</button>
   </nav>
+  <button id="navAddProduct" class="floating-add" type="button" aria-label="Məhsul əlavə et">+</button>
 </div>
 
 <div id="productModal" class="modal-backdrop hidden">
