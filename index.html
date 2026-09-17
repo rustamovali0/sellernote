@@ -324,6 +324,12 @@
     .auth-card{padding:18px}
     .auth-card h1{margin:0 0 6px}
     .auth-note{font-size:11px;color:var(--muted);margin-top:10px}
+    .auth-actions{display:flex;justify-content:flex-end;margin-top:2px}
+    .link-btn{
+      min-height:34px;padding:4px 2px;background:transparent;color:var(--text);
+      font-size:12px;font-weight:750;text-decoration:underline;text-underline-offset:3px;
+    }
+    .link-btn:disabled{opacity:.5;cursor:not-allowed}
     .toast{
       position:fixed;left:50%;transform:translateX(-50%);top:16px;z-index:150;
       max-width:calc(100% - 28px);padding:10px 13px;border-radius:12px;
@@ -1458,7 +1464,18 @@
       <form id="authForm" class="form">
         <input id="password" class="input" type="password" minlength="6" placeholder="Şifrə" required />
         <button id="authSubmit" class="btn full" type="submit">Daxil ol</button>
+        <div class="auth-actions">
+          <button id="forgotPasswordBtn" class="link-btn" type="button">Şifrəni unutdum?</button>
+        </div>
       </form>
+      <form id="resetPasswordForm" class="form hidden">
+        <p class="auth-note" style="margin:0 0 4px">Yeni şifrənizi yazın və təsdiqləyin.</p>
+        <input id="newPassword" class="input" type="password" minlength="6" placeholder="Yeni şifrə" autocomplete="new-password" />
+        <input id="newPasswordConfirm" class="input" type="password" minlength="6" placeholder="Yeni şifrəni təkrar yazın" autocomplete="new-password" />
+        <button id="resetPasswordSubmit" class="btn full" type="submit">Şifrəni yenilə</button>
+        <button id="backToLoginBtn" class="btn secondary full" type="button">Girişə qayıt</button>
+      </form>
+      <p id="authNote" class="auth-note hidden"></p>
     </div>
   </div>
 
@@ -2063,8 +2080,8 @@
   </div>
 
 <script>
-const SUPABASE_URL="https://ldahrwkjwckghkwovqua.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY="sb_publishable_0ICHNWlwXe8bXlVHgduOXA_hNNYcl66";
+const SUPABASE_URL="https://qzrysfkotffuajczxjnv.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_64yI1atj6OICqpr0B2AX1w_8il9qBlH";
 const FIXED_LOGIN_EMAIL="rustamovali664@gmail.com";
 const THEME_KEY="mal_ucotu_theme";
 
@@ -2103,6 +2120,7 @@ let saleEntryMode="loose";
 let categoryCreateContext="settings";
 let multiSaleDraft=new Map();
 let multiSaleImageTargetId=null;
+let passwordRecoveryMode=location.hash.includes("type=recovery")||location.search.includes("type=recovery");
 
 /* Delete buttons are intentionally not persisted. Refresh => hidden again. */
 let productDeleteMode=false;
@@ -2408,6 +2426,30 @@ function showAuth(){
 function showApp(){
   $("authView").classList.add("hidden");
   $("mainApp").classList.remove("hidden");
+}
+
+function setAuthNote(message=""){
+  $("authNote").textContent=message;
+  $("authNote").classList.toggle("hidden",!message);
+}
+
+function showLoginForm(){
+  passwordRecoveryMode=false;
+  $("authForm").classList.remove("hidden");
+  $("resetPasswordForm").classList.add("hidden");
+  $("newPassword").value="";
+  $("newPasswordConfirm").value="";
+  setAuthNote("");
+  showAuth();
+}
+
+function showResetPasswordForm(message="Yeni şifrənizi yazın və təsdiqləyin."){
+  passwordRecoveryMode=true;
+  $("authForm").classList.add("hidden");
+  $("resetPasswordForm").classList.remove("hidden");
+  setAuthNote(message);
+  showAuth();
+  setTimeout(()=>$("newPassword").focus(),0);
 }
 
 async function loadCategories(){
@@ -4605,6 +4647,7 @@ document.querySelectorAll(".nav-btn").forEach(button=>{
 $("authForm").addEventListener("submit",async event=>{
   event.preventDefault();
   $("authSubmit").disabled=true;
+  setAuthNote("");
 
   const {data,error}=await sb.auth.signInWithPassword({
     email:FIXED_LOGIN_EMAIL,
@@ -4631,6 +4674,62 @@ $("authForm").addEventListener("submit",async event=>{
   showPage("sales",{history:false});
 });
 
+$("forgotPasswordBtn").addEventListener("click",async()=>{
+  $("forgotPasswordBtn").disabled=true;
+  setAuthNote("");
+
+  const redirectTo=location.href.split("#")[0].split("?")[0];
+  const {error}=await sb.auth.resetPasswordForEmail(FIXED_LOGIN_EMAIL,{redirectTo});
+
+  $("forgotPasswordBtn").disabled=false;
+
+  if(error){
+    toast(error.message||"Şifrə bərpası linki göndərilmədi");
+    return;
+  }
+
+  setAuthNote("Şifrəni yeniləmək üçün link email ünvanına göndərildi.");
+  toast("Şifrə bərpası linki göndərildi");
+});
+
+$("resetPasswordForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const password=$("newPassword").value.trim();
+  const confirm=$("newPasswordConfirm").value.trim();
+
+  if(password.length<6){
+    toast("Yeni şifrə ən azı 6 simvol olmalıdır");
+    return;
+  }
+  if(password!==confirm){
+    toast("Şifrələr eyni deyil");
+    return;
+  }
+
+  $("resetPasswordSubmit").disabled=true;
+  const {error}=await sb.auth.updateUser({password});
+  $("resetPasswordSubmit").disabled=false;
+
+  if(error){
+    toast(error.message||"Şifrə yenilənmədi");
+    return;
+  }
+
+  toast("Şifrə yeniləndi");
+  await sb.auth.signOut();
+  history.replaceState({page:"sales"},"","#sales");
+  showLoginForm();
+});
+
+$("backToLoginBtn").addEventListener("click",showLoginForm);
+
+sb.auth.onAuthStateChange(event=>{
+  if(event==="PASSWORD_RECOVERY"){
+    showResetPasswordForm("Emaildəki link təsdiqləndi. İndi yeni şifrənizi yazın.");
+  }
+});
+
 $("logoutBtn").addEventListener("click",async()=>{
   await sb.auth.signOut();
   currentUser=null;
@@ -4638,7 +4737,7 @@ $("logoutBtn").addEventListener("click",async()=>{
   categories=[];
   sales=[];
   $("password").value="";
-  showAuth();
+  showLoginForm();
 });
 
 addEventListener("resize",fitValues);
@@ -4647,9 +4746,15 @@ addEventListener("resize",fitValues);
 (async()=>{
   const {data:{session}}=await sb.auth.getSession();
 
+  if(passwordRecoveryMode){
+    history.replaceState({page:"sales"},"","#sales");
+    showResetPasswordForm("Emaildəki link təsdiqləndi. İndi yeni şifrənizi yazın.");
+    return;
+  }
+
   if(!session){
     history.replaceState({page:"sales"},"","#sales");
-    showAuth();
+    showLoginForm();
     return;
   }
 
