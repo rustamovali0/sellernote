@@ -1596,13 +1596,13 @@
         <div class="toolbar with-clear">
           <div class="dropdown">
             <button id="productDateBtn" class="drop-btn" type="button" aria-expanded="false">
-              <span class="txt">Tarix: <strong id="productDateLabel">Bu gün</strong></span><span class="chev">⌄</span>
+              <span class="txt">Tarix: <strong id="productDateLabel">Bütün</strong></span><span class="chev">⌄</span>
             </button>
             <div id="productDatePanel" class="drop-panel hidden">
-              <button class="drop-option active" data-product-date="today" type="button">Bu gün</button>
+              <button class="drop-option" data-product-date="today" type="button">Bu gün</button>
               <button class="drop-option" data-product-date="yesterday" type="button">Dünən</button>
               <button class="drop-option" data-product-date="custom" type="button">Tarix seç</button>
-              <button class="drop-option" data-product-date="all" type="button">Bütün</button>
+              <button class="drop-option active" data-product-date="all" type="button">Bütün</button>
             </div>
           </div>
 
@@ -2187,7 +2187,7 @@ let lightboxIndex=0;
 let lightboxTouchStartX=0;
 let lightboxTouchStartY=0;
 
-let productDateMode="today";
+let productDateMode="all";
 let salesDateMode="today";
 let calendarView={product:new Date(),sales:new Date()};
 let saleEntryMode="loose";
@@ -3751,8 +3751,7 @@ function clearProductFilters(){
   $("productProfitFilter").value="";
   $("productSort").value="newest";
   if(document.querySelector(".nav-btn.active")?.dataset.page==="dashboard")$("globalSearch").value="";
-  closeDropdowns();
-  renderProducts();
+  setProductDate("all");
 }
 $("resetProductFilters").addEventListener("click",clearProductFilters);
 $("clearProductToolbar").addEventListener("click",clearProductFilters);
