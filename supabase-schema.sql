@@ -85,6 +85,37 @@ create index if not exists sales_user_category_idx
 create index if not exists sales_user_product_idx
   on public.sales (user_id, product_id);
 
+create table if not exists public.expenses (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null default 'Xerc',
+  amount numeric(12,2) not null default 0 check (amount >= 0),
+  note text,
+  image_url text,
+  image_urls text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists expenses_user_created_idx
+  on public.expenses (user_id, created_at desc);
+
+create index if not exists expenses_user_amount_idx
+  on public.expenses (user_id, amount);
+
+create table if not exists public.notes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  body text not null,
+  image_url text,
+  image_urls text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists notes_user_created_idx
+  on public.notes (user_id, created_at desc);
+
 create table if not exists public.app_settings (
   user_id uuid primary key references auth.users(id) on delete cascade,
   logo_url text,
@@ -126,6 +157,8 @@ as $$
     case entity_type
       when 'products' then coalesce(row_data->>'name', 'Mehsul')
       when 'sales' then coalesce(row_data->>'product_name', 'Satis')
+      when 'expenses' then coalesce(row_data->>'title', 'Xerc')
+      when 'notes' then coalesce(row_data->>'body', 'Qeyd')
       when 'categories' then coalesce(row_data->>'name', 'Kateqoriya')
       when 'app_settings' then 'Logo / favicon'
       else entity_type
@@ -196,6 +229,16 @@ create trigger sales_set_updated_at
 before update on public.sales
 for each row execute function public.set_updated_at();
 
+drop trigger if exists expenses_set_updated_at on public.expenses;
+create trigger expenses_set_updated_at
+before update on public.expenses
+for each row execute function public.set_updated_at();
+
+drop trigger if exists notes_set_updated_at on public.notes;
+create trigger notes_set_updated_at
+before update on public.notes
+for each row execute function public.set_updated_at();
+
 drop trigger if exists app_settings_set_updated_at on public.app_settings;
 create trigger app_settings_set_updated_at
 before update on public.app_settings
@@ -216,6 +259,16 @@ create trigger sales_activity_log
 after insert or update or delete on public.sales
 for each row execute function public.write_activity_log();
 
+drop trigger if exists expenses_activity_log on public.expenses;
+create trigger expenses_activity_log
+after insert or update or delete on public.expenses
+for each row execute function public.write_activity_log();
+
+drop trigger if exists notes_activity_log on public.notes;
+create trigger notes_activity_log
+after insert or update or delete on public.notes
+for each row execute function public.write_activity_log();
+
 drop trigger if exists app_settings_activity_log on public.app_settings;
 create trigger app_settings_activity_log
 after insert or update or delete on public.app_settings
@@ -224,6 +277,8 @@ for each row execute function public.write_activity_log();
 alter table public.categories enable row level security;
 alter table public.products enable row level security;
 alter table public.sales enable row level security;
+alter table public.expenses enable row level security;
+alter table public.notes enable row level security;
 alter table public.app_settings enable row level security;
 alter table public.activity_logs enable row level security;
 
@@ -303,6 +358,20 @@ with check (
     )
   )
 );
+
+drop policy if exists expenses_user_access on public.expenses;
+create policy expenses_user_access
+on public.expenses
+for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+drop policy if exists notes_user_access on public.notes;
+create policy notes_user_access
+on public.notes
+for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 
 drop policy if exists app_settings_user_access on public.app_settings;
 create policy app_settings_user_access

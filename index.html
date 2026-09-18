@@ -223,7 +223,7 @@
     .btn.full{width:100%}
     .btn:disabled{opacity:.5;cursor:not-allowed}
 
-    .product-list,.sales-list,.category-list{display:grid;gap:10px}
+    .product-list,.sales-list,.expense-list,.category-list{display:grid;gap:10px}
     .product{
       min-width:0;padding:12px;
       display:grid;grid-template-columns:76px minmax(0,1fr);gap:11px;
@@ -270,7 +270,7 @@
     .bottom-nav{
       position:fixed;left:50%;transform:translateX(-50%);bottom:10px;z-index:45;
       width:min(calc(100% - 18px),542px);
-      display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;
+      display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;
       padding:7px;border:1px solid var(--line);border-radius:20px;
       background:var(--glass);box-shadow:var(--shadowStrong);
       backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
@@ -278,7 +278,7 @@
     .nav-btn{
       min-width:0;min-height:46px;padding:7px 4px;border-radius:14px;
       background:transparent;color:var(--muted);
-      font-size:11px;font-weight:750;line-height:1.15;
+      font-size:10px;font-weight:750;line-height:1.15;
       white-space:normal;overflow-wrap:anywhere;
     }
     .nav-btn.active{background:var(--primary);color:var(--primaryText);font-weight:850}
@@ -1767,6 +1767,131 @@
       <div id="salesList" class="sales-list"></div>
     </section>
 
+    <section id="expensesPage" class="hidden">
+      <div class="section-head">
+        <h2>Xərclər</h2>
+        <div class="section-tools">
+          <span id="expensesCount" class="count">0 xərc</span>
+          <button id="toggleExpensesDelete" class="top-delete" type="button">Sil</button>
+        </div>
+      </div>
+
+      <div class="toolbar with-clear">
+        <div class="dropdown">
+          <button id="expensesDateBtn" class="drop-btn" type="button" aria-expanded="false">
+            <span class="txt">Tarix: <strong id="expensesDateLabel">Bu gün</strong></span><span class="chev">⌄</span>
+          </button>
+          <div id="expensesDatePanel" class="drop-panel hidden">
+            <button class="drop-option active" data-expenses-date="today" type="button">Bu gün</button>
+            <button class="drop-option" data-expenses-date="yesterday" type="button">Dünən</button>
+            <button class="drop-option" data-expenses-date="custom" type="button">Tarix seç</button>
+            <button class="drop-option" data-expenses-date="all" type="button">Bütün</button>
+          </div>
+        </div>
+
+        <div class="dropdown">
+          <button id="expensesFilterBtn" class="drop-btn" type="button" aria-expanded="false">
+            <span class="txt">Filterlər</span><span class="chev">⌄</span>
+          </button>
+          <div id="expensesFilterPanel" class="drop-panel right hidden">
+            <div class="form">
+              <input id="expensesSearchInput" class="input" type="search" placeholder="Xərc adına görə axtar..." />
+              <div class="row2">
+                <input id="expensesMinAmount" class="input" type="number" min="0" step="0.01" placeholder="Min məbləğ" />
+                <input id="expensesMaxAmount" class="input" type="number" min="0" step="0.01" placeholder="Max məbləğ" />
+              </div>
+              <select id="expensesSort" class="select">
+                <option value="newest">Ən yeni</option>
+                <option value="oldest">Ən köhnə</option>
+                <option value="amount_desc">Məbləğ: yüksəkdən aşağı</option>
+                <option value="amount_asc">Məbləğ: aşağıdan yüksək</option>
+              </select>
+              <button id="resetExpensesFilters" class="btn secondary full" type="button">Filterləri sıfırla</button>
+            </div>
+          </div>
+        </div>
+
+        <button id="clearExpensesToolbar" class="toolbar-clear" type="button" aria-label="Xərc filterlərini təmizlə">
+          Təmizlə
+        </button>
+      </div>
+
+      <div id="expensesDateBox" class="card date-box hidden">
+        <input id="expensesSingleDate" type="hidden" />
+        <div id="expensesCalendar" class="custom-calendar" data-calendar-kind="expenses">
+          <div class="calendar-head">
+            <button id="expensesCalendarPrev" class="calendar-nav" type="button" aria-label="Əvvəlki ay">‹</button>
+            <div>
+              <div class="date-label">Tarix seç</div>
+              <div id="expensesCalendarTitle" class="calendar-title"></div>
+            </div>
+            <button id="expensesCalendarNext" class="calendar-nav" type="button" aria-label="Növbəti ay">›</button>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>B.e</span><span>Ç.a</span><span>Ç</span><span>C.a</span><span>C</span><span>Ş</span><span>B</span>
+          </div>
+          <div id="expensesCalendarGrid" class="calendar-grid"></div>
+          <button id="expensesCalendarToday" class="calendar-today" type="button">Bu gün</button>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="stat"><div id="expensesSummaryLabel" class="label">Bu günün xərci</div><div id="filterExpensesTotal" class="value">0 ₼</div></div>
+        <div class="stat"><div class="label">Xərc sayı</div><div id="filterExpensesCount" class="value">0</div></div>
+      </div>
+
+      <div id="expensesList" class="expense-list"></div>
+    </section>
+
+    <section id="notesPage" class="hidden">
+      <div class="section-head">
+        <h2>Qeydlər</h2>
+        <div class="section-tools">
+          <span id="notesCount" class="count">0 qeyd</span>
+          <button id="toggleNotesDelete" class="top-delete" type="button">Sil</button>
+        </div>
+      </div>
+
+      <div class="toolbar with-clear">
+        <div class="dropdown">
+          <button id="notesDateBtn" class="drop-btn" type="button" aria-expanded="false">
+            <span class="txt">Tarix: <strong id="notesDateLabel">Bu gün</strong></span><span class="chev">⌄</span>
+          </button>
+          <div id="notesDatePanel" class="drop-panel hidden">
+            <button class="drop-option active" data-notes-date="today" type="button">Bu gün</button>
+            <button class="drop-option" data-notes-date="yesterday" type="button">Dünən</button>
+            <button class="drop-option" data-notes-date="custom" type="button">Tarix seç</button>
+            <button class="drop-option" data-notes-date="all" type="button">Bütün</button>
+          </div>
+        </div>
+
+        <button id="clearNotesToolbar" class="toolbar-clear" type="button" aria-label="Qeyd filterini təmizlə">
+          Təmizlə
+        </button>
+      </div>
+
+      <div id="notesDateBox" class="card date-box hidden">
+        <input id="notesSingleDate" type="hidden" />
+        <div id="notesCalendar" class="custom-calendar" data-calendar-kind="notes">
+          <div class="calendar-head">
+            <button id="notesCalendarPrev" class="calendar-nav" type="button" aria-label="Əvvəlki ay">‹</button>
+            <div>
+              <div class="date-label">Tarix seç</div>
+              <div id="notesCalendarTitle" class="calendar-title"></div>
+            </div>
+            <button id="notesCalendarNext" class="calendar-nav" type="button" aria-label="Növbəti ay">›</button>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>B.e</span><span>Ç.a</span><span>Ç</span><span>C.a</span><span>C</span><span>Ş</span><span>B</span>
+          </div>
+          <div id="notesCalendarGrid" class="calendar-grid"></div>
+          <button id="notesCalendarToday" class="calendar-today" type="button">Bu gün</button>
+        </div>
+      </div>
+
+      <div id="notesList" class="expense-list"></div>
+    </section>
+
     <section id="categoriesPage" class="hidden">
       <div class="section-head">
         <h2>Parametrlər</h2>
@@ -1838,6 +1963,8 @@
               <option value="">Bütün bölmələr</option>
               <option value="products">Məhsullar</option>
               <option value="sales">Satışlar</option>
+              <option value="expenses">Xərclər</option>
+              <option value="notes">Qeydlər</option>
               <option value="categories">Kateqoriyalar</option>
               <option value="app_settings">Logo / favicon</option>
             </select>
@@ -1868,11 +1995,15 @@
     <nav class="bottom-nav">
       <button class="nav-btn active" data-page="sales" type="button">Satışlar</button>
       <button class="nav-btn" data-page="dashboard" type="button">Məhsullar</button>
+      <button class="nav-btn" data-page="expenses" type="button">Xərclər</button>
+      <button class="nav-btn" data-page="notes" type="button">Qeydlər</button>
       <button class="nav-btn" data-page="categories" type="button">Parametrlər</button>
     </nav>
 
     <button id="addProductBtn" class="floating-add hidden" type="button" aria-label="Məhsul əlavə et">+</button>
     <button id="salesAddBtn" class="floating-add" type="button" aria-label="Satış əlavə et">+</button>
+    <button id="expensesAddBtn" class="floating-add hidden" type="button" aria-label="Xərc əlavə et">+</button>
+    <button id="notesAddBtn" class="floating-add hidden" type="button" aria-label="Qeyd əlavə et">+</button>
   </main>
 
   <div id="saleTypeModal" class="modal-backdrop hidden">
@@ -2122,6 +2253,73 @@
     </div>
   </div>
 
+  <div id="expenseModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="expenseModalTitle">Xərc əlavə et</h3>
+        <button class="close" data-close="expenseModal" type="button">×</button>
+      </div>
+      <form id="expenseForm" class="form" novalidate>
+        <input id="expenseId" type="hidden" />
+
+        <div>
+          <div class="label" style="margin-bottom:7px">
+            Şəkillər <span id="expenseImageCount">(0/5)</span>
+            <span class="meta" style="margin-left:5px">Qəbz və ya məhsul şəkli</span>
+          </div>
+
+          <div id="expenseImagePreview" class="product-image-preview-grid">
+            <div class="product-image-empty">Şəkil seçilməyib</div>
+          </div>
+        </div>
+
+        <button id="openExpenseImagePicker" class="btn secondary full" type="button">＋ Şəkil əlavə et</button>
+        <div class="meta">Mobil telefonda Kamera / Foto qalereyası / Fayl seçimi açılacaq. Maksimum 5 şəkil.</div>
+        <input id="expenseImagePicker" class="hidden" type="file" accept="image/*" multiple />
+
+        <input id="expenseTitle" class="input" placeholder="Xərc adı (məs: Paket, yanacaq, reklam)" />
+
+        <div>
+          <label class="label">Məbləğ</label>
+          <input id="expenseAmount" class="input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0" />
+        </div>
+
+        <textarea id="expenseNote" class="textarea" placeholder="Qeyd (boş qala bilər)"></textarea>
+        <button id="saveExpenseBtn" class="btn full" type="submit">Yadda saxla</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="noteModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="noteModalTitle">Qeyd əlavə et</h3>
+        <button class="close" data-close="noteModal" type="button">×</button>
+      </div>
+      <form id="noteForm" class="form" novalidate>
+        <input id="noteId" type="hidden" />
+
+        <div>
+          <div class="label" style="margin-bottom:7px">
+            Şəkillər <span id="noteImageCount">(0/5)</span>
+            <span class="meta" style="margin-left:5px">Opsional</span>
+          </div>
+
+          <div id="noteImagePreview" class="product-image-preview-grid">
+            <div class="product-image-empty">Şəkil seçilməyib</div>
+          </div>
+        </div>
+
+        <button id="openNoteImagePicker" class="btn secondary full" type="button">＋ Şəkil əlavə et</button>
+        <div class="meta">Şəkil opsionaldır. Maksimum 5 şəkil.</div>
+        <input id="noteImagePicker" class="hidden" type="file" accept="image/*" multiple />
+
+        <textarea id="noteText" class="textarea" placeholder="Qeyd yaz..." required></textarea>
+        <button id="saveNoteBtn" class="btn full" type="submit">Yadda saxla</button>
+      </form>
+    </div>
+  </div>
+
   <div id="categoryModal" class="modal-backdrop hidden">
     <div class="modal">
       <div class="modal-head">
@@ -2172,15 +2370,23 @@ let currentUser=null;
 let products=[];
 let categories=[];
 let sales=[];
+let expenses=[];
+let notes=[];
 let activityLogs=[];
 let appSettings={logo_url:null,favicon_url:null};
 let currentSaleProduct=null;
 let editingImageUrls=[];
 let editingSaleImageUrls=[];
+let editingExpenseImageUrls=[];
+let editingNoteImageUrls=[];
 let pendingSaleImageFiles=[];
 let pendingSalePreviewUrls=[];
 let pendingProductImageFiles=[];
 let pendingProductPreviewUrls=[];
+let pendingExpenseImageFiles=[];
+let pendingExpensePreviewUrls=[];
+let pendingNoteImageFiles=[];
+let pendingNotePreviewUrls=[];
 
 let lightboxImages=[];
 let lightboxIndex=0;
@@ -2189,16 +2395,21 @@ let lightboxTouchStartY=0;
 
 let productDateMode="all";
 let salesDateMode="today";
-let calendarView={product:new Date(),sales:new Date()};
+let expensesDateMode="today";
+let notesDateMode="today";
+let calendarView={product:new Date(),sales:new Date(),expenses:new Date(),notes:new Date()};
 let saleEntryMode="loose";
 let categoryCreateContext="settings";
 let multiSaleDraft=new Map();
 let multiSaleImageTargetId=null;
 let passwordRecoveryMode=location.hash.includes("type=recovery")||location.search.includes("type=recovery");
+let notesSearchQuery="";
 
 /* Delete buttons are intentionally not persisted. Refresh => hidden again. */
 let productDeleteMode=false;
 let salesDeleteMode=false;
+let expensesDeleteMode=false;
+let notesDeleteMode=false;
 
 const $=id=>document.getElementById(id);
 
@@ -2359,11 +2570,18 @@ function setCalendarView(kind,value){
   calendarView[kind]=new Date(date.getFullYear(),date.getMonth(),1);
 }
 
+function calendarElements(kind){
+  return {
+    input:$(`${kind}SingleDate`),
+    title:$(`${kind}CalendarTitle`),
+    grid:$(`${kind}CalendarGrid`),
+    label:$(`${kind}DateLabel`),
+    box:$(`${kind}DateBox`)
+  };
+}
+
 function renderCustomCalendar(kind){
-  const isProduct=kind==="product";
-  const input=$(isProduct?"productSingleDate":"salesSingleDate");
-  const title=$(isProduct?"productCalendarTitle":"salesCalendarTitle");
-  const grid=$(isProduct?"productCalendarGrid":"salesCalendarGrid");
+  const {input,title,grid}=calendarElements(kind);
   if(!input||!title||!grid)return;
 
   const view=calendarView[kind]||new Date();
@@ -2389,9 +2607,7 @@ function renderCustomCalendar(kind){
 }
 
 function selectCalendarDate(kind,value){
-  const isProduct=kind==="product";
-  const input=$(isProduct?"productSingleDate":"salesSingleDate");
-  const label=$(isProduct?"productDateLabel":"salesDateLabel");
+  const {input,label,box}=calendarElements(kind);
   if(!input||!label)return;
 
   input.value=value;
@@ -2399,14 +2615,22 @@ function selectCalendarDate(kind,value){
   renderCustomCalendar(kind);
   label.textContent=shortAzDate(value);
 
-  if(isProduct){
+  if(kind==="product"){
     productDateMode="custom";
-    $("productDateBox").classList.add("hidden");
+    box?.classList.add("hidden");
     renderProducts();
-  }else{
+  }else if(kind==="sales"){
     salesDateMode="custom";
-    $("salesDateBox").classList.add("hidden");
+    box?.classList.add("hidden");
     renderSales();
+  }else if(kind==="expenses"){
+    expensesDateMode="custom";
+    box?.classList.add("hidden");
+    renderExpenses();
+  }else if(kind==="notes"){
+    notesDateMode="custom";
+    box?.classList.add("hidden");
+    renderNotes();
   }
 }
 
@@ -2469,6 +2693,29 @@ function updateSalesSummaryLabels(){
   $("salesSummaryProfitLabel").textContent=profitLabel;
 }
 
+function updateExpensesSummaryLabel(){
+  let label="Bu günün xərci";
+
+  if(expensesDateMode==="yesterday"){
+    label="Dünənin xərci";
+  }else if(expensesDateMode==="custom"){
+    const value=$("expensesSingleDate").value;
+    if(value){
+      const date=parseIsoLocalDate(value);
+      label=new Intl.DateTimeFormat("az-AZ",{
+        day:"2-digit",
+        month:"short"
+      }).format(date)+" xərci";
+    }else{
+      label="Seçilən tarixin xərci";
+    }
+  }else if(expensesDateMode==="all"){
+    label="Bütün xərclər";
+  }
+
+  $("expensesSummaryLabel").textContent=label;
+}
+
 function setSalesDate(mode){
   salesDateMode=mode;
 
@@ -2490,6 +2737,52 @@ function setSalesDate(mode){
 
   closeDropdowns();
   renderSales();
+}
+
+function setExpensesDate(mode){
+  expensesDateMode=mode;
+
+  const labels={today:"Bu gün",yesterday:"Dünən",custom:"Tarix seç",all:"Bütün"};
+  $("expensesDateLabel").textContent=labels[mode]||"Bu gün";
+
+  document.querySelectorAll("[data-expenses-date]").forEach(button=>{
+    button.classList.toggle("active",button.dataset.expensesDate===mode);
+  });
+
+  $("expensesDateBox").classList.toggle("hidden",mode!=="custom");
+
+  if(mode==="custom"){
+    if(!$("expensesSingleDate").value)$("expensesSingleDate").value=isoLocalDate(new Date());
+    setCalendarView("expenses",$("expensesSingleDate").value);
+    renderCustomCalendar("expenses");
+    $("expensesDateLabel").textContent=shortAzDate($("expensesSingleDate").value);
+  }
+
+  closeDropdowns();
+  renderExpenses();
+}
+
+function setNotesDate(mode){
+  notesDateMode=mode;
+
+  const labels={today:"Bu gün",yesterday:"Dünən",custom:"Tarix seç",all:"Bütün"};
+  $("notesDateLabel").textContent=labels[mode]||"Bu gün";
+
+  document.querySelectorAll("[data-notes-date]").forEach(button=>{
+    button.classList.toggle("active",button.dataset.notesDate===mode);
+  });
+
+  $("notesDateBox").classList.toggle("hidden",mode!=="custom");
+
+  if(mode==="custom"){
+    if(!$("notesSingleDate").value)$("notesSingleDate").value=isoLocalDate(new Date());
+    setCalendarView("notes",$("notesSingleDate").value);
+    renderCustomCalendar("notes");
+    $("notesDateLabel").textContent=shortAzDate($("notesSingleDate").value);
+  }
+
+  closeDropdowns();
+  renderNotes();
 }
 
 function showAuth(){
@@ -2546,6 +2839,22 @@ async function loadSales(){
   sales=data||[];
 }
 
+async function loadExpenses(){
+  const {data,error}=await sb.from("expenses")
+    .select("*")
+    .order("created_at",{ascending:false});
+  if(error){toast(error.message);return}
+  expenses=data||[];
+}
+
+async function loadNotes(){
+  const {data,error}=await sb.from("notes")
+    .select("*")
+    .order("created_at",{ascending:false});
+  if(error){toast(error.message);return}
+  notes=data||[];
+}
+
 async function loadLogs(){
   const {data,error}=await sb.from("activity_logs")
     .select("*")
@@ -2575,7 +2884,7 @@ async function loadAppSettings(){
 }
 
 async function loadAll(){
-  await Promise.all([loadCategories(),loadProducts(),loadSales(),loadLogs(),loadAppSettings()]);
+  await Promise.all([loadCategories(),loadProducts(),loadSales(),loadExpenses(),loadNotes(),loadLogs(),loadAppSettings()]);
   renderAll();
 }
 
@@ -3177,6 +3486,352 @@ function renderSales(){
   fitValues();
 }
 
+function expenseImages(expense){
+  if(Array.isArray(expense?.image_urls) && expense.image_urls.length){
+    return expense.image_urls.filter(Boolean).slice(0,5);
+  }
+  return expense?.image_url ? [expense.image_url] : [];
+}
+
+function currentExpensePreviewEntries(){
+  return [
+    ...editingExpenseImageUrls.map((url,index)=>({kind:"existing",url,index})),
+    ...pendingExpenseImageFiles.map((file,index)=>({
+      kind:"pending",
+      url:pendingExpensePreviewUrls[index],
+      index
+    }))
+  ].slice(0,5);
+}
+
+function renderExpenseImagePreviews(){
+  const entries=currentExpensePreviewEntries();
+  $("expenseImageCount").textContent=`(${entries.length}/5)`;
+
+  if(!entries.length){
+    $("expenseImagePreview").innerHTML='<div class="product-image-empty">Şəkil seçilməyib</div>';
+    return;
+  }
+
+  $("expenseImagePreview").innerHTML=entries.map((entry,displayIndex)=>`
+    <div class="product-preview-item ${displayIndex===0?"main-image":""}">
+      <img src="${escapeHtml(entry.url)}"
+           alt="Xərc şəkli ${displayIndex+1}"
+           data-expense-preview-index="${displayIndex}">
+      ${displayIndex===0?'<span class="product-preview-main-label">Əsas</span>':""}
+      <button class="product-preview-remove"
+              type="button"
+              data-remove-expense-kind="${entry.kind}"
+              data-remove-expense-index="${entry.index}"
+              aria-label="Şəkli sil">×</button>
+    </div>
+  `).join("");
+
+  const images=entries.map(entry=>entry.url);
+
+  document.querySelectorAll("[data-expense-preview-index]").forEach(image=>{
+    image.addEventListener("click",()=>{
+      openImageLightbox(images,Number(image.dataset.expensePreviewIndex)||0);
+    });
+  });
+
+  document.querySelectorAll("[data-remove-expense-kind]").forEach(button=>{
+    button.addEventListener("click",event=>{
+      event.stopPropagation();
+      const index=Number(button.dataset.removeExpenseIndex);
+
+      if(button.dataset.removeExpenseKind==="existing"){
+        editingExpenseImageUrls.splice(index,1);
+      }else{
+        const url=pendingExpensePreviewUrls[index];
+        if(url)URL.revokeObjectURL(url);
+        pendingExpenseImageFiles.splice(index,1);
+        pendingExpensePreviewUrls.splice(index,1);
+      }
+
+      renderExpenseImagePreviews();
+    });
+  });
+}
+
+function addExpenseImageFiles(files){
+  const incoming=Array.from(files||[]);
+  if(!incoming.length)return;
+
+  const currentCount=editingExpenseImageUrls.length+pendingExpenseImageFiles.length;
+  const remaining=5-currentCount;
+
+  if(remaining<=0){
+    toast("Xərclərdə maksimum 5 şəkil əlavə etmək olar.");
+    return;
+  }
+
+  if(incoming.length>remaining){
+    toast(`Yalnız ${remaining} şəkil əlavə olundu. Maksimum 5 şəkil mümkündür.`);
+  }
+
+  for(const file of incoming.slice(0,remaining)){
+    if(!file.type.startsWith("image/"))continue;
+
+    if(file.size>5*1024*1024){
+      toast(`${file.name||"Şəkil"} 5MB-dan böyükdür və əlavə olunmadı.`);
+      continue;
+    }
+
+    pendingExpenseImageFiles.push(file);
+    pendingExpensePreviewUrls.push(URL.createObjectURL(file));
+  }
+
+  renderExpenseImagePreviews();
+}
+
+function renderExpenses(){
+  const query=$("expensesSearchInput").value.trim().toLowerCase();
+  const minAmount=$("expensesMinAmount").value===""?null:Number($("expensesMinAmount").value);
+  const maxAmount=$("expensesMaxAmount").value===""?null:Number($("expensesMaxAmount").value);
+  const sort=$("expensesSort").value;
+  const selectedDate=$("expensesSingleDate").value;
+
+  let list=expenses.filter(expense=>{
+    const title=String(expense.title||"Xərc").toLowerCase();
+    const amount=Number(expense.amount||0);
+
+    if(!dateMatches(expense.created_at,expensesDateMode,selectedDate))return false;
+    if(query&&!title.includes(query))return false;
+    if(minAmount!==null&&amount<minAmount)return false;
+    if(maxAmount!==null&&amount>maxAmount)return false;
+
+    return true;
+  });
+
+  list.sort((a,b)=>{
+    if(sort==="oldest")return new Date(a.created_at)-new Date(b.created_at);
+    if(sort==="amount_desc")return Number(b.amount)-Number(a.amount);
+    if(sort==="amount_asc")return Number(a.amount)-Number(b.amount);
+    return new Date(b.created_at)-new Date(a.created_at);
+  });
+
+  $("expensesCount").textContent=`${list.length} xərc`;
+  updateExpensesSummaryLabel();
+  $("filterExpensesTotal").textContent=money(list.reduce((sum,item)=>sum+Number(item.amount||0),0));
+  $("filterExpensesCount").textContent=list.length;
+
+  $("expensesList").innerHTML=list.length?list.map(expense=>`
+    <div class="card sale">
+      <div class="${expenseImages(expense).length?"sale-with-image":""}">
+        ${expenseImages(expense).length
+          ? `<div style="position:relative;width:58px;height:58px">
+               <img class="sale-thumb clickable-image"
+                    src="${escapeHtml(expenseImages(expense)[0])}"
+                    alt="${escapeHtml(expense.title||"Xərc")}"
+                    data-open-expense-images="${expense.id}">
+               ${expenseImages(expense).length>1
+                 ? `<span class="product-image-badge">${expenseImages(expense).length}</span>`
+                 : ""}
+             </div>`
+          : ""}
+
+        <div>
+          <div class="sale-top">
+            <div>
+              <div class="sale-name">${escapeHtml(expense.title||"Xərc")}</div>
+              <div class="meta">${formatDate(expense.created_at)}</div>
+            </div>
+            <div class="sale-total">${money(expense.amount)}</div>
+          </div>
+
+          ${expense.note?`<div class="meta" style="margin-top:7px">${escapeHtml(expense.note)}</div>`:""}
+
+          <div class="actions">
+            <button class="btn secondary" data-edit-expense="${expense.id}" type="button">Düzəliş</button>
+            ${expensesDeleteMode?`<button class="btn danger" data-delete-expense="${expense.id}" type="button">Sil</button>`:""}
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join(""):'<div class="card empty">Bu seçimə uyğun xərc yoxdur.</div>';
+
+  document.querySelectorAll("[data-open-expense-images]").forEach(image=>{
+    image.addEventListener("click",()=>{
+      const expense=expenses.find(item=>item.id===image.dataset.openExpenseImages);
+      if(expense)openImageLightbox(expenseImages(expense),0);
+    });
+  });
+
+  document.querySelectorAll("[data-edit-expense]").forEach(button=>{
+    button.addEventListener("click",()=>openEditExpense(button.dataset.editExpense));
+  });
+
+  document.querySelectorAll("[data-delete-expense]").forEach(button=>{
+    button.addEventListener("click",()=>deleteExpense(button.dataset.deleteExpense));
+  });
+
+  fitValues();
+}
+
+function noteImages(note){
+  if(Array.isArray(note?.image_urls) && note.image_urls.length){
+    return note.image_urls.filter(Boolean).slice(0,5);
+  }
+  return note?.image_url ? [note.image_url] : [];
+}
+
+function currentNotePreviewEntries(){
+  return [
+    ...editingNoteImageUrls.map((url,index)=>({kind:"existing",url,index})),
+    ...pendingNoteImageFiles.map((file,index)=>({
+      kind:"pending",
+      url:pendingNotePreviewUrls[index],
+      index
+    }))
+  ].slice(0,5);
+}
+
+function renderNoteImagePreviews(){
+  const entries=currentNotePreviewEntries();
+  $("noteImageCount").textContent=`(${entries.length}/5)`;
+
+  if(!entries.length){
+    $("noteImagePreview").innerHTML='<div class="product-image-empty">Şəkil seçilməyib</div>';
+    return;
+  }
+
+  $("noteImagePreview").innerHTML=entries.map((entry,displayIndex)=>`
+    <div class="product-preview-item ${displayIndex===0?"main-image":""}">
+      <img src="${escapeHtml(entry.url)}"
+           alt="Qeyd şəkli ${displayIndex+1}"
+           data-note-preview-index="${displayIndex}">
+      ${displayIndex===0?'<span class="product-preview-main-label">Əsas</span>':""}
+      <button class="product-preview-remove"
+              type="button"
+              data-remove-note-kind="${entry.kind}"
+              data-remove-note-index="${entry.index}"
+              aria-label="Şəkli sil">×</button>
+    </div>
+  `).join("");
+
+  const images=entries.map(entry=>entry.url);
+
+  document.querySelectorAll("[data-note-preview-index]").forEach(image=>{
+    image.addEventListener("click",()=>{
+      openImageLightbox(images,Number(image.dataset.notePreviewIndex)||0);
+    });
+  });
+
+  document.querySelectorAll("[data-remove-note-kind]").forEach(button=>{
+    button.addEventListener("click",event=>{
+      event.stopPropagation();
+      const index=Number(button.dataset.removeNoteIndex);
+
+      if(button.dataset.removeNoteKind==="existing"){
+        editingNoteImageUrls.splice(index,1);
+      }else{
+        const url=pendingNotePreviewUrls[index];
+        if(url)URL.revokeObjectURL(url);
+        pendingNoteImageFiles.splice(index,1);
+        pendingNotePreviewUrls.splice(index,1);
+      }
+
+      renderNoteImagePreviews();
+    });
+  });
+}
+
+function addNoteImageFiles(files){
+  const incoming=Array.from(files||[]);
+  if(!incoming.length)return;
+
+  const currentCount=editingNoteImageUrls.length+pendingNoteImageFiles.length;
+  const remaining=5-currentCount;
+
+  if(remaining<=0){
+    toast("Qeydlərdə maksimum 5 şəkil əlavə etmək olar.");
+    return;
+  }
+
+  if(incoming.length>remaining){
+    toast(`Yalnız ${remaining} şəkil əlavə olundu. Maksimum 5 şəkil mümkündür.`);
+  }
+
+  for(const file of incoming.slice(0,remaining)){
+    if(!file.type.startsWith("image/"))continue;
+
+    if(file.size>5*1024*1024){
+      toast(`${file.name||"Şəkil"} 5MB-dan böyükdür və əlavə olunmadı.`);
+      continue;
+    }
+
+    pendingNoteImageFiles.push(file);
+    pendingNotePreviewUrls.push(URL.createObjectURL(file));
+  }
+
+  renderNoteImagePreviews();
+}
+
+function renderNotes(){
+  const selectedDate=$("notesSingleDate").value;
+  const query=notesSearchQuery.trim().toLowerCase();
+
+  const list=notes
+    .filter(note=>{
+      if(!dateMatches(note.created_at,notesDateMode,selectedDate))return false;
+      if(query&&!String(note.body||"").toLowerCase().includes(query))return false;
+      return true;
+    })
+    .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+
+  $("notesCount").textContent=`${list.length} qeyd`;
+
+  $("notesList").innerHTML=list.length?list.map(note=>`
+    <div class="card sale">
+      <div class="${noteImages(note).length?"sale-with-image":""}">
+        ${noteImages(note).length
+          ? `<div style="position:relative;width:58px;height:58px">
+               <img class="sale-thumb clickable-image"
+                    src="${escapeHtml(noteImages(note)[0])}"
+                    alt="Qeyd şəkli"
+                    data-open-note-images="${note.id}">
+               ${noteImages(note).length>1
+                 ? `<span class="product-image-badge">${noteImages(note).length}</span>`
+                 : ""}
+             </div>`
+          : ""}
+
+        <div>
+          <div class="sale-top">
+            <div>
+              <div class="sale-name">${escapeHtml(note.body||"Qeyd")}</div>
+              <div class="meta">${formatDate(note.created_at)}</div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn secondary" data-edit-note="${note.id}" type="button">Düzəliş</button>
+            ${notesDeleteMode?`<button class="btn danger" data-delete-note="${note.id}" type="button">Sil</button>`:""}
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join(""):'<div class="card empty">Bu tarix üçün qeyd yoxdur.</div>';
+
+  document.querySelectorAll("[data-open-note-images]").forEach(image=>{
+    image.addEventListener("click",()=>{
+      const note=notes.find(item=>item.id===image.dataset.openNoteImages);
+      if(note)openImageLightbox(noteImages(note),0);
+    });
+  });
+
+  document.querySelectorAll("[data-edit-note]").forEach(button=>{
+    button.addEventListener("click",()=>openEditNote(button.dataset.editNote));
+  });
+
+  document.querySelectorAll("[data-delete-note]").forEach(button=>{
+    button.addEventListener("click",()=>deleteNote(button.dataset.deleteNote));
+  });
+
+  fitValues();
+}
+
 function renderCategories(){
   $("categoryList").innerHTML=categories.length?categories.map(category=>{
     const count=products.filter(product=>product.category_id===category.id).length;
@@ -3200,7 +3855,14 @@ function logActionText(action){
 }
 
 function logEntityText(entity){
-  return ({products:"Məhsullar",sales:"Satışlar",categories:"Kateqoriyalar",app_settings:"Logo / favicon"})[entity]||entity;
+  return ({
+    products:"Məhsullar",
+    sales:"Satışlar",
+    expenses:"Xərclər",
+    notes:"Qeydlər",
+    categories:"Kateqoriyalar",
+    app_settings:"Logo / favicon"
+  })[entity]||entity;
 }
 
 function renderLogs(){
@@ -3242,16 +3904,18 @@ function renderAll(){
   renderCategoryOptions();
   renderProducts();
   renderSales();
+  renderExpenses();
+  renderNotes();
   renderCategories();
   renderLogs();
   renderStats();
 }
 
 function showPage(page,options={}){
-  const validPages=["sales","dashboard","categories"];
+  const validPages=["sales","dashboard","expenses","notes","categories"];
   if(!validPages.includes(page))page="sales";
 
-  ["dashboard","sales","categories"].forEach(name=>{
+  ["dashboard","sales","expenses","notes","categories"].forEach(name=>{
     $(name+"Page").classList.toggle("hidden",name!==page);
   });
 
@@ -3261,6 +3925,8 @@ function showPage(page,options={}){
 
   $("addProductBtn").classList.toggle("hidden",page!=="dashboard");
   $("salesAddBtn").classList.toggle("hidden",page!=="sales");
+  $("expensesAddBtn").classList.toggle("hidden",page!=="expenses");
+  $("notesAddBtn").classList.toggle("hidden",page!=="notes");
   syncGlobalSearch(page);
   closeDropdowns();
   fitValues();
@@ -3510,6 +4176,108 @@ async function deleteCategory(id){
   toast("Kateqoriya silindi");
 }
 
+function resetExpenseForm(){
+  $("expenseForm").reset();
+  $("expenseId").value="";
+  pendingExpensePreviewUrls.forEach(url=>URL.revokeObjectURL(url));
+  pendingExpensePreviewUrls=[];
+  pendingExpenseImageFiles=[];
+  editingExpenseImageUrls=[];
+  $("expenseImagePicker").value="";
+  renderExpenseImagePreviews();
+  $("expenseModalTitle").textContent="Xərc əlavə et";
+}
+
+function openNewExpenseModal(){
+  resetExpenseForm();
+  openModal("expenseModal");
+}
+
+function openEditExpense(id){
+  const expense=expenses.find(item=>item.id===id);
+  if(!expense)return;
+
+  resetExpenseForm();
+  $("expenseModalTitle").textContent="Xərci düzəlt";
+  $("expenseId").value=expense.id;
+  $("expenseTitle").value=expense.title||"";
+  $("expenseAmount").value=Number(expense.amount||0)===0?"":expense.amount;
+  $("expenseNote").value=expense.note||"";
+  editingExpenseImageUrls=expenseImages(expense);
+  renderExpenseImagePreviews();
+  openModal("expenseModal");
+}
+
+async function deleteExpense(id){
+  if(!await appConfirm("Bu xərc qeydini silmək istəyirsiniz?",{
+    title:"Xərci sil",
+    confirmText:"Sil",
+    cancelText:"İmtina",
+    tone:"danger"
+  }))return;
+
+  const {data,error}=await sb.from("expenses").delete().eq("id",id).select("id");
+  if(error){toast(error.message);return}
+
+  if(!data||!data.length){
+    toast("Silinmədi. Supabase DELETE policy-ni yeniləyin.");
+    return;
+  }
+
+  await loadAll();
+  toast("Xərc silindi");
+}
+
+function resetNoteForm(){
+  $("noteForm").reset();
+  $("noteId").value="";
+  pendingNotePreviewUrls.forEach(url=>URL.revokeObjectURL(url));
+  pendingNotePreviewUrls=[];
+  pendingNoteImageFiles=[];
+  editingNoteImageUrls=[];
+  $("noteImagePicker").value="";
+  renderNoteImagePreviews();
+  $("noteModalTitle").textContent="Qeyd əlavə et";
+}
+
+function openNewNoteModal(){
+  resetNoteForm();
+  openModal("noteModal");
+}
+
+function openEditNote(id){
+  const note=notes.find(item=>item.id===id);
+  if(!note)return;
+
+  resetNoteForm();
+  $("noteModalTitle").textContent="Qeydi düzəlt";
+  $("noteId").value=note.id;
+  $("noteText").value=note.body||"";
+  editingNoteImageUrls=noteImages(note);
+  renderNoteImagePreviews();
+  openModal("noteModal");
+}
+
+async function deleteNote(id){
+  if(!await appConfirm("Bu qeydi silmək istəyirsiniz?",{
+    title:"Qeydi sil",
+    confirmText:"Sil",
+    cancelText:"İmtina",
+    tone:"danger"
+  }))return;
+
+  const {data,error}=await sb.from("notes").delete().eq("id",id).select("id");
+  if(error){toast(error.message);return}
+
+  if(!data||!data.length){
+    toast("Silinmədi. Supabase DELETE policy-ni yeniləyin.");
+    return;
+  }
+
+  await loadAll();
+  toast("Qeyd silindi");
+}
+
 /* Branding */
 
 function applyBranding(){
@@ -3715,6 +4483,9 @@ bindDropdown("productDateBtn","productDatePanel");
 bindDropdown("productFilterBtn","productFilterPanel");
 bindDropdown("salesDateBtn","salesDatePanel");
 bindDropdown("salesFilterBtn","salesFilterPanel");
+bindDropdown("expensesDateBtn","expensesDatePanel");
+bindDropdown("expensesFilterBtn","expensesFilterPanel");
+bindDropdown("notesDateBtn","notesDatePanel");
 document.addEventListener("click",()=>closeDropdowns());
 
 document.querySelectorAll("[data-product-date]").forEach(button=>{
@@ -3723,6 +4494,12 @@ document.querySelectorAll("[data-product-date]").forEach(button=>{
 document.querySelectorAll("[data-sales-date]").forEach(button=>{
   button.addEventListener("click",()=>setSalesDate(button.dataset.salesDate));
 });
+document.querySelectorAll("[data-expenses-date]").forEach(button=>{
+  button.addEventListener("click",()=>setExpensesDate(button.dataset.expensesDate));
+});
+document.querySelectorAll("[data-notes-date]").forEach(button=>{
+  button.addEventListener("click",()=>setNotesDate(button.dataset.notesDate));
+});
 
 $("productCalendarPrev").addEventListener("click",()=>moveCalendarMonth("product",-1));
 $("productCalendarNext").addEventListener("click",()=>moveCalendarMonth("product",1));
@@ -3730,6 +4507,12 @@ $("productCalendarToday").addEventListener("click",()=>selectCalendarDate("produ
 $("salesCalendarPrev").addEventListener("click",()=>moveCalendarMonth("sales",-1));
 $("salesCalendarNext").addEventListener("click",()=>moveCalendarMonth("sales",1));
 $("salesCalendarToday").addEventListener("click",()=>selectCalendarDate("sales",isoLocalDate(new Date())));
+$("expensesCalendarPrev").addEventListener("click",()=>moveCalendarMonth("expenses",-1));
+$("expensesCalendarNext").addEventListener("click",()=>moveCalendarMonth("expenses",1));
+$("expensesCalendarToday").addEventListener("click",()=>selectCalendarDate("expenses",isoLocalDate(new Date())));
+$("notesCalendarPrev").addEventListener("click",()=>moveCalendarMonth("notes",-1));
+$("notesCalendarNext").addEventListener("click",()=>moveCalendarMonth("notes",1));
+$("notesCalendarToday").addEventListener("click",()=>selectCalendarDate("notes",isoLocalDate(new Date())));
 $("productCalendarGrid").addEventListener("click",event=>{
   const button=event.target.closest("[data-calendar-date]");
   if(button)selectCalendarDate("product",button.dataset.calendarDate);
@@ -3737,6 +4520,14 @@ $("productCalendarGrid").addEventListener("click",event=>{
 $("salesCalendarGrid").addEventListener("click",event=>{
   const button=event.target.closest("[data-calendar-date]");
   if(button)selectCalendarDate("sales",button.dataset.calendarDate);
+});
+$("expensesCalendarGrid").addEventListener("click",event=>{
+  const button=event.target.closest("[data-calendar-date]");
+  if(button)selectCalendarDate("expenses",button.dataset.calendarDate);
+});
+$("notesCalendarGrid").addEventListener("click",event=>{
+  const button=event.target.closest("[data-calendar-date]");
+  if(button)selectCalendarDate("notes",button.dataset.calendarDate);
 });
 
 /* Product filters */
@@ -3779,6 +4570,32 @@ function clearSalesFilters(){
 $("resetSalesFilters").addEventListener("click",clearSalesFilters);
 $("clearSalesToolbar").addEventListener("click",clearSalesFilters);
 
+/* Expense filters */
+["expensesSearchInput","expensesMinAmount","expensesMaxAmount","expensesSort"].forEach(id=>{
+  $(id).addEventListener(["expensesSearchInput","expensesMinAmount","expensesMaxAmount"].includes(id)?"input":"change",renderExpenses);
+});
+
+function clearExpensesFilters(){
+  $("expensesSearchInput").value="";
+  $("expensesMinAmount").value="";
+  $("expensesMaxAmount").value="";
+  $("expensesSort").value="newest";
+  if(document.querySelector(".nav-btn.active")?.dataset.page==="expenses")$("globalSearch").value="";
+  closeDropdowns();
+  renderExpenses();
+}
+$("resetExpensesFilters").addEventListener("click",clearExpensesFilters);
+$("clearExpensesToolbar").addEventListener("click",clearExpensesFilters);
+
+function clearNotesFilters(){
+  $("notesSingleDate").value="";
+  notesSearchQuery="";
+  if(document.querySelector(".nav-btn.active")?.dataset.page==="notes")$("globalSearch").value="";
+  setNotesDate("today");
+  renderNotes();
+}
+$("clearNotesToolbar").addEventListener("click",clearNotesFilters);
+
 /* Delete mode: hidden by default and not saved anywhere */
 $("toggleProductDelete").addEventListener("click",()=>{
   productDeleteMode=!productDeleteMode;
@@ -3790,6 +4607,18 @@ $("toggleSalesDelete").addEventListener("click",()=>{
   salesDeleteMode=!salesDeleteMode;
   $("toggleSalesDelete").textContent=salesDeleteMode?"Bitir":"Sil";
   renderSales();
+});
+
+$("toggleExpensesDelete").addEventListener("click",()=>{
+  expensesDeleteMode=!expensesDeleteMode;
+  $("toggleExpensesDelete").textContent=expensesDeleteMode?"Bitir":"Sil";
+  renderExpenses();
+});
+
+$("toggleNotesDelete").addEventListener("click",()=>{
+  notesDeleteMode=!notesDeleteMode;
+  $("toggleNotesDelete").textContent=notesDeleteMode?"Bitir":"Sil";
+  renderNotes();
 });
 
 
@@ -4122,6 +4951,9 @@ $("salesAddBtn").addEventListener("click",()=>{
   openModal("saleTypeModal");
 });
 
+$("expensesAddBtn").addEventListener("click",openNewExpenseModal);
+$("notesAddBtn").addEventListener("click",openNewNoteModal);
+
 $("chooseRegularSale").addEventListener("click",()=>{
   closeModal("saleTypeModal");
   openSaleEntry("regular");
@@ -4200,6 +5032,130 @@ $("productForm").addEventListener("submit",async event=>{
     toast(error.message||"Xəta baş verdi");
   }finally{
     $("saveProductBtn").disabled=false;
+  }
+});
+
+/* Expenses */
+$("openExpenseImagePicker").addEventListener("click",()=>{
+  if(editingExpenseImageUrls.length+pendingExpenseImageFiles.length>=5){
+    toast("Xərclərdə maksimum 5 şəkil əlavə etmək olar.");
+    return;
+  }
+
+  $("expenseImagePicker").value="";
+  $("expenseImagePicker").click();
+});
+
+$("expenseImagePicker").addEventListener("change",()=>{
+  addExpenseImageFiles($("expenseImagePicker").files);
+});
+
+$("expenseForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const amount=Number($("expenseAmount").value||0);
+  if(amount<0){
+    toast("Məbləğ mənfi ola bilməz.");
+    return;
+  }
+
+  $("saveExpenseBtn").disabled=true;
+
+  try{
+    const id=$("expenseId").value;
+    const uploadedUrls=[];
+
+    for(const file of pendingExpenseImageFiles){
+      const url=await uploadImage(file);
+      if(url)uploadedUrls.push(url);
+    }
+
+    const imageUrls=[...editingExpenseImageUrls,...uploadedUrls].filter(Boolean).slice(0,5);
+    const payload={
+      user_id:currentUser.id,
+      title:$("expenseTitle").value.trim()||"Xərc",
+      amount,
+      note:$("expenseNote").value.trim()||null,
+      image_url:imageUrls[0]||null,
+      image_urls:imageUrls
+    };
+
+    const result=id
+      ? await sb.from("expenses").update(payload).eq("id",id)
+      : await sb.from("expenses").insert(payload);
+
+    if(result.error)throw result.error;
+
+    closeModal("expenseModal");
+    await loadAll();
+    showPage("expenses");
+    toast(id?"Xərc yeniləndi":"Xərc əlavə edildi");
+  }catch(error){
+    console.error(error);
+    toast(error.message||"Xərc yadda saxlanılmadı");
+  }finally{
+    $("saveExpenseBtn").disabled=false;
+  }
+});
+
+/* Notes */
+$("openNoteImagePicker").addEventListener("click",()=>{
+  if(editingNoteImageUrls.length+pendingNoteImageFiles.length>=5){
+    toast("Qeydlərdə maksimum 5 şəkil əlavə etmək olar.");
+    return;
+  }
+
+  $("noteImagePicker").value="";
+  $("noteImagePicker").click();
+});
+
+$("noteImagePicker").addEventListener("change",()=>{
+  addNoteImageFiles($("noteImagePicker").files);
+});
+
+$("noteForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const body=$("noteText").value.trim();
+  if(!body){
+    toast("Qeyd yazın.");
+    return;
+  }
+
+  $("saveNoteBtn").disabled=true;
+
+  try{
+    const id=$("noteId").value;
+    const uploadedUrls=[];
+
+    for(const file of pendingNoteImageFiles){
+      const url=await uploadImage(file);
+      if(url)uploadedUrls.push(url);
+    }
+
+    const imageUrls=[...editingNoteImageUrls,...uploadedUrls].filter(Boolean).slice(0,5);
+    const payload={
+      user_id:currentUser.id,
+      body,
+      image_url:imageUrls[0]||null,
+      image_urls:imageUrls
+    };
+
+    const result=id
+      ? await sb.from("notes").update(payload).eq("id",id)
+      : await sb.from("notes").insert(payload);
+
+    if(result.error)throw result.error;
+
+    closeModal("noteModal");
+    await loadAll();
+    showPage("notes");
+    toast(id?"Qeyd yeniləndi":"Qeyd əlavə edildi");
+  }catch(error){
+    console.error(error);
+    toast(error.message||"Qeyd yadda saxlanılmadı");
+  }finally{
+    $("saveNoteBtn").disabled=false;
   }
 });
 
@@ -4639,6 +5595,7 @@ $("pdfExportForm").addEventListener("submit",async event=>{
 
 function syncGlobalSearch(page){
   const input=$("globalSearch");
+  input.disabled=false;
 
   if(page==="sales"){
     input.placeholder="Satışlarda axtar...";
@@ -4646,6 +5603,12 @@ function syncGlobalSearch(page){
   }else if(page==="dashboard"){
     input.placeholder="Məhsullarda axtar...";
     input.value=$("searchInput").value;
+  }else if(page==="expenses"){
+    input.placeholder="Xərclərdə axtar...";
+    input.value=$("expensesSearchInput").value;
+  }else if(page==="notes"){
+    input.placeholder="Qeydlərdə axtar...";
+    input.value=notesSearchQuery;
   }else{
     input.placeholder="Loglarda axtar...";
     input.value=$("logSearch").value;
@@ -4662,6 +5625,12 @@ $("globalSearch").addEventListener("input",()=>{
   }else if(active==="dashboard"){
     $("searchInput").value=value;
     renderProducts();
+  }else if(active==="expenses"){
+    $("expensesSearchInput").value=value;
+    renderExpenses();
+  }else if(active==="notes"){
+    notesSearchQuery=value;
+    renderNotes();
   }else{
     $("logSearch").value=value;
     renderLogs();
@@ -4737,8 +5706,12 @@ $("authForm").addEventListener("submit",async event=>{
   currentUser=data.user;
   productDeleteMode=false;
   salesDeleteMode=false;
+  expensesDeleteMode=false;
+  notesDeleteMode=false;
   $("toggleProductDelete").textContent="Sil";
   $("toggleSalesDelete").textContent="Sil";
+  $("toggleExpensesDelete").textContent="Sil";
+  $("toggleNotesDelete").textContent="Sil";
 
   showApp();
   setToday();
@@ -4809,6 +5782,9 @@ $("logoutBtn").addEventListener("click",async()=>{
   products=[];
   categories=[];
   sales=[];
+  expenses=[];
+  notes=[];
+  activityLogs=[];
   $("password").value="";
   showLoginForm();
 });
@@ -4835,8 +5811,12 @@ addEventListener("resize",fitValues);
 
   productDeleteMode=false;
   salesDeleteMode=false;
+  expensesDeleteMode=false;
+  notesDeleteMode=false;
   $("toggleProductDelete").textContent="Sil";
   $("toggleSalesDelete").textContent="Sil";
+  $("toggleExpensesDelete").textContent="Sil";
+  $("toggleNotesDelete").textContent="Sil";
 
   showApp();
   setToday();
