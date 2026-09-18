@@ -123,8 +123,8 @@
       text-overflow:ellipsis;
       text-transform:capitalize;
     }
-    .today-day{font-size:10px;font-weight:800;color:var(--muted)}
-    .today-time{font-size:12px;font-weight:900;color:var(--text);font-variant-numeric:tabular-nums}
+    .today-day{font-size:12px;font-weight:950;color:var(--text);letter-spacing:.02em}
+    .today-time{font-size:11px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
 
     .stats{
       display:grid;
@@ -2476,13 +2476,23 @@ function isoLocalDate(date){
 
 function setToday(){
   const now=new Date();
+  const months=[
+    "YANVAR","FEVRAL","MART","APREL","MAY","IYUN",
+    "IYUL","AVQUST","SENTYABR","OKTYABR","NOYABR","DEKABR"
+  ];
+  const weekdays=["Bazar","Bazar ertəsi","Çərşənbə axşamı","Çərşənbə","Cümə axşamı","Cümə","Şənbə"];
+  const day=String(now.getDate()).padStart(2,"0");
+  const month=months[now.getMonth()];
+  const weekday=weekdays[now.getDay()];
+  const time=new Intl.DateTimeFormat("az-AZ",{
+    hour:"2-digit",
+    minute:"2-digit",
+    hour12:false
+  }).format(now);
+
   $("todayText").innerHTML=`
-    <span class="today-day">${new Intl.DateTimeFormat("az-AZ",{
-      weekday:"short",day:"2-digit",month:"short"
-    }).format(now)}</span>
-    <span class="today-time">${new Intl.DateTimeFormat("az-AZ",{
-      hour:"2-digit",minute:"2-digit",hour12:false
-    }).format(now)}</span>
+    <span class="today-day">${day} ${month}</span>
+    <span class="today-time">${weekday} · ${time}</span>
   `;
 }
 
