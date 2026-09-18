@@ -94,7 +94,7 @@
     }
     .brand-title{font-size:18px;font-weight:850;letter-spacing:-.02em}
     .brand-sub{font-size:11px;color:var(--muted);margin-top:2px}
-    .top-actions{display:flex;gap:7px;flex:0 0 auto}
+    .top-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto;min-width:0}
     .icon-btn{
       width:41px;height:41px;border-radius:13px;border:1px solid var(--line);
       background:var(--card);color:var(--text);box-shadow:var(--shadow);
@@ -102,10 +102,29 @@
     }
 
     .today{
-      margin:0 0 11px;
-      font-size:11px;color:var(--muted);
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:capitalize;
+      max-width:168px;
+      min-height:41px;
+      padding:7px 10px;
+      border:1px solid var(--line);
+      border-radius:13px;
+      background:var(--card);
+      box-shadow:var(--shadow);
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      gap:1px;
+      color:var(--text);
+      white-space:nowrap;
+      overflow:hidden;
     }
+    .today-day,.today-time{
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      text-transform:capitalize;
+    }
+    .today-day{font-size:10px;font-weight:800;color:var(--muted)}
+    .today-time{font-size:12px;font-weight:900;color:var(--text);font-variant-numeric:tabular-nums}
 
     .stats{
       display:grid;
@@ -412,6 +431,7 @@
       .section-tools{max-width:64%}
       .count{max-width:70px}
       .floating-add{right:24px}
+      .today{max-width:112px;padding-left:8px;padding-right:8px}
     }
     @media(min-width:620px){
       .stats{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -1566,6 +1586,7 @@
         </div>
       </div>
       <div class="top-actions">
+        <div id="todayText" class="today" aria-live="polite"></div>
         <button id="themeToggle" class="icon-btn" type="button" aria-label="Tema dəyiş">☾</button>
       </div>
     </header>
@@ -1573,8 +1594,6 @@
     <div class="global-search-wrap">
       <input id="globalSearch" class="input global-search" type="search" placeholder="Satışlarda axtar..." autocomplete="off">
     </div>
-
-    <div id="todayText" class="today"></div>
 
     <section id="dashboardPage" class="hidden">
       <div class="stats">
@@ -2456,9 +2475,15 @@ function isoLocalDate(date){
 }
 
 function setToday(){
-  $("todayText").textContent=new Intl.DateTimeFormat("az-AZ",{
-    weekday:"long",day:"2-digit",month:"long",year:"numeric"
-  }).format(new Date());
+  const now=new Date();
+  $("todayText").innerHTML=`
+    <span class="today-day">${new Intl.DateTimeFormat("az-AZ",{
+      weekday:"short",day:"2-digit",month:"short"
+    }).format(now)}</span>
+    <span class="today-time">${new Intl.DateTimeFormat("az-AZ",{
+      hour:"2-digit",minute:"2-digit",hour12:false
+    }).format(now)}</span>
+  `;
 }
 
 function fitValues(){
@@ -5790,6 +5815,7 @@ $("logoutBtn").addEventListener("click",async()=>{
 });
 
 addEventListener("resize",fitValues);
+setInterval(setToday,30000);
 
 /* Initial session */
 (async()=>{
