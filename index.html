@@ -75,14 +75,14 @@
       position:sticky;
       top:0;
       z-index:35;
-      display:flex;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto minmax(41px,1fr);
       align-items:center;
-      justify-content:space-between;
       gap:10px;
       padding:8px 0 14px;
       background:linear-gradient(to bottom,var(--bg) 72%,transparent);
     }
-    .brand{display:flex;align-items:center;gap:10px;min-width:0}
+    .brand{display:flex;align-items:center;gap:10px;min-width:0;justify-self:start}
     .brand-mark{
       width:40px;height:40px;flex:0 0 40px;
       border-radius:13px;background:var(--primary);color:var(--primaryText);
@@ -94,7 +94,7 @@
     }
     .brand-title{font-size:18px;font-weight:850;letter-spacing:-.02em}
     .brand-sub{font-size:11px;color:var(--muted);margin-top:2px}
-    .top-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto;min-width:0}
+    .top-actions{display:flex;align-items:center;gap:7px;min-width:0;justify-self:end}
     .icon-btn{
       width:41px;height:41px;border-radius:13px;border:1px solid var(--line);
       background:var(--card);color:var(--text);box-shadow:var(--shadow);
@@ -102,11 +102,11 @@
     }
 
     .today{
-      max-width:168px;
-      min-height:41px;
-      padding:7px 10px;
+      width:min(184px,36vw);
+      min-height:48px;
+      padding:8px 12px;
       border:1px solid var(--line);
-      border-radius:13px;
+      border-radius:15px;
       background:var(--card);
       box-shadow:var(--shadow);
       display:flex;
@@ -116,6 +116,8 @@
       color:var(--text);
       white-space:nowrap;
       overflow:hidden;
+      justify-self:center;
+      text-align:center;
     }
     .today-day,.today-time{
       min-width:0;
@@ -123,8 +125,8 @@
       text-overflow:ellipsis;
       text-transform:capitalize;
     }
-    .today-day{font-size:12px;font-weight:950;color:var(--text);letter-spacing:.02em}
-    .today-time{font-size:11px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+    .today-day{font-size:14px;font-weight:950;color:var(--text);letter-spacing:.02em}
+    .today-time{font-size:12px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
 
     .stats{
       display:grid;
@@ -431,7 +433,9 @@
       .section-tools{max-width:64%}
       .count{max-width:70px}
       .floating-add{right:24px}
-      .today{max-width:112px;padding-left:8px;padding-right:8px}
+      .today{width:126px;min-height:44px;padding-left:8px;padding-right:8px}
+      .today-day{font-size:12px}
+      .today-time{font-size:10px}
     }
     @media(min-width:620px){
       .stats{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -1585,8 +1589,8 @@
           <div class="brand-sub">Satış və qazanc izləmə</div>
         </div>
       </div>
+      <div id="todayText" class="today" aria-live="polite"></div>
       <div class="top-actions">
-        <div id="todayText" class="today" aria-live="polite"></div>
         <button id="themeToggle" class="icon-btn" type="button" aria-label="Tema dəyiş">☾</button>
       </div>
     </header>
