@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="Rustamoff Jeans">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
     :root{
@@ -727,6 +728,44 @@
     }
     .pdf-summary-label{font-size:9px;color:#6b7280}
     .pdf-summary-value{font-size:15px;font-weight:800;margin-top:3px}
+    .pdf-section{
+      margin-top:18px;
+      page-break-inside:avoid;
+    }
+    .pdf-section h2{
+      margin:0 0 8px;
+      font-size:15px;
+      color:#111827;
+    }
+    .report-options{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+    }
+    .check-card{
+      min-height:42px;
+      display:flex;
+      align-items:center;
+      gap:9px;
+      padding:9px 10px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:var(--card2);
+      color:var(--text);
+      font-weight:800;
+      font-size:12px;
+    }
+    .check-card input{
+      width:18px;
+      height:18px;
+      accent-color:var(--primary);
+    }
+    .clickable-stat{
+      cursor:pointer;
+      text-align:left;
+      font-family:inherit;
+    }
+    .clickable-stat:hover{border-color:rgba(37,99,235,.35)}
     @media(max-width:360px){
       .sales-quick-actions{gap:5px}
       .sales-quick-actions .btn{font-size:10px!important;padding:7px 4px!important}
@@ -1528,7 +1567,7 @@
     }
 
   
-    #filterRevenue,#filterProfit{
+    #filterRevenue,#filterProfit,#filterPocket,#filterSoldQty{
       font-size:clamp(19px,5.6vw,24px);
     }
 
@@ -1729,6 +1768,7 @@
       <div class="sales-quick-actions">
         <button id="addSaleFromSales" class="btn secondary" type="button">+ Satış</button>
         <button id="addLooseSale" class="btn secondary" type="button">+ Sərbəst satış</button>
+        <button id="addTrustIncome" class="btn secondary" type="button">+ Etibar</button>
         <button id="openPdfExport" class="btn secondary" type="button">PDF</button>
       </div>
 
@@ -1810,8 +1850,10 @@
       </div>
 
       <div class="summary-grid">
-        <div class="stat"><div id="salesSummaryRevenueLabel" class="label">Bu günün satışı</div><div id="filterRevenue" class="value">0 ₼</div></div>
+        <button id="salesRevenueStat" class="stat clickable-stat" type="button"><div id="salesSummaryRevenueLabel" class="label">Bu günün satışı</div><div id="filterRevenue" class="value">0 ₼</div></button>
         <div class="stat"><div id="salesSummaryProfitLabel" class="label">Bu günün qazancı</div><div id="filterProfit" class="value profit">0 ₼</div></div>
+        <div class="stat"><div id="salesSummaryPocketLabel" class="label">Bu günün cibi</div><div id="filterPocket" class="value profit">0 ₼</div></div>
+        <div class="stat"><div id="salesSummaryQtyLabel" class="label">Satılan mallar</div><div id="filterSoldQty" class="value">0</div></div>
       </div>
 
       <div id="salesList" class="sales-list"></div>
@@ -1992,6 +2034,22 @@
       <div class="card settings-card">
         <div class="settings-head">
           <div>
+            <div class="settings-title">PDF / JPG hesabatı</div>
+            <div class="meta">Hesabatda hansı bölmələrin görünəcəyini seç</div>
+          </div>
+        </div>
+        <div id="reportSectionsSettings" class="report-options">
+          <label class="check-card"><input type="checkbox" value="summary"> Satış + xərc</label>
+          <label class="check-card"><input type="checkbox" value="sales"> Satış</label>
+          <label class="check-card"><input type="checkbox" value="expenses"> Xərc</label>
+          <label class="check-card"><input type="checkbox" value="products"> Məhsul siyahısı</label>
+          <label class="check-card"><input type="checkbox" value="notes"> Qeyd</label>
+        </div>
+      </div>
+
+      <div class="card settings-card">
+        <div class="settings-head">
+          <div>
             <div class="settings-title">Fəaliyyət tarixçəsi</div>
             <div class="meta">Əlavə, düzəliş və silinmə qeydləri</div>
           </div>
@@ -2016,7 +2074,7 @@
               <option value="expenses">Xərclər</option>
               <option value="notes">Qeydlər</option>
               <option value="categories">Kateqoriyalar</option>
-              <option value="app_settings">Logo / favicon</option>
+              <option value="app_settings">Parametrlər</option>
             </select>
           </div>
 
@@ -2142,7 +2200,7 @@
         </div>
 
         <button id="openProductImagePicker" class="btn secondary full" type="button">＋ Şəkil əlavə et</button>
-        <div class="meta">Mobil telefonda Kamera / Foto qalereyası / Fayl seçimi açılacaq. Maksimum 5 şəkil.</div>
+        <div class="meta">Mobil telefonda Kamera / Foto qalereyası / Fayl seçimi açılacaq. Maksimum 5 şəkil, şəkillər 8MP-ə optimallaşdırılır.</div>
         <input id="productImagePicker" class="hidden" type="file" accept="image/*" multiple />
         <input id="productName" class="input" placeholder="Məhsulun adı (boş qala bilər)" />
         <div class="product-category-row">
@@ -2190,8 +2248,15 @@
         </div>
         <div>
           <label class="label">Satıldığı qiymət</label>
-          <input id="salePriceOverride" class="input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Məhsulun satış qiyməti" />
+          <input id="salePriceOverride" class="input" type="number" step="0.01" inputmode="decimal" placeholder="Məhsulun satış qiyməti" />
           <div id="salePriceFallbackHint" class="meta" style="margin-top:5px"></div>
+        </div>
+        <div>
+          <label class="label">Ödəniş</label>
+          <select id="salePaymentMethod" class="select">
+            <option value="cash">Nağd</option>
+            <option value="card">Kart</option>
+          </select>
         </div>
         <div>
           <label class="label">Satılan say</label>
@@ -2217,7 +2282,7 @@
       <form id="looseSaleForm" class="form" novalidate>
         <input id="looseSaleId" type="hidden" />
 
-        <div>
+        <div id="looseSaleImageBlock">
           <div class="label" style="margin-bottom:7px">
             Şəkillər <span id="looseSaleImageCount">(0/5)</span>
             <span class="meta" style="margin-left:5px">1-ci şəkil əsasdır</span>
@@ -2229,12 +2294,12 @@
         </div>
 
         <button id="openLooseSaleImagePicker" class="btn secondary full" type="button">＋ Şəkil əlavə et</button>
-        <div class="meta">Maksimum 5 şəkil. Birinci şəkil əsas şəkildir.</div>
+        <div id="looseSaleImageHelp" class="meta">Maksimum 5 şəkil. Birinci şəkil əsasdır, şəkillər 8MP-ə optimallaşdırılır.</div>
         <input id="looseSaleImagePicker" class="hidden" type="file" accept="image/*" multiple />
 
         <input id="looseSaleName" class="input" placeholder="Satış" value="Satış" />
 
-        <div>
+        <div id="looseSaleCategoryBlock">
           <label class="label">Kateqoriya</label>
           <select id="looseSaleCategory" class="select">
             <option value="">Avtomatik: Şalvar</option>
@@ -2244,20 +2309,28 @@
         <div class="row2">
           <div>
             <label class="label">Satış qiyməti</label>
-            <input id="looseSalePrice" class="input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Qeyd edilməyib" />
+            <input id="looseSalePrice" class="input" type="number" step="0.01" inputmode="decimal" placeholder="Qeyd edilməyib" />
           </div>
-          <div>
+          <div id="looseSaleCostBlock">
             <label class="label">Maya dəyəri</label>
             <input id="looseSaleCost" class="input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Qeyd edilməyib" />
           </div>
         </div>
 
-        <div>
+        <div id="looseSalePaymentBlock">
+          <label class="label">Ödəniş</label>
+          <select id="looseSalePaymentMethod" class="select">
+            <option value="cash">Nağd</option>
+            <option value="card">Kart</option>
+          </select>
+        </div>
+
+        <div id="looseSaleQuantityBlock">
           <label class="label">Satılan say</label>
           <input id="looseSaleQuantity" class="input" type="number" min="1" step="1" inputmode="numeric" placeholder="1" />
         </div>
 
-        <div class="row2">
+        <div id="looseSalePreviewGrid" class="row2">
           <div class="stat">
             <div class="label">Satış məbləği</div>
             <div id="looseSaleTotal" class="value">Qeyd edilməyib</div>
@@ -2278,7 +2351,7 @@
   <div id="pdfExportModal" class="modal-backdrop hidden">
     <div class="modal">
       <div class="modal-head">
-        <h3>PDF export</h3>
+        <h3>Hesabat export</h3>
         <button class="close" data-close="pdfExportModal" type="button">×</button>
       </div>
 
@@ -2294,12 +2367,32 @@
           </div>
         </div>
 
+        <div id="reportSectionsPreview" class="report-options"></div>
+
         <div class="meta">
-          Yalnız seçilən tarix aralığındakı satışlar PDF-ə daxil ediləcək.
+          Seçilən tarix aralığındakı gəlir, xərc və seçilmiş bölmələr hesabatda görünəcək.
         </div>
 
-        <button id="exportPdfBtn" class="btn full" type="submit">PDF yarat</button>
+        <div class="row2">
+          <button id="exportPdfBtn" class="btn full" type="submit">PDF yarat</button>
+          <button id="exportJpgBtn" class="btn secondary full" type="button">JPG yarat</button>
+        </div>
+        <button id="sharePdfBtn" class="btn secondary full" type="button">PDF paylaş</button>
       </form>
+    </div>
+  </div>
+
+  <div id="paymentSummaryModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Nağd / Kart</h3>
+        <button class="close" data-close="paymentSummaryModal" type="button">×</button>
+      </div>
+      <div class="summary-grid">
+        <div class="stat"><div class="label">Nağd</div><div id="paymentCashTotal" class="value">0 ₼</div></div>
+        <div class="stat"><div class="label">Kart</div><div id="paymentCardTotal" class="value">0 ₼</div></div>
+      </div>
+      <div class="meta">Bu məbləğlər cari satış tarix filterinə görə hesablanır.</div>
     </div>
   </div>
 
@@ -2324,7 +2417,7 @@
         </div>
 
         <button id="openExpenseImagePicker" class="btn secondary full" type="button">＋ Şəkil əlavə et</button>
-        <div class="meta">Mobil telefonda Kamera / Foto qalereyası / Fayl seçimi açılacaq. Maksimum 5 şəkil.</div>
+        <div class="meta">Mobil telefonda Kamera / Foto qalereyası / Fayl seçimi açılacaq. Maksimum 5 şəkil, şəkillər 8MP-ə optimallaşdırılır.</div>
         <input id="expenseImagePicker" class="hidden" type="file" accept="image/*" multiple />
 
         <input id="expenseTitle" class="input" placeholder="Xərc adı (məs: Paket, yanacaq, reklam)" />
@@ -2361,7 +2454,7 @@
         </div>
 
         <button id="openNoteImagePicker" class="btn secondary full" type="button">＋ Şəkil əlavə et</button>
-        <div class="meta">Şəkil opsionaldır. Maksimum 5 şəkil.</div>
+        <div class="meta">Şəkil opsionaldır. Maksimum 5 şəkil, şəkillər 8MP-ə optimallaşdırılır.</div>
         <input id="noteImagePicker" class="hidden" type="file" accept="image/*" multiple />
 
         <textarea id="noteText" class="textarea" placeholder="Qeyd yaz..." required></textarea>
@@ -2423,7 +2516,7 @@ let sales=[];
 let expenses=[];
 let notes=[];
 let activityLogs=[];
-let appSettings={logo_url:null,favicon_url:null};
+let appSettings={logo_url:null,favicon_url:null,report_sections:null};
 let currentSaleProduct=null;
 let editingImageUrls=[];
 let editingSaleImageUrls=[];
@@ -2462,6 +2555,15 @@ let expensesDeleteMode=false;
 let notesDeleteMode=false;
 
 const $=id=>document.getElementById(id);
+const TRUST_CATEGORY_NAME="Etibar";
+const DEFAULT_REPORT_SECTIONS=["summary","sales","expenses"];
+const REPORT_SECTION_LABELS={
+  summary:"Satış + xərc",
+  sales:"Satış",
+  expenses:"Xərc",
+  products:"Məhsul siyahısı",
+  notes:"Qeyd"
+};
 
 const escapeHtml=s=>String(s??"").replace(/[&<>"']/g,m=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
@@ -2732,10 +2834,14 @@ function setProductDate(mode){
 function updateSalesSummaryLabels(){
   let revenueLabel="Bu günün satışı";
   let profitLabel="Bu günün qazancı";
+  let pocketLabel="Bu günün cibi";
+  let qtyLabel="Bugünkü say";
 
   if(salesDateMode==="yesterday"){
     revenueLabel="Dünənin satışı";
     profitLabel="Dünənin qazancı";
+    pocketLabel="Dünənin cibi";
+    qtyLabel="Dünənin sayı";
   }else if(salesDateMode==="custom"){
     const value=$("salesSingleDate").value;
     if(value){
@@ -2746,17 +2852,25 @@ function updateSalesSummaryLabels(){
       }).format(date);
       revenueLabel=`${label} satışı`;
       profitLabel=`${label} qazancı`;
+      pocketLabel=`${label} cibi`;
+      qtyLabel=`${label} sayı`;
     }else{
       revenueLabel="Seçilən tarixin satışı";
       profitLabel="Seçilən tarixin qazancı";
+      pocketLabel="Seçilən tarixin cibi";
+      qtyLabel="Seçilən tarixin sayı";
     }
   }else if(salesDateMode==="all"){
     revenueLabel="Bütün satışlar";
     profitLabel="Ümumi qazanc";
+    pocketLabel="Ümumi cib";
+    qtyLabel="Ümumi say";
   }
 
   $("salesSummaryRevenueLabel").textContent=revenueLabel;
   $("salesSummaryProfitLabel").textContent=profitLabel;
+  $("salesSummaryPocketLabel").textContent=pocketLabel;
+  $("salesSummaryQtyLabel").textContent=qtyLabel;
 }
 
 function updateExpensesSummaryLabel(){
@@ -2936,17 +3050,18 @@ async function loadLogs(){
 
 async function loadAppSettings(){
   const {data,error}=await sb.from("app_settings")
-    .select("logo_url,favicon_url")
+    .select("*")
     .maybeSingle();
 
   if(error){
     console.warn("app_settings:",error.message);
-    appSettings={logo_url:null,favicon_url:null};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null};
   }else{
-    appSettings=data||{logo_url:null,favicon_url:null};
+    appSettings=data||{logo_url:null,favicon_url:null,report_sections:null};
   }
 
   applyBranding();
+  renderReportSectionControls();
 }
 
 async function loadAll(){
@@ -2975,6 +3090,10 @@ function findShalvarCategory(){
   })||null;
 }
 
+function findTrustCategory(){
+  return categories.find(category=>normalizeCategoryName(category.name)===normalizeCategoryName(TRUST_CATEGORY_NAME))||null;
+}
+
 async function ensureShalvarCategory(){
   const existing=findShalvarCategory();
   if(existing)return existing.id;
@@ -2991,6 +3110,69 @@ async function ensureShalvarCategory(){
 
   categories.unshift(data);
   return data.id;
+}
+
+async function ensureTrustCategory(){
+  const existing=findTrustCategory();
+  if(existing)return existing.id;
+
+  const {data,error}=await sb.from("categories")
+    .insert({
+      user_id:currentUser.id,
+      name:TRUST_CATEGORY_NAME
+    })
+    .select("id,name")
+    .single();
+
+  if(error)throw error;
+
+  categories.unshift(data);
+  renderCategoryOptions();
+  return data.id;
+}
+
+function selectedReportSections(){
+  const sections=Array.isArray(appSettings?.report_sections)
+    ? appSettings.report_sections.filter(section=>REPORT_SECTION_LABELS[section])
+    : [];
+  return sections.length?sections:[...DEFAULT_REPORT_SECTIONS];
+}
+
+function renderReportSectionControls(){
+  const selected=new Set(selectedReportSections());
+
+  document.querySelectorAll("#reportSectionsSettings input[type='checkbox']").forEach(input=>{
+    input.checked=selected.has(input.value);
+  });
+
+  if($("reportSectionsPreview")){
+    $("reportSectionsPreview").innerHTML=Object.entries(REPORT_SECTION_LABELS).map(([value,label])=>`
+      <label class="check-card">
+        <input type="checkbox" value="${escapeHtml(value)}" ${selected.has(value)?"checked":""}>
+        ${escapeHtml(label)}
+      </label>
+    `).join("");
+  }
+}
+
+async function saveReportSections(sections){
+  const clean=sections.filter(section=>REPORT_SECTION_LABELS[section]);
+  appSettings={...appSettings,report_sections:clean};
+  renderReportSectionControls();
+
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    report_sections:clean,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+
+  if(error){
+    toast(error.message);
+    return;
+  }
+
+  await loadLogs();
+  renderLogs();
 }
 
 function closeProductCategoryMenu(){
@@ -3202,11 +3384,6 @@ function addProductImageFiles(files){
   for(const file of incoming.slice(0,remaining)){
     if(!file.type.startsWith("image/"))continue;
 
-    if(file.size>5*1024*1024){
-      toast(`${file.name||"Şəkil"} 5MB-dan böyükdür və əlavə olunmadı.`);
-      continue;
-    }
-
     pendingProductImageFiles.push(file);
     pendingProductPreviewUrls.push(URL.createObjectURL(file));
   }
@@ -3399,11 +3576,6 @@ function addLooseSaleImageFiles(files){
   for(const file of incoming.slice(0,remaining)){
     if(!file.type.startsWith("image/"))continue;
 
-    if(file.size>5*1024*1024){
-      toast(`${file.name||"Şəkil"} 5MB-dan böyükdür və əlavə olunmadı.`);
-      continue;
-    }
-
     pendingSaleImageFiles.push(file);
     pendingSalePreviewUrls.push(URL.createObjectURL(file));
   }
@@ -3437,7 +3609,18 @@ function displayProfit(sale){
     : money(sale.profit);
 }
 
-function renderSales(){
+function saleTitle(sale){
+  if(sale?.products?.name && (!sale.product_name || sale.product_name==="Satış")){
+    return sale.products.name;
+  }
+  return sale?.product_name||sale?.products?.name||"Satış";
+}
+
+function paymentMethodLabel(value){
+  return value==="card"?"Kart":"Nağd";
+}
+
+function filteredSalesList(){
   const query=$("salesSearchInput").value.trim().toLowerCase();
   const category=$("salesCategoryFilter").value;
   const minAmount=$("salesMinAmount").value===""?null:Number($("salesMinAmount").value);
@@ -3448,7 +3631,7 @@ function renderSales(){
   const selectedDate=$("salesSingleDate").value;
 
   let list=sales.filter(sale=>{
-    const name=String(sale.product_name||sale.products?.name||"Satış").toLowerCase();
+    const name=String(saleTitle(sale)).toLowerCase();
     const revenue=Number(sale.total_revenue||0);
     const profit=Number(sale.profit||0);
     const qty=Number(sale.quantity||0);
@@ -3483,10 +3666,46 @@ function renderSales(){
     return new Date(b.created_at)-new Date(a.created_at);
   });
 
+  return list;
+}
+
+function expensesForSalesDate(){
+  const selectedDate=$("salesSingleDate").value;
+  return expenses.filter(expense=>dateMatches(expense.created_at,salesDateMode,selectedDate));
+}
+
+function currentPaymentSummary(list=filteredSalesList()){
+  return list.reduce((totals,sale)=>{
+    const amount=Number(sale.total_revenue||0);
+    if(sale.payment_method==="card"){
+      totals.card+=amount;
+    }else{
+      totals.cash+=amount;
+    }
+    return totals;
+  },{cash:0,card:0});
+}
+
+function updatePaymentSummaryModal(){
+  const totals=currentPaymentSummary();
+  $("paymentCashTotal").textContent=money(totals.cash);
+  $("paymentCardTotal").textContent=money(totals.card);
+}
+
+function renderSales(){
+  const list=filteredSalesList();
+
   $("salesCount").textContent=`${list.length} qeyd`;
   updateSalesSummaryLabels();
-  $("filterRevenue").textContent=money(list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0));
-  $("filterProfit").textContent=money(list.reduce((sum,s)=>sum+Number(s.profit||0),0));
+  const revenue=list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
+  const profit=list.reduce((sum,s)=>sum+Number(s.profit||0),0);
+  const soldQty=list.reduce((sum,s)=>sum+Number(s.quantity||0),0);
+  const expenseTotal=expensesForSalesDate().reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+  $("filterRevenue").textContent=money(revenue);
+  $("filterProfit").textContent=money(profit);
+  $("filterPocket").textContent=money(revenue-expenseTotal);
+  $("filterSoldQty").textContent=soldQty;
+  updatePaymentSummaryModal();
 
   $("salesList").innerHTML=list.length?list.map(sale=>`
     <div class="card sale">
@@ -3495,7 +3714,7 @@ function renderSales(){
           ? `<div style="position:relative;width:58px;height:58px">
                <img class="sale-thumb clickable-image"
                     src="${escapeHtml(saleImages(sale)[0])}"
-                    alt="${escapeHtml(sale.product_name||"Satış")}"
+                    alt="${escapeHtml(saleTitle(sale))}"
                     data-open-sale-images="${sale.id}">
                ${saleImages(sale).length>1
                  ? `<span class="product-image-badge">${saleImages(sale).length}</span>`
@@ -3506,7 +3725,7 @@ function renderSales(){
         <div>
           <div class="sale-top">
             <div>
-              <div class="sale-name">${escapeHtml(sale.product_name||sale.products?.name||"Satış")}</div>
+              <div class="sale-name">${escapeHtml(saleTitle(sale))}</div>
               <div class="meta">
                 ${formatDate(sale.created_at)} · ${sale.quantity||1} ədəd
                 ${saleCategoryName(sale)
@@ -3519,6 +3738,7 @@ function renderSales(){
 
           <div class="price-row">
             <span class="badge ${sale.sale_price_provided===false?"not-recorded":""}">Satış ${displayUnitSale(sale)}</span>
+            <span class="badge">${paymentMethodLabel(sale.payment_method)}</span>
             <span class="badge ${sale.cost_price_provided===false?"not-recorded":""}">Maya ${displayCost(sale)}</span>
             <span class="badge profit ${(sale.sale_price_provided===false||sale.cost_price_provided===false)?"not-recorded":""}">Qazanc ${displayProfit(sale)}</span>
           </div>
@@ -3638,11 +3858,6 @@ function addExpenseImageFiles(files){
 
   for(const file of incoming.slice(0,remaining)){
     if(!file.type.startsWith("image/"))continue;
-
-    if(file.size>5*1024*1024){
-      toast(`${file.name||"Şəkil"} 5MB-dan böyükdür və əlavə olunmadı.`);
-      continue;
-    }
 
     pendingExpenseImageFiles.push(file);
     pendingExpensePreviewUrls.push(URL.createObjectURL(file));
@@ -3822,11 +4037,6 @@ function addNoteImageFiles(files){
   for(const file of incoming.slice(0,remaining)){
     if(!file.type.startsWith("image/"))continue;
 
-    if(file.size>5*1024*1024){
-      toast(`${file.name||"Şəkil"} 5MB-dan böyükdür və əlavə olunmadı.`);
-      continue;
-    }
-
     pendingNoteImageFiles.push(file);
     pendingNotePreviewUrls.push(URL.createObjectURL(file));
   }
@@ -3927,7 +4137,7 @@ function logEntityText(entity){
     expenses:"Xərclər",
     notes:"Qeydlər",
     categories:"Kateqoriyalar",
-    app_settings:"Logo / favicon"
+    app_settings:"Parametrlər"
   })[entity]||entity;
 }
 
@@ -3975,6 +4185,7 @@ function renderAll(){
   renderCategories();
   renderLogs();
   renderStats();
+  renderReportSectionControls();
 }
 
 function showPage(page,options={}){
@@ -4036,13 +4247,57 @@ function updateProfitPreview(){
 async function uploadImage(file){
   if(!file)return null;
 
-  const extension=(file.name.split(".").pop()||"jpg").toLowerCase();
+  const prepared=await prepareImageForUpload(file);
+  const extension=(prepared.name.split(".").pop()||"jpg").toLowerCase();
   const path=`${currentUser.id}/${crypto.randomUUID()}.${extension}`;
 
-  const {error}=await sb.storage.from("product-images").upload(path,file,{upsert:false});
+  const {error}=await sb.storage.from("product-images").upload(path,prepared,{upsert:false});
   if(error)throw error;
 
   return sb.storage.from("product-images").getPublicUrl(path).data.publicUrl;
+}
+
+function canvasToBlob(canvas,type="image/jpeg",quality=.88){
+  return new Promise(resolve=>canvas.toBlob(resolve,type,quality));
+}
+
+async function prepareImageForUpload(file){
+  if(!file?.type?.startsWith("image/"))return file;
+
+  const url=URL.createObjectURL(file);
+  try{
+    const image=new Image();
+    image.decoding="async";
+    image.src=url;
+    await image.decode();
+
+    const maxPixels=8000000;
+    const sourceWidth=image.naturalWidth||image.width;
+    const sourceHeight=image.naturalHeight||image.height;
+    const pixels=sourceWidth*sourceHeight;
+    const scale=pixels>maxPixels?Math.sqrt(maxPixels/pixels):1;
+    const width=Math.max(1,Math.round(sourceWidth*scale));
+    const height=Math.max(1,Math.round(sourceHeight*scale));
+
+    const canvas=document.createElement("canvas");
+    canvas.width=width;
+    canvas.height=height;
+    const ctx=canvas.getContext("2d");
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,width,height);
+    ctx.drawImage(image,0,0,width,height);
+
+    const blob=await canvasToBlob(canvas,"image/jpeg",.88);
+    if(!blob)return file;
+
+    return new File(
+      [blob],
+      `${(file.name||"image").replace(/\.[^.]+$/,"")}.jpg`,
+      {type:"image/jpeg"}
+    );
+  }finally{
+    URL.revokeObjectURL(url);
+  }
 }
 
 function openEditProduct(id){
@@ -4134,6 +4389,7 @@ function openSale(id){
   $("saleProductInfo").classList.remove("hidden");
   $("saleQuantity").value=1;
   $("salePriceOverride").value="";
+  $("salePaymentMethod").value="cash";
   setSaleProduct(product);
   openModal("saleModal");
 }
@@ -4148,6 +4404,7 @@ function openDirectSale(){
   $("saleModalTitle").textContent="Yeni satış";
   $("saleQuantity").value=1;
   $("salePriceOverride").value="";
+  $("salePaymentMethod").value="cash";
   $("saleProductSelectWrap").classList.remove("hidden");
   $("saleProductInfo").classList.remove("hidden");
 
@@ -4165,7 +4422,7 @@ function getSaleEffectivePrice(){
   const overrideProvided=$("salePriceOverride").value!=="";
   const productPrice=Number(currentSaleProduct.sale_price||0);
   const price=overrideProvided
-    ? Math.max(0,Number($("salePriceOverride").value||0))
+    ? Number($("salePriceOverride").value||0)
     : productPrice;
 
   return {
@@ -4390,15 +4647,11 @@ async function uploadBrandAsset(file,type){
     return;
   }
 
-  if(file.size>5*1024*1024){
-    toast("Şəkil maksimum 5MB ola bilər.");
-    return;
-  }
-
-  const extension=(file.name.split(".").pop()||"png").toLowerCase();
+  const prepared=await prepareImageForUpload(file);
+  const extension=(prepared.name.split(".").pop()||"png").toLowerCase();
   const path=`${currentUser.id}/branding/${type}-${Date.now()}.${extension}`;
 
-  const {error:uploadError}=await sb.storage.from("product-images").upload(path,file,{upsert:false});
+  const {error:uploadError}=await sb.storage.from("product-images").upload(path,prepared,{upsert:false});
   if(uploadError){
     toast(uploadError.message);
     return;
@@ -4757,7 +5010,6 @@ function renderMultiSaleProducts(){
             <label class="label">Satıldığı qiymət</label>
             <input class="input"
                    type="number"
-                   min="0"
                    step="0.01"
                    inputmode="decimal"
                    data-multi-price="${product.id}"
@@ -4855,10 +5107,6 @@ $("multiSaleImagePicker").addEventListener("change",()=>{
       toast("Yalnız şəkil faylı seçin.");
       continue;
     }
-    if(file.size>5*1024*1024){
-      toast("Hər şəkil maksimum 5 MB ola bilər.");
-      continue;
-    }
     valid.push(file);
     if(valid.length===5)break;
   }
@@ -4904,7 +5152,7 @@ $("confirmMultiSale").addEventListener("click",async()=>{
       !Number.isFinite(Number(draft.salePrice))
     )
       ? Number(product.sale_price||0)
-      : Math.max(0,Number(draft.salePrice));
+      : Number(draft.salePrice);
 
     const quantity=Math.max(1,parseInt(draft.quantity||1,10)||1);
     const productSaleImages=productImages(product);
@@ -4931,6 +5179,7 @@ $("confirmMultiSale").addEventListener("click",async()=>{
       unit_cost_price:Number(product.cost_price||0),
       sale_price_provided:true,
       cost_price_provided:true,
+      payment_method:"cash",
       image_url:images[0]||null,
       image_urls:images,
       note:null
@@ -5262,6 +5511,7 @@ $("saleForm").addEventListener("submit",async event=>{
     unit_cost_price:costPrice,
     sale_price_provided:salePriceProvided,
     cost_price_provided:costPriceProvided,
+    payment_method:$("salePaymentMethod").value||"cash",
     image_url:images[0]||null,
     image_urls:images
   });
@@ -5281,6 +5531,7 @@ function resetLooseSaleForm(){
   $("looseSaleForm").reset();
   $("looseSaleId").value="";
   $("looseSaleName").value="Satış";
+  $("looseSalePaymentMethod").value="cash";
 
   pendingSalePreviewUrls.forEach(url=>URL.revokeObjectURL(url));
   pendingSalePreviewUrls=[];
@@ -5294,7 +5545,28 @@ function resetLooseSaleForm(){
   $("looseSaleCategory").value=defaultCategory?.id||"";
 
   $("looseSaleModalTitle").textContent="Sərbəst satış";
+  updateLooseSaleModeFields();
   updateLooseSalePreview();
+}
+
+function isTrustCategoryId(categoryId){
+  const trust=findTrustCategory();
+  return !!trust && categoryId===trust.id;
+}
+
+function updateLooseSaleModeFields(){
+  const isTrust=saleEntryMode==="trust" || isTrustCategoryId($("looseSaleCategory").value);
+  $("looseSaleImageBlock").classList.toggle("hidden",isTrust);
+  $("openLooseSaleImagePicker").classList.toggle("hidden",isTrust);
+  $("looseSaleImageHelp").classList.toggle("hidden",isTrust);
+  $("looseSaleCategoryBlock").classList.toggle("hidden",isTrust);
+  $("looseSaleCostBlock").classList.toggle("hidden",isTrust);
+  $("looseSalePaymentBlock").classList.toggle("hidden",isTrust);
+  $("looseSaleQuantityBlock").classList.toggle("hidden",isTrust);
+  $("looseSalePreviewGrid").classList.toggle("hidden",isTrust);
+  $("looseSaleNote").classList.toggle("hidden",isTrust);
+  $("looseSaleName").placeholder=isTrust?"Başlıq":"Satış";
+  $("looseSalePrice").placeholder=isTrust?"Gəlir məbləği":"Qeyd edilməyib";
 }
 
 function updateLooseSalePreview(){
@@ -5316,21 +5588,40 @@ function updateLooseSalePreview(){
 
 function openSaleEntry(mode="loose"){
   resetLooseSaleForm();
-  saleEntryMode=mode==="regular"?"regular":"loose";
+  saleEntryMode=mode==="regular"?"regular":mode==="trust"?"trust":"loose";
 
   if(saleEntryMode==="regular"){
     $("looseSaleModalTitle").textContent="Satış əlavə et";
     $("saveLooseSaleBtn").textContent="Satış və məhsul əlavə et";
+  }else if(saleEntryMode==="trust"){
+    $("looseSaleModalTitle").textContent="Etibar gəliri";
+    $("saveLooseSaleBtn").textContent="Gəliri yadda saxla";
   }else{
     $("looseSaleModalTitle").textContent="Sərbəst satış";
     $("saveLooseSaleBtn").textContent="Yadda saxla";
   }
 
+  updateLooseSaleModeFields();
   openModal("looseSaleModal");
 }
 
 function openLooseSale(){
   openSaleEntry("loose");
+}
+
+async function openTrustIncome(){
+  resetLooseSaleForm();
+  const trustId=await ensureTrustCategory();
+  saleEntryMode="trust";
+  $("looseSaleModalTitle").textContent="Etibar gəliri";
+  $("saveLooseSaleBtn").textContent="Gəliri yadda saxla";
+  $("looseSaleName").value=TRUST_CATEGORY_NAME;
+  $("looseSaleCategory").value=trustId;
+  $("looseSaleCost").value="";
+  $("looseSaleQuantity").value=1;
+  updateLooseSaleModeFields();
+  updateLooseSalePreview();
+  openModal("looseSaleModal");
 }
 
 function openEditSale(id){
@@ -5343,24 +5634,39 @@ function openEditSale(id){
   $("looseSaleModalTitle").textContent="Satışı düzəlt";
   $("saveLooseSaleBtn").textContent="Yadda saxla";
   $("looseSaleId").value=sale.id;
-  $("looseSaleName").value=sale.product_name||"Satış";
+  $("looseSaleName").value=saleTitle(sale);
   $("looseSaleQuantity").value=sale.quantity||1;
   $("looseSalePrice").value=(sale.sale_price_provided===false||Number(sale.unit_sale_price||0)===0)?"":Number(sale.unit_sale_price||0);
   $("looseSaleCost").value=(sale.cost_price_provided===false||Number(sale.unit_cost_price||0)===0)?"":Number(sale.unit_cost_price||0);
   $("looseSaleNote").value=sale.note||"";
   $("looseSaleCategory").value=sale.category_id||sale.products?.category_id||findShalvarCategory()?.id||"";
+  $("looseSalePaymentMethod").value=sale.payment_method||"cash";
+  if(isTrustCategoryId($("looseSaleCategory").value))saleEntryMode="trust";
 
   editingSaleImageUrls=saleImages(sale);
   renderLooseSaleImagePreviews();
 
   updateLooseSalePreview();
+  updateLooseSaleModeFields();
   openModal("looseSaleModal");
 }
 
 $("addLooseSale").addEventListener("click",openLooseSale);
+$("addTrustIncome").addEventListener("click",openTrustIncome);
 
 ["looseSalePrice","looseSaleCost","looseSaleQuantity"].forEach(id=>{
   $(id).addEventListener("input",updateLooseSalePreview);
+});
+$("looseSaleCategory").addEventListener("change",()=>{
+  if(isTrustCategoryId($("looseSaleCategory").value)){
+    saleEntryMode="trust";
+    $("looseSaleCost").value="";
+    $("looseSaleQuantity").value=1;
+  }else if(saleEntryMode==="trust"){
+    saleEntryMode="loose";
+  }
+  updateLooseSaleModeFields();
+  updateLooseSalePreview();
 });
 
 $("openLooseSaleImagePicker").addEventListener("click",()=>{
@@ -5395,15 +5701,18 @@ $("looseSaleForm").addEventListener("submit",async event=>{
     const imageUrls=[...editingSaleImageUrls,...uploadedUrls].filter(Boolean).slice(0,5);
     const imageUrl=imageUrls[0]||null;
 
+    const isTrust=saleEntryMode==="trust" || isTrustCategoryId($("looseSaleCategory").value);
     const salePriceProvided=$("looseSalePrice").value!=="";
-    const costPriceProvided=$("looseSaleCost").value!=="";
+    const costPriceProvided=!isTrust && $("looseSaleCost").value!=="";
 
-    const name=$("looseSaleName").value.trim()||"Satış";
-    const quantity=Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1);
+    const name=$("looseSaleName").value.trim()||(isTrust?TRUST_CATEGORY_NAME:"Satış");
+    const quantity=isTrust?1:Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1);
     const salePrice=Number($("looseSalePrice").value||0);
-    const costPrice=Number($("looseSaleCost").value||0);
+    const costPrice=isTrust?0:Number($("looseSaleCost").value||0);
     const note=$("looseSaleNote").value.trim()||null;
-    const categoryId=$("looseSaleCategory").value||await ensureShalvarCategory();
+    const categoryId=isTrust
+      ? ($("looseSaleCategory").value||await ensureTrustCategory())
+      : ($("looseSaleCategory").value||await ensureShalvarCategory());
 
     const salePayload={
       product_name:name,
@@ -5413,8 +5722,9 @@ $("looseSaleForm").addEventListener("submit",async event=>{
       unit_cost_price:costPrice,
       sale_price_provided:salePriceProvided,
       cost_price_provided:costPriceProvided,
-      image_url:imageUrl,
-      image_urls:imageUrls,
+      payment_method:$("looseSalePaymentMethod").value||"cash",
+      image_url:isTrust?null:imageUrl,
+      image_urls:isTrust?[]:imageUrls,
       note
     };
 
@@ -5434,8 +5744,8 @@ $("looseSaleForm").addEventListener("submit",async event=>{
         user_id:currentUser.id,
         category_id:categoryId,
         name,
-        sale_price:salePrice,
-        cost_price:costPrice,
+        sale_price:Math.max(0,salePrice),
+        cost_price:Math.max(0,costPrice),
         note,
         image_url:imageUrl,
         image_urls:imageUrls
@@ -5526,130 +5836,268 @@ $("categoryForm").addEventListener("submit",async event=>{
   toast("Kateqoriya əlavə edildi");
 });
 
+$("reportSectionsSettings").addEventListener("change",async()=>{
+  const sections=Array.from(document.querySelectorAll("#reportSectionsSettings input:checked")).map(input=>input.value);
+  await saveReportSections(sections);
+});
 
-/* PDF export */
+
+/* Report export */
 
 function dateOnlyInRange(value,from,to){
   const date=isoLocalDate(new Date(value));
   return date>=from && date<=to;
 }
 
-function buildPdfReport(list,from,to){
+function reportData(from,to){
+  return {
+    sales:sales.filter(sale=>dateOnlyInRange(sale.created_at,from,to)).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)),
+    expenses:expenses.filter(expense=>dateOnlyInRange(expense.created_at,from,to)).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)),
+    notes:notes.filter(note=>dateOnlyInRange(note.created_at,from,to)).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)),
+    products:[...products].sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"az"))
+  };
+}
+
+function reportTable(headers,rows){
+  if(!rows.length)return '<div class="pdf-report-sub">Məlumat yoxdur.</div>';
+  return `<table class="pdf-table">
+    <thead><tr>${headers.map(header=>`<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+  </table>`;
+}
+
+function reportSection(title,content){
+  return `<div class="pdf-section"><h2>${escapeHtml(title)}</h2>${content}</div>`;
+}
+
+function buildReport(from,to,sections=selectedReportSections()){
+  const data=reportData(from,to);
+  const reportSections=new Set(sections);
   const report=document.createElement("div");
   report.className="pdf-report";
 
-  const revenue=list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const cost=list.reduce((sum,s)=>sum+Number(s.total_cost||0),0);
-  const profit=list.reduce((sum,s)=>sum+Number(s.profit||0),0);
+  const revenue=data.sales.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
+  const cost=data.sales.reduce((sum,s)=>sum+Number(s.total_cost||0),0);
+  const profit=data.sales.reduce((sum,s)=>sum+Number(s.profit||0),0);
+  const expenseTotal=data.expenses.reduce((sum,e)=>sum+Number(e.amount||0),0);
+  const pocket=revenue-expenseTotal;
+  const soldQty=data.sales.reduce((sum,s)=>sum+Number(s.quantity||0),0);
+  const showCost=Math.abs(cost)>0.000001;
+  const showProfit=Math.abs(profit)>0.000001;
 
   const logo=appSettings?.logo_url
     ? `<img class="pdf-report-logo" src="${escapeHtml(appSettings.logo_url)}" alt="Logo">`
     : `<div style="width:50px;height:50px;border-radius:10px;background:#0f172a;color:#fff;display:grid;place-items:center;font-weight:800">M</div>`;
+
+  const blocks=[];
+
+  if(reportSections.has("summary")){
+    blocks.push(reportSection("Satış + xərc",`
+      <div class="pdf-summary">
+        <div><div class="pdf-summary-label">Satış</div><div class="pdf-summary-value">${money(revenue)}</div></div>
+        <div><div class="pdf-summary-label">Xərc</div><div class="pdf-summary-value">${money(expenseTotal)}</div></div>
+        <div><div class="pdf-summary-label">Cib</div><div class="pdf-summary-value">${money(pocket)}</div></div>
+        <div><div class="pdf-summary-label">Satılan say</div><div class="pdf-summary-value">${soldQty}</div></div>
+        ${showCost?`<div><div class="pdf-summary-label">Maya</div><div class="pdf-summary-value">${money(cost)}</div></div>`:""}
+        ${showProfit?`<div><div class="pdf-summary-label">Qazanc</div><div class="pdf-summary-value">${money(profit)}</div></div>`:""}
+      </div>
+    `));
+  }
+
+  if(reportSections.has("sales")){
+    const headers=["Tarix","Ad","Say","Ödəniş","Satış"];
+    if(showCost)headers.push("Maya");
+    if(showProfit)headers.push("Qazanc");
+
+    const rows=data.sales.map(sale=>{
+      const row=[
+        formatDate(sale.created_at),
+        saleTitle(sale),
+        String(sale.quantity||1),
+        paymentMethodLabel(sale.payment_method),
+        displaySalePrice(sale)
+      ];
+      if(showCost)row.push(displayCost(sale));
+      if(showProfit)row.push(displayProfit(sale));
+      return row;
+    });
+    blocks.push(reportSection("Satışlar",reportTable(headers,rows)));
+  }
+
+  if(reportSections.has("expenses")){
+    blocks.push(reportSection("Xərclər",reportTable(
+      ["Tarix","Ad","Məbləğ","Qeyd"],
+      data.expenses.map(expense=>[
+        formatDate(expense.created_at),
+        expense.title||"Xərc",
+        money(expense.amount),
+        expense.note||""
+      ])
+    )));
+  }
+
+  if(reportSections.has("products")){
+    const productCost=products.reduce((sum,product)=>sum+Number(product.cost_price||0),0);
+    const productProfit=products.reduce((sum,product)=>sum+Number(product.sale_price||0)-Number(product.cost_price||0),0);
+    const productHeaders=["Məhsul","Kateqoriya","Satış"];
+    if(Math.abs(productCost)>0.000001)productHeaders.push("Maya");
+    if(Math.abs(productProfit)>0.000001)productHeaders.push("Qazanc");
+
+    blocks.push(reportSection("Məhsul siyahısı",reportTable(
+      productHeaders,
+      data.products.map(product=>{
+        const row=[
+          product.name||"Adsız məhsul",
+          product.categories?.name||"",
+          money(product.sale_price)
+        ];
+        if(Math.abs(productCost)>0.000001)row.push(money(product.cost_price));
+        if(Math.abs(productProfit)>0.000001)row.push(money(Number(product.sale_price||0)-Number(product.cost_price||0)));
+        return row;
+      })
+    )));
+  }
+
+  if(reportSections.has("notes")){
+    blocks.push(reportSection("Qeydlər",reportTable(
+      ["Tarix","Qeyd"],
+      data.notes.map(note=>[formatDate(note.created_at),note.body||"Qeyd"])
+    )));
+  }
 
   report.innerHTML=`
     <div class="pdf-report-header">
       <div style="display:flex;align-items:center;gap:10px">
         ${logo}
         <div>
-          <h1>Satış hesabatı</h1>
+          <h1>Mal uçotu hesabatı</h1>
           <div class="pdf-report-sub">${escapeHtml(from)} - ${escapeHtml(to)}</div>
         </div>
       </div>
-      <div class="pdf-report-sub">${list.length} satış</div>
+      <div class="pdf-report-sub">${data.sales.length} satış · ${data.expenses.length} xərc</div>
     </div>
-
-    <div class="pdf-summary">
-      <div><div class="pdf-summary-label">Satış</div><div class="pdf-summary-value">${money(revenue)}</div></div>
-      <div><div class="pdf-summary-label">Maya</div><div class="pdf-summary-value">${money(cost)}</div></div>
-      <div><div class="pdf-summary-label">Qazanc</div><div class="pdf-summary-value">${money(profit)}</div></div>
-    </div>
-
-    <table class="pdf-table">
-      <thead>
-        <tr>
-          <th>Tarix</th>
-          <th>Ad</th>
-          <th>Say</th>
-          <th>Satış</th>
-          <th>Maya</th>
-          <th>Qazanc</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${list.map(sale=>`
-          <tr>
-            <td>${escapeHtml(formatDate(sale.created_at))}</td>
-            <td>${escapeHtml(sale.product_name||sale.products?.name||"Satış")}</td>
-            <td>${escapeHtml(sale.quantity||1)}</td>
-            <td>${escapeHtml(displaySalePrice(sale))}</td>
-            <td>${escapeHtml(displayCost(sale))}</td>
-            <td>${escapeHtml(displayProfit(sale))}</td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
+    ${blocks.join("")}
   `;
 
   return report;
+}
+
+function selectedReportSectionsFromModal(){
+  const checked=Array.from(document.querySelectorAll("#reportSectionsPreview input:checked")).map(input=>input.value);
+  return checked.length?checked:selectedReportSections();
+}
+
+function validateReportDates(){
+  const from=$("pdfDateFrom").value;
+  const to=$("pdfDateTo").value;
+
+  if(!from||!to){
+    toast("Tarix aralığını seçin.");
+    return null;
+  }
+
+  if(from>to){
+    toast("Başlanğıc tarix son tarixdən böyük ola bilməz.");
+    return null;
+  }
+
+  return {from,to,sections:selectedReportSectionsFromModal()};
+}
+
+function downloadBlob(blob,filename){
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement("a");
+  link.href=url;
+  link.download=filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+async function renderReportElement(from,to,sections){
+  const report=buildReport(from,to,sections);
+  document.body.appendChild(report);
+  return report;
+}
+
+async function exportReportPdf({from,to,sections,share=false}){
+  const report=await renderReportElement(from,to,sections);
+  try{
+    const worker=html2pdf().set({
+      margin:8,
+      filename:`hesabat-${from}-${to}.pdf`,
+      image:{type:"jpeg",quality:0.96},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
+      jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
+      pagebreak:{mode:["css","legacy"]}
+    }).from(report);
+
+    if(share){
+      const blob=await worker.outputPdf("blob");
+      const file=new File([blob],`hesabat-${from}-${to}.pdf`,{type:"application/pdf"});
+      if(navigator.canShare?.({files:[file]})){
+        await navigator.share({title:"Mal uçotu hesabatı",files:[file]});
+      }else{
+        downloadBlob(blob,file.name);
+        toast("Paylaşma dəstəklənmir, PDF endirildi.");
+      }
+    }else{
+      await worker.save();
+    }
+  }finally{
+    report.remove();
+  }
+}
+
+async function exportReportJpg({from,to,sections}){
+  const report=await renderReportElement(from,to,sections);
+  try{
+    const canvas=await html2canvas(report,{scale:2,useCORS:true,backgroundColor:"#ffffff"});
+    const blob=await canvasToBlob(canvas,"image/jpeg",.94);
+    if(blob)downloadBlob(blob,`hesabat-${from}-${to}.jpg`);
+  }finally{
+    report.remove();
+  }
+}
+
+async function runReportExport(kind){
+  const config=validateReportDates();
+  if(!config)return;
+
+  const buttons=[$("exportPdfBtn"),$("exportJpgBtn"),$("sharePdfBtn")];
+  buttons.forEach(button=>button.disabled=true);
+
+  try{
+    if(kind==="jpg"){
+      await exportReportJpg(config);
+    }else{
+      await exportReportPdf({...config,share:kind==="share"});
+    }
+  }catch(error){
+    console.error(error);
+    toast("Hesabat yaradılmadı.");
+  }finally{
+    buttons.forEach(button=>button.disabled=false);
+    document.querySelectorAll(".pdf-report").forEach(el=>el.remove());
+  }
 }
 
 $("openPdfExport").addEventListener("click",()=>{
   const today=isoLocalDate(new Date());
   $("pdfDateFrom").value=today;
   $("pdfDateTo").value=today;
+  renderReportSectionControls();
   openModal("pdfExportModal");
 });
 
 $("pdfExportForm").addEventListener("submit",async event=>{
   event.preventDefault();
-
-  const from=$("pdfDateFrom").value;
-  const to=$("pdfDateTo").value;
-
-  if(!from||!to){
-    toast("Tarix aralığını seçin.");
-    return;
-  }
-
-  if(from>to){
-    toast("Başlanğıc tarix son tarixdən böyük ola bilməz.");
-    return;
-  }
-
-  const list=sales
-    .filter(sale=>dateOnlyInRange(sale.created_at,from,to))
-    .sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-
-  if(!list.length){
-    toast("Bu tarix aralığında satış yoxdur.");
-    return;
-  }
-
-  $("exportPdfBtn").disabled=true;
-
-  try{
-    const report=buildPdfReport(list,from,to);
-    document.body.appendChild(report);
-
-    await html2pdf().set({
-      margin:8,
-      filename:`satislar-${from}-${to}.pdf`,
-      image:{type:"jpeg",quality:0.96},
-      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
-      jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
-      pagebreak:{mode:["css","legacy"]}
-    }).from(report).save();
-
-    report.remove();
-    closeModal("pdfExportModal");
-  }catch(error){
-    console.error(error);
-    toast("PDF yaradılmadı.");
-  }finally{
-    $("exportPdfBtn").disabled=false;
-    document.querySelectorAll(".pdf-report").forEach(el=>el.remove());
-  }
+  await runReportExport("pdf");
 });
+
+$("exportJpgBtn").addEventListener("click",()=>runReportExport("jpg"));
+$("sharePdfBtn").addEventListener("click",()=>runReportExport("share"));
 
 
 /* Activity log filters */
@@ -5701,6 +6149,11 @@ $("globalSearch").addEventListener("input",()=>{
     $("logSearch").value=value;
     renderLogs();
   }
+});
+
+$("salesRevenueStat").addEventListener("click",()=>{
+  updatePaymentSummaryModal();
+  openModal("paymentSummaryModal");
 });
 
 

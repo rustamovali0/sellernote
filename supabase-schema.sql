@@ -52,10 +52,11 @@ create table if not exists public.sales (
   category_id uuid references public.categories(id) on delete set null,
   product_name text not null default 'Satis',
   quantity integer not null default 1 check (quantity > 0),
-  unit_sale_price numeric(12,2) not null default 0 check (unit_sale_price >= 0),
+  unit_sale_price numeric(12,2) not null default 0,
   unit_cost_price numeric(12,2) not null default 0 check (unit_cost_price >= 0),
   sale_price_provided boolean not null default true,
   cost_price_provided boolean not null default true,
+  payment_method text not null default 'cash' check (payment_method in ('cash','card')),
   total_revenue numeric(12,2) generated always as (
     case when sale_price_provided then quantity * unit_sale_price else 0 end
   ) stored,
@@ -84,6 +85,19 @@ create index if not exists sales_user_category_idx
 
 create index if not exists sales_user_product_idx
   on public.sales (user_id, product_id);
+
+alter table public.sales
+  drop constraint if exists sales_unit_sale_price_check;
+
+alter table public.sales
+  add column if not exists payment_method text not null default 'cash';
+
+alter table public.sales
+  drop constraint if exists sales_payment_method_check;
+
+alter table public.sales
+  add constraint sales_payment_method_check
+  check (payment_method in ('cash','card'));
 
 create table if not exists public.expenses (
   id uuid primary key default gen_random_uuid(),
@@ -120,9 +134,13 @@ create table if not exists public.app_settings (
   user_id uuid primary key references auth.users(id) on delete cascade,
   logo_url text,
   favicon_url text,
+  report_sections text[] not null default array['summary','sales','expenses'],
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.app_settings
+  add column if not exists report_sections text[] not null default array['summary','sales','expenses'];
 
 create table if not exists public.activity_logs (
   id uuid primary key default gen_random_uuid(),
@@ -160,7 +178,7 @@ as $$
       when 'expenses' then coalesce(row_data->>'title', 'Xerc')
       when 'notes' then coalesce(row_data->>'body', 'Qeyd')
       when 'categories' then coalesce(row_data->>'name', 'Kateqoriya')
-      when 'app_settings' then 'Logo / favicon'
+      when 'app_settings' then 'Parametrler'
       else entity_type
     end
   );
@@ -391,7 +409,7 @@ values (
   'product-images',
   'product-images',
   true,
-  5242880,
+  12582912,
   array['image/jpeg','image/png','image/webp','image/gif','image/svg+xml']
 )
 on conflict (id) do update set
