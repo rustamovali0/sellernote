@@ -135,12 +135,16 @@ create table if not exists public.app_settings (
   logo_url text,
   favicon_url text,
   report_sections text[] not null default array['summary','sales','expenses'],
+  pocket_overrides jsonb not null default '{}',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 alter table public.app_settings
   add column if not exists report_sections text[] not null default array['summary','sales','expenses'];
+
+alter table public.app_settings
+  add column if not exists pocket_overrides jsonb not null default '{}';
 
 create table if not exists public.activity_logs (
   id uuid primary key default gen_random_uuid(),

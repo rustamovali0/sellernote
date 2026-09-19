@@ -1852,7 +1852,7 @@
       <div class="summary-grid">
         <button id="salesRevenueStat" class="stat clickable-stat" type="button"><div id="salesSummaryRevenueLabel" class="label">Bu günün satışı</div><div id="filterRevenue" class="value">0 ₼</div></button>
         <div class="stat"><div id="salesSummaryProfitLabel" class="label">Bu günün qazancı</div><div id="filterProfit" class="value profit">0 ₼</div></div>
-        <div class="stat"><div id="salesSummaryPocketLabel" class="label">Bu günün cibi</div><div id="filterPocket" class="value profit">0 ₼</div></div>
+        <button id="salesPocketStat" class="stat clickable-stat" type="button"><div id="salesSummaryPocketLabel" class="label">Bu günün cibi</div><div id="filterPocket" class="value profit">0 ₼</div></button>
         <div class="stat"><div id="salesSummaryQtyLabel" class="label">Satılan mallar</div><div id="filterSoldQty" class="value">0</div></div>
       </div>
 
@@ -1986,7 +1986,7 @@
 
     <section id="categoriesPage" class="hidden">
       <div class="section-head">
-        <h2>Parametrlər</h2>
+        <h2>Ayarlar</h2>
       </div>
 
       <div class="card settings-card">
@@ -2074,7 +2074,7 @@
               <option value="expenses">Xərclər</option>
               <option value="notes">Qeydlər</option>
               <option value="categories">Kateqoriyalar</option>
-              <option value="app_settings">Parametrlər</option>
+              <option value="app_settings">Ayarlar</option>
             </select>
           </div>
 
@@ -2105,7 +2105,7 @@
       <button class="nav-btn" data-page="dashboard" type="button">Məhsullar</button>
       <button class="nav-btn" data-page="expenses" type="button">Xərclər</button>
       <button class="nav-btn" data-page="notes" type="button">Qeydlər</button>
-      <button class="nav-btn" data-page="categories" type="button">Parametrlər</button>
+      <button class="nav-btn" data-page="categories" type="button">Ayarlar</button>
     </nav>
 
     <button id="addProductBtn" class="floating-add hidden" type="button" aria-label="Məhsul əlavə et">+</button>
@@ -2396,6 +2396,29 @@
     </div>
   </div>
 
+  <div id="pocketEditModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Cibi dəyiş</h3>
+        <button class="close" data-close="pocketEditModal" type="button">×</button>
+      </div>
+      <form id="pocketEditForm" class="form" novalidate>
+        <div class="summary-grid">
+          <div class="stat"><div class="label">Avtomatik cib</div><div id="pocketAutoValue" class="value">0 ₼</div></div>
+          <div class="stat"><div class="label">Cari cib</div><div id="pocketCurrentValue" class="value profit">0 ₼</div></div>
+        </div>
+        <div>
+          <label id="pocketEditLabel" class="label">Cib məbləği</label>
+          <input id="pocketOverrideInput" class="input" type="number" step="0.01" inputmode="decimal" placeholder="Məs: 150" />
+        </div>
+        <div class="row2">
+          <button id="savePocketOverrideBtn" class="btn full" type="submit">Yadda saxla</button>
+          <button id="clearPocketOverrideBtn" class="btn secondary full" type="button">Avtomatik hesabla</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="expenseModal" class="modal-backdrop hidden">
     <div class="modal">
       <div class="modal-head">
@@ -2516,8 +2539,9 @@ let sales=[];
 let expenses=[];
 let notes=[];
 let activityLogs=[];
-let appSettings={logo_url:null,favicon_url:null,report_sections:null};
+let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null};
 let currentSaleProduct=null;
+let displayedLocalDate=null;
 let editingImageUrls=[];
 let editingSaleImageUrls=[];
 let editingExpenseImageUrls=[];
@@ -2609,6 +2633,9 @@ function isoLocalDate(date){
 
 function setToday(){
   const now=new Date();
+  const today=isoLocalDate(now);
+  const dateChanged=displayedLocalDate && displayedLocalDate!==today;
+  displayedLocalDate=today;
   const months=[
     "YANVAR","FEVRAL","MART","APREL","MAY","IYUN",
     "IYUL","AVQUST","SENTYABR","OKTYABR","NOYABR","DEKABR"
@@ -2627,6 +2654,18 @@ function setToday(){
     <span class="today-day">${day} ${month}</span>
     <span class="today-time">${weekday} · ${time}</span>
   `;
+
+  if(dateChanged && currentUser){
+    refreshForDateChange();
+  }
+}
+
+function refreshForDateChange(){
+  if(salesDateMode==="today")renderSales();
+  if(expensesDateMode==="today")renderExpenses();
+  if(notesDateMode==="today")renderNotes();
+  if(productDateMode==="today")renderProducts();
+  renderStats();
 }
 
 function fitValues(){
@@ -3055,9 +3094,9 @@ async function loadAppSettings(){
 
   if(error){
     console.warn("app_settings:",error.message);
-    appSettings={logo_url:null,favicon_url:null,report_sections:null};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null};
   }else{
-    appSettings=data||{logo_url:null,favicon_url:null,report_sections:null};
+    appSettings=data||{logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null};
   }
 
   applyBranding();
@@ -3674,6 +3713,82 @@ function expensesForSalesDate(){
   return expenses.filter(expense=>dateMatches(expense.created_at,salesDateMode,selectedDate));
 }
 
+function currentPocketKey(){
+  if(salesDateMode==="today")return `date:${isoLocalDate(new Date())}`;
+  if(salesDateMode==="yesterday"){
+    const yesterday=new Date();
+    yesterday.setDate(yesterday.getDate()-1);
+    return `date:${isoLocalDate(yesterday)}`;
+  }
+  if(salesDateMode==="custom"){
+    return $("salesSingleDate").value?`date:${$("salesSingleDate").value}`:"custom";
+  }
+  return "all";
+}
+
+function pocketOverrides(){
+  return appSettings?.pocket_overrides && typeof appSettings.pocket_overrides==="object"
+    ? appSettings.pocket_overrides
+    : {};
+}
+
+function pocketOverrideValue(){
+  const value=pocketOverrides()[currentPocketKey()];
+  return Number.isFinite(Number(value))?Number(value):null;
+}
+
+function computedPocketValue(list=filteredSalesList()){
+  const revenue=list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
+  const expenseTotal=expensesForSalesDate().reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+  return revenue-expenseTotal;
+}
+
+function displayedPocketValue(list=filteredSalesList()){
+  const override=pocketOverrideValue();
+  return override===null?computedPocketValue(list):override;
+}
+
+async function savePocketOverride(value){
+  const next={...pocketOverrides()};
+  const key=currentPocketKey();
+  if(value===null){
+    delete next[key];
+  }else{
+    next[key]=Number(value);
+  }
+
+  appSettings={...appSettings,pocket_overrides:next};
+
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    pocket_overrides:next,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+
+  if(error){
+    toast(error.message);
+    return false;
+  }
+
+  await loadLogs();
+  renderLogs();
+  renderSales();
+  return true;
+}
+
+function openPocketEditModal(){
+  const list=filteredSalesList();
+  const auto=computedPocketValue(list);
+  const override=pocketOverrideValue();
+  const shown=override===null?auto:override;
+
+  $("pocketAutoValue").textContent=money(auto);
+  $("pocketCurrentValue").textContent=money(shown);
+  $("pocketOverrideInput").value=override===null?shown:override;
+  $("pocketEditLabel").textContent=`${$("salesSummaryPocketLabel").textContent} məbləği`;
+  openModal("pocketEditModal");
+}
+
 function currentPaymentSummary(list=filteredSalesList()){
   return list.reduce((totals,sale)=>{
     const amount=Number(sale.total_revenue||0);
@@ -3700,10 +3815,11 @@ function renderSales(){
   const revenue=list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
   const profit=list.reduce((sum,s)=>sum+Number(s.profit||0),0);
   const soldQty=list.reduce((sum,s)=>sum+Number(s.quantity||0),0);
-  const expenseTotal=expensesForSalesDate().reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+  const pocketOverride=pocketOverrideValue();
   $("filterRevenue").textContent=money(revenue);
   $("filterProfit").textContent=money(profit);
-  $("filterPocket").textContent=money(revenue-expenseTotal);
+  $("filterPocket").textContent=money(displayedPocketValue(list));
+  $("filterPocket").classList.toggle("not-recorded",pocketOverride!==null);
   $("filterSoldQty").textContent=soldQty;
   updatePaymentSummaryModal();
 
@@ -4137,7 +4253,7 @@ function logEntityText(entity){
     expenses:"Xərclər",
     notes:"Qeydlər",
     categories:"Kateqoriyalar",
-    app_settings:"Parametrlər"
+    app_settings:"Ayarlar"
   })[entity]||entity;
 }
 
@@ -5530,7 +5646,7 @@ $("saleForm").addEventListener("submit",async event=>{
 function resetLooseSaleForm(){
   $("looseSaleForm").reset();
   $("looseSaleId").value="";
-  $("looseSaleName").value="Satış";
+  $("looseSaleName").value="";
   $("looseSalePaymentMethod").value="cash";
 
   pendingSalePreviewUrls.forEach(url=>URL.revokeObjectURL(url));
@@ -5565,7 +5681,7 @@ function updateLooseSaleModeFields(){
   $("looseSaleQuantityBlock").classList.toggle("hidden",isTrust);
   $("looseSalePreviewGrid").classList.toggle("hidden",isTrust);
   $("looseSaleNote").classList.toggle("hidden",isTrust);
-  $("looseSaleName").placeholder=isTrust?"Başlıq":"Satış";
+  $("looseSaleName").placeholder=(saleEntryMode==="regular"||isTrust)?"Başlıq":"Satış";
   $("looseSalePrice").placeholder=isTrust?"Gəlir məbləği":"Qeyd edilməyib";
 }
 
@@ -6154,6 +6270,30 @@ $("globalSearch").addEventListener("input",()=>{
 $("salesRevenueStat").addEventListener("click",()=>{
   updatePaymentSummaryModal();
   openModal("paymentSummaryModal");
+});
+
+$("salesPocketStat").addEventListener("click",openPocketEditModal);
+
+$("pocketEditForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+  const value=Number($("pocketOverrideInput").value||0);
+  $("savePocketOverrideBtn").disabled=true;
+  const ok=await savePocketOverride(value);
+  $("savePocketOverrideBtn").disabled=false;
+  if(ok){
+    closeModal("pocketEditModal");
+    toast("Cib məbləği yeniləndi");
+  }
+});
+
+$("clearPocketOverrideBtn").addEventListener("click",async()=>{
+  $("clearPocketOverrideBtn").disabled=true;
+  const ok=await savePocketOverride(null);
+  $("clearPocketOverrideBtn").disabled=false;
+  if(ok){
+    closeModal("pocketEditModal");
+    toast("Cib avtomatik hesaba qaytarıldı");
+  }
 });
 
 
