@@ -82,7 +82,7 @@
       padding:8px 0 14px;
       background:linear-gradient(to bottom,var(--bg) 72%,transparent);
     }
-    .brand{display:flex;align-items:center;gap:10px;min-width:0;justify-self:start}
+    .brand{display:flex;align-items:center;gap:10px;min-width:0;max-width:100%;overflow:hidden;justify-self:start}
     .brand-mark{
       width:40px;height:40px;flex:0 0 40px;
       border-radius:13px;background:var(--primary);color:var(--primaryText);
@@ -121,8 +121,40 @@
       text-overflow:ellipsis;
       text-transform:capitalize;
     }
-    .today-day{font-size:16px;font-weight:950;color:var(--text);letter-spacing:.02em}
-    .today-time{font-size:13px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+    .today-day{font-size:16px;font-weight:950;color:var(--text);letter-spacing:.02em;text-transform:uppercase}
+    .today-time{font-size:13px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums;text-transform:none}
+
+    @media(max-width:430px){
+      .topbar{
+        grid-template-columns:minmax(0,122px) minmax(94px,1fr) 41px;
+        gap:6px;
+      }
+      .brand{gap:7px}
+      .brand-mark{
+        width:36px;
+        height:36px;
+        flex-basis:36px;
+        border-radius:12px;
+      }
+      .brand-title{font-size:16px}
+      .brand-sub{font-size:10px}
+      .today{
+        width:auto;
+        min-width:94px;
+        max-width:118px;
+        min-height:40px;
+        padding:0 2px;
+      }
+      .today-day{font-size:14px}
+      .today-time{font-size:11px}
+      .nav-btn{
+        min-height:44px;
+        padding-left:2px;
+        padding-right:2px;
+        font-size:9px;
+        letter-spacing:-.01em;
+      }
+    }
 
     .stats{
       display:grid;
@@ -296,7 +328,7 @@
       min-width:0;min-height:46px;padding:7px 4px;border-radius:14px;
       background:transparent;color:var(--muted);
       font-size:10px;font-weight:750;line-height:1.15;
-      white-space:normal;overflow-wrap:anywhere;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;
     }
     .nav-btn.active{background:var(--primary);color:var(--primaryText);font-weight:850}
 
@@ -695,7 +727,6 @@
     }
     .pdf-summary-label{font-size:9px;color:#6b7280}
     .pdf-summary-value{font-size:15px;font-weight:800;margin-top:3px}
-
     @media(max-width:360px){
       .sales-quick-actions{gap:5px}
       .sales-quick-actions .btn{font-size:10px!important;padding:7px 4px!important}
