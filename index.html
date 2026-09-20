@@ -303,8 +303,8 @@
     .sale-top{display:flex;align-items:flex-start;justify-content:space-between;gap:9px}
     .sale-top>div:first-child{min-width:0}
     .sale-total{
-      flex:0 0 auto;max-width:44%;
-      font-size:16px;font-weight:900;
+      flex:0 0 auto;max-width:58%;
+      font-size:22px;font-weight:950;
       white-space:nowrap;overflow:hidden;
       font-variant-numeric:tabular-nums;
     }
@@ -587,7 +587,7 @@
       background:var(--card2);opacity:.62;flex:0 0 auto;
     }
     .sale-check-input{
-      width:26px;height:26px;flex:0 0 auto;
+      width:18px;height:18px;flex:0 0 auto;
       accent-color:var(--success);
       cursor:pointer;
     }
@@ -4225,12 +4225,12 @@ function renderSales(){
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
+              <div class="sale-total ${sale.sale_price_provided===false?"not-recorded":""}">${displaySalePrice(sale)}</div>
               <input class="sale-check-input"
                      type="checkbox"
                      data-sale-check="${sale.id}"
                      ${sale.is_checked?"checked":""}
                      aria-label="Satış statusu">
-              <div class="sale-total ${sale.sale_price_provided===false?"not-recorded":""}">${displaySalePrice(sale)}</div>
             </div>
           </div>
 
