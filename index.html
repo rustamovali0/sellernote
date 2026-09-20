@@ -559,7 +559,7 @@
     .deleted-list{display:grid;gap:8px}
     .card-limit-strip{
       display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
+      grid-template-columns:1fr;
       gap:8px;
       margin-bottom:12px;
     }
@@ -574,6 +574,14 @@
       font-weight:850;
     }
     .card-limit small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+    .card-info-box{
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:var(--card2);
+      margin-bottom:10px;
+    }
+    .card-info-box strong{display:block;font-size:16px;margin-bottom:4px}
     .sale-check{
       width:26px;height:26px;border:2px solid var(--line);border-radius:8px;
       background:var(--card2);opacity:.62;flex:0 0 auto;
@@ -2481,6 +2489,7 @@
         <h3>Kartlar</h3>
         <button class="close" data-close="cardSettingsModal" type="button">×</button>
       </div>
+      <div id="selectedCardInfo" class="card-info-box hidden"></div>
       <div id="cardSettingsList" class="log-list"></div>
       <div class="row2" style="margin-top:10px">
         <input id="newCardAccountName" class="input" placeholder="Kart adı" />
@@ -2682,6 +2691,10 @@ const TRUST_CATEGORY_NAME="Etibar";
 const TAILOR_CATEGORY_NAME="Dərzi";
 const OUTSIDE_INCOME_NAMES=[TRUST_CATEGORY_NAME,TAILOR_CATEGORY_NAME];
 const DEFAULT_CARD_ACCOUNTS=["Əlinin kartı","Yusifin kartı"];
+const CARD_PUBLIC_INFO={
+  "Əlinin kartı":{bank:"Birbank",masked:"•••• •••• •••• 0323"},
+  "Yusifin kartı":{bank:"Birbank",masked:"•••• •••• •••• 4477"}
+};
 const DEFAULT_REPORT_SECTIONS=["summary","sales","expenses"];
 const REPORT_SECTION_LABELS={
   summary:"Satış + xərc",
@@ -3409,6 +3422,10 @@ function cardAccounts(){
   return list.length?list:[...DEFAULT_CARD_ACCOUNTS];
 }
 
+function cardPublicInfo(name){
+  return CARD_PUBLIC_INFO[name]||null;
+}
+
 function renderCardAccountOptions(){
   const options=cardAccounts().map(name=>`<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
   if($("saleCardAccount"))$("saleCardAccount").innerHTML=options;
@@ -3447,14 +3464,15 @@ function renderCardLimitStrip(){
   $("cardLimitStrip").innerHTML=cardAccounts().map(name=>{
     const used=todayStats[name]||0;
     const left=Math.max(0,5-used);
-    return `<button class="card-limit" type="button" data-open-card-settings>
+    const info=cardPublicInfo(name);
+    return `<button class="card-limit" type="button" data-open-card-settings="${escapeHtml(name)}">
       ${escapeHtml(name)}
-      <small>${left} mədaxil limiti</small>
+      <small>${left} mədaxil limiti${info?` · ${escapeHtml(info.bank)} · ${escapeHtml(info.masked)}`:""}</small>
     </button>`;
   }).join("");
 
   document.querySelectorAll("[data-open-card-settings]").forEach(button=>{
-    button.addEventListener("click",openCardSettingsModal);
+    button.addEventListener("click",()=>openCardSettingsModal(button.dataset.openCardSettings));
   });
 }
 
@@ -3499,7 +3517,23 @@ function renderCardSettingsModal(){
   });
 }
 
-function openCardSettingsModal(){
+function renderSelectedCardInfo(name){
+  if(!name){
+    $("selectedCardInfo").classList.add("hidden");
+    $("selectedCardInfo").innerHTML="";
+    return;
+  }
+
+  const info=cardPublicInfo(name);
+  $("selectedCardInfo").classList.toggle("hidden",!info);
+  $("selectedCardInfo").innerHTML=info?`
+    <strong>${escapeHtml(name)}</strong>
+    <div class="meta">${escapeHtml(info.bank)} · ${escapeHtml(info.masked)}</div>
+  `:"";
+}
+
+function openCardSettingsModal(name=""){
+  renderSelectedCardInfo(name);
   renderCardSettingsModal();
   openModal("cardSettingsModal");
 }
