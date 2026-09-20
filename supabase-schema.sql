@@ -35,6 +35,7 @@ create table if not exists public.products (
   note text,
   image_url text,
   image_urls text[] not null default '{}',
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -57,6 +58,7 @@ create table if not exists public.sales (
   sale_price_provided boolean not null default true,
   cost_price_provided boolean not null default true,
   payment_method text not null default 'cash' check (payment_method in ('cash','card')),
+  card_account text,
   total_revenue numeric(12,2) generated always as (
     case when sale_price_provided then quantity * unit_sale_price else 0 end
   ) stored,
@@ -73,6 +75,7 @@ create table if not exists public.sales (
   image_url text,
   image_urls text[] not null default '{}',
   note text,
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -107,6 +110,7 @@ create table if not exists public.expenses (
   note text,
   image_url text,
   image_urls text[] not null default '{}',
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -123,6 +127,7 @@ create table if not exists public.notes (
   body text not null,
   image_url text,
   image_urls text[] not null default '{}',
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -136,6 +141,9 @@ create table if not exists public.app_settings (
   favicon_url text,
   report_sections text[] not null default array['summary','sales','expenses'],
   pocket_overrides jsonb not null default '{}',
+  show_dashboard_profit boolean not null default true,
+  card_accounts text[] not null default array['Əlinin kartı','Yusifin kartı'],
+  card_counter_reset_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -145,6 +153,30 @@ alter table public.app_settings
 
 alter table public.app_settings
   add column if not exists pocket_overrides jsonb not null default '{}';
+
+alter table public.app_settings
+  add column if not exists show_dashboard_profit boolean not null default true;
+
+alter table public.app_settings
+  add column if not exists card_accounts text[] not null default array['Əlinin kartı','Yusifin kartı'];
+
+alter table public.app_settings
+  add column if not exists card_counter_reset_at timestamptz;
+
+alter table public.products
+  add column if not exists deleted_at timestamptz;
+
+alter table public.sales
+  add column if not exists deleted_at timestamptz;
+
+alter table public.sales
+  add column if not exists card_account text;
+
+alter table public.expenses
+  add column if not exists deleted_at timestamptz;
+
+alter table public.notes
+  add column if not exists deleted_at timestamptz;
 
 create table if not exists public.activity_logs (
   id uuid primary key default gen_random_uuid(),

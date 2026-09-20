@@ -2,7 +2,7 @@
 <html lang="az">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
   <title>Rustamoff Jeans</title>
 
@@ -59,7 +59,9 @@
       color:var(--text);
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
       transition:background .2s,color .2s;
+      touch-action:manipulation;
     }
+    body.modal-open{overflow:hidden}
     button,input,select,textarea{font:inherit}
     button{border:0;cursor:pointer}
     .hidden{display:none!important}
@@ -548,6 +550,37 @@
       display:grid;
       gap:8px;
     }
+    .settings-menu{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    .settings-subview.hidden{display:none!important}
+    .deleted-list{display:grid;gap:8px}
+    .card-limit-strip{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .card-limit{
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:var(--card);
+      color:var(--text);
+      padding:10px;
+      text-align:left;
+      box-shadow:var(--shadow);
+      font-weight:850;
+    }
+    .card-limit small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+    .sale-check{
+      width:26px;height:26px;border:2px solid var(--line);border-radius:8px;
+      background:var(--card2);opacity:.62;flex:0 0 auto;
+    }
+    .sale-card-line{display:flex;gap:10px;align-items:flex-start}
+    .hidden-profit{display:none!important}
+    .sql-preview{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;line-height:1.45;color:#111827}
     .log-item{
       padding:11px;
       border:1px solid var(--line);
@@ -623,12 +656,17 @@
     }
     .global-search-wrap{
       margin:-3px 0 10px;
+      display:grid;
+      grid-template-columns:1fr auto auto;
+      gap:8px;
     }
     .global-search{
       background:var(--card);
       box-shadow:var(--shadow);
       border-radius:15px;
     }
+    .global-search-wrap .btn{min-height:44px;padding:0 14px}
+    .global-clear.hidden{display:none!important}
     .sales-quick-actions{
       grid-template-columns:repeat(3,minmax(0,1fr))!important;
     }
@@ -1663,6 +1701,8 @@
 
     <div class="global-search-wrap">
       <input id="globalSearch" class="input global-search" type="search" placeholder="Satışlarda axtar..." autocomplete="off">
+      <button id="globalSearchBtn" class="btn" type="button">Axtar</button>
+      <button id="globalClearBtn" class="btn secondary global-clear hidden" type="button">Təmizlə</button>
     </div>
 
     <section id="dashboardPage" class="hidden">
@@ -1670,7 +1710,7 @@
         <div class="stat"><div class="label">Məhsullar</div><div id="statProducts" class="value">0</div><div class="sub">qeydiyyatda</div></div>
         <div class="stat"><div class="label">Satış</div><div id="statRevenue" class="value">0 ₼</div><div class="sub">ümumi gəlir</div></div>
         <div class="stat"><div class="label">Maya</div><div id="statCost" class="value">0 ₼</div><div class="sub">satılan mallar</div></div>
-        <div class="stat"><div class="label">Xalis qazanc</div><div id="statProfit" class="value profit">0 ₼</div><div class="sub">gəlir − maya</div></div>
+        <div id="dashboardProfitStat" class="stat"><div class="label">Xalis qazanc</div><div id="statProfit" class="value profit">0 ₼</div><div class="sub">gəlir − maya</div></div>
       </div>
 
       <div class="section">
@@ -1757,6 +1797,7 @@
     </section>
 
     <section id="salesPage">
+      <div id="cardLimitStrip" class="card-limit-strip"></div>
       <div class="section-head">
         <h2>Satış tarixçəsi</h2>
         <div class="section-tools">
@@ -1767,9 +1808,12 @@
 
       <div class="sales-quick-actions">
         <button id="addSaleFromSales" class="btn secondary" type="button">+ Satış</button>
+        <button id="goSellFromProducts" class="btn secondary" type="button">Sat</button>
         <button id="addLooseSale" class="btn secondary" type="button">+ Sərbəst satış</button>
         <button id="addTrustIncome" class="btn secondary" type="button">+ Etibar</button>
+        <button id="addTailorIncome" class="btn secondary" type="button">+ Dərzi</button>
         <button id="openPdfExport" class="btn secondary" type="button">PDF</button>
+        <button id="sendReportWhatsapp" class="btn secondary" type="button">Hesabat göndər</button>
       </div>
 
       <div class="toolbar with-clear">
@@ -1851,7 +1895,7 @@
 
       <div class="summary-grid">
         <button id="salesRevenueStat" class="stat clickable-stat" type="button"><div id="salesSummaryRevenueLabel" class="label">Bu günün satışı</div><div id="filterRevenue" class="value">0 ₼</div></button>
-        <div class="stat"><div id="salesSummaryProfitLabel" class="label">Bu günün qazancı</div><div id="filterProfit" class="value profit">0 ₼</div></div>
+        <div id="salesProfitStat" class="stat"><div id="salesSummaryProfitLabel" class="label">Bu günün qazancı</div><div id="filterProfit" class="value profit">0 ₼</div></div>
         <button id="salesPocketStat" class="stat clickable-stat" type="button"><div id="salesSummaryPocketLabel" class="label">Bu günün cibi</div><div id="filterPocket" class="value profit">0 ₼</div></button>
         <div class="stat"><div id="salesSummaryQtyLabel" class="label">Satılan mallar</div><div id="filterSoldQty" class="value">0</div></div>
       </div>
@@ -2045,6 +2089,26 @@
           <label class="check-card"><input type="checkbox" value="products"> Məhsul siyahısı</label>
           <label class="check-card"><input type="checkbox" value="notes"> Qeyd</label>
         </div>
+        <label class="check-card" style="margin-top:10px"><input id="dashboardProfitVisible" type="checkbox"> Ana ekranda qazanc görünsün</label>
+        <button id="downloadSqlPdfBtn" class="btn secondary full" type="button" style="margin-top:10px">SQL yüklə</button>
+      </div>
+
+      <div class="card settings-card">
+        <div class="settings-head">
+          <div>
+            <div class="settings-title">Silinənlər</div>
+            <div class="meta">Məhsul, satış, xərc və qeydləri geri qaytar</div>
+          </div>
+          <button id="toggleDeletedPanel" class="btn secondary" type="button">Silinənlər</button>
+        </div>
+        <div id="deletedPanel" class="settings-subview hidden">
+          <select id="deletedDateFilter" class="select" style="margin-bottom:10px">
+            <option value="today">Bu gün</option>
+            <option value="yesterday">Dünən</option>
+            <option value="all">Bütün</option>
+          </select>
+          <div id="deletedList" class="deleted-list"></div>
+        </div>
       </div>
 
       <div class="card settings-card">
@@ -2091,6 +2155,7 @@
         </div>
 
         <div id="logList" class="log-list"></div>
+        <button id="loadMoreLogsBtn" class="btn secondary full hidden" type="button" style="margin-top:10px">Daha çox</button>
       </div>
 
       <div class="card settings-card">
@@ -2258,6 +2323,10 @@
             <option value="card">Kart</option>
           </select>
         </div>
+        <div id="saleCardAccountBlock" class="hidden">
+          <label class="label">Kart hesabı</label>
+          <select id="saleCardAccount" class="select"></select>
+        </div>
         <div>
           <label class="label">Satılan say</label>
           <input id="saleQuantity" class="input" type="number" min="1" step="1" value="1" />
@@ -2323,6 +2392,10 @@
             <option value="cash">Nağd</option>
             <option value="card">Kart</option>
           </select>
+        </div>
+        <div id="looseSaleCardAccountBlock" class="hidden">
+          <label class="label">Kart hesabı</label>
+          <select id="looseSaleCardAccount" class="select"></select>
         </div>
 
         <div id="looseSaleQuantityBlock">
@@ -2390,9 +2463,25 @@
       </div>
       <div class="summary-grid">
         <div class="stat"><div class="label">Nağd</div><div id="paymentCashTotal" class="value">0 ₼</div></div>
-        <div class="stat"><div class="label">Kart</div><div id="paymentCardTotal" class="value">0 ₼</div></div>
+        <button id="paymentCardStat" class="stat clickable-stat" type="button"><div class="label">Kart</div><div id="paymentCardTotal" class="value">0 ₼</div></button>
       </div>
+      <div id="paymentCardBreakdown" class="log-list"></div>
       <div class="meta">Bu məbləğlər cari satış tarix filterinə görə hesablanır.</div>
+    </div>
+  </div>
+
+  <div id="cardSettingsModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Kartlar</h3>
+        <button class="close" data-close="cardSettingsModal" type="button">×</button>
+      </div>
+      <div id="cardSettingsList" class="log-list"></div>
+      <div class="row2" style="margin-top:10px">
+        <input id="newCardAccountName" class="input" placeholder="Kart adı" />
+        <button id="addCardAccountBtn" class="btn" type="button">Əlavə et</button>
+      </div>
+      <button id="resetCardCountersBtn" class="btn secondary full" type="button" style="margin-top:10px">Sayğacı sıfırla</button>
     </div>
   </div>
 
@@ -2407,6 +2496,7 @@
           <div class="stat"><div class="label">Avtomatik cib</div><div id="pocketAutoValue" class="value">0 ₼</div></div>
           <div class="stat"><div class="label">Cari cib</div><div id="pocketCurrentValue" class="value profit">0 ₼</div></div>
         </div>
+        <div id="pocketIncomeBreakdown" class="log-list"></div>
         <div>
           <label id="pocketEditLabel" class="label">Cib məbləği</label>
           <input id="pocketOverrideInput" class="input" type="number" step="0.01" inputmode="decimal" placeholder="Məs: 150" />
@@ -2539,7 +2629,8 @@ let sales=[];
 let expenses=[];
 let notes=[];
 let activityLogs=[];
-let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null};
+let deletedRecords=[];
+let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,show_dashboard_profit:true,card_accounts:null,card_counter_reset_at:null};
 let currentSaleProduct=null;
 let displayedLocalDate=null;
 let editingImageUrls=[];
@@ -2564,13 +2655,16 @@ let productDateMode="all";
 let salesDateMode="today";
 let expensesDateMode="today";
 let notesDateMode="today";
+let deletedDateMode="today";
 let calendarView={product:new Date(),sales:new Date(),expenses:new Date(),notes:new Date()};
 let saleEntryMode="loose";
+let currentOutsideIncomeName=TRUST_CATEGORY_NAME;
 let categoryCreateContext="settings";
 let multiSaleDraft=new Map();
 let multiSaleImageTargetId=null;
 let passwordRecoveryMode=location.hash.includes("type=recovery")||location.search.includes("type=recovery");
 let notesSearchQuery="";
+let logVisibleCount=5;
 
 /* Delete buttons are intentionally not persisted. Refresh => hidden again. */
 let productDeleteMode=false;
@@ -2580,6 +2674,9 @@ let notesDeleteMode=false;
 
 const $=id=>document.getElementById(id);
 const TRUST_CATEGORY_NAME="Etibar";
+const TAILOR_CATEGORY_NAME="Dərzi";
+const OUTSIDE_INCOME_NAMES=[TRUST_CATEGORY_NAME,TAILOR_CATEGORY_NAME];
+const DEFAULT_CARD_ACCOUNTS=["Əlinin kartı","Yusifin kartı"];
 const DEFAULT_REPORT_SECTIONS=["summary","sales","expenses"];
 const REPORT_SECTION_LABELS={
   summary:"Satış + xərc",
@@ -2682,8 +2779,19 @@ function fitValues(){
   });
 }
 
-function openModal(id){$(id).classList.remove("hidden")}
-function closeModal(id){$(id).classList.add("hidden")}
+function syncModalScrollLock(){
+  document.body.classList.toggle("modal-open",!!document.querySelector(".modal-backdrop:not(.hidden),.image-lightbox:not(.hidden)"));
+}
+
+function openModal(id){
+  $(id).classList.remove("hidden");
+  syncModalScrollLock();
+}
+
+function closeModal(id){
+  $(id).classList.add("hidden");
+  syncModalScrollLock();
+}
 
 let confirmResolve=null;
 
@@ -3047,7 +3155,7 @@ async function loadCategories(){
 async function loadProducts(){
   const {data,error}=await sb.from("products").select("*, categories(name)").order("created_at",{ascending:false});
   if(error){toast(error.message);return}
-  products=data||[];
+  products=(data||[]).filter(row=>!row.deleted_at);
 }
 
 async function loadSales(){
@@ -3055,7 +3163,7 @@ async function loadSales(){
     .select("*, products(name, category_id, categories(name))")
     .order("created_at",{ascending:false});
   if(error){toast(error.message);return}
-  sales=data||[];
+  sales=(data||[]).filter(row=>!row.deleted_at);
 }
 
 async function loadExpenses(){
@@ -3063,7 +3171,7 @@ async function loadExpenses(){
     .select("*")
     .order("created_at",{ascending:false});
   if(error){toast(error.message);return}
-  expenses=data||[];
+  expenses=(data||[]).filter(row=>!row.deleted_at);
 }
 
 async function loadNotes(){
@@ -3071,7 +3179,35 @@ async function loadNotes(){
     .select("*")
     .order("created_at",{ascending:false});
   if(error){toast(error.message);return}
-  notes=data||[];
+  notes=(data||[]).filter(row=>!row.deleted_at);
+}
+
+async function loadDeletedRecords(){
+  const configs=[
+    ["products","Məhsul","name"],
+    ["sales","Satış","product_name"],
+    ["expenses","Xərc","title"],
+    ["notes","Qeyd","body"]
+  ];
+
+  const results=await Promise.all(configs.map(async([table,label,titleKey])=>{
+    const {data,error}=await sb.from(table)
+      .select("*")
+      .not("deleted_at","is",null)
+      .order("deleted_at",{ascending:false});
+    if(error){
+      console.warn(`${table} deleted:`,error.message);
+      return [];
+    }
+    return (data||[]).map(row=>({
+      table,
+      label,
+      title:row[titleKey]||label,
+      row
+    }));
+  }));
+
+  deletedRecords=results.flat().sort((a,b)=>new Date(b.row.deleted_at)-new Date(a.row.deleted_at));
 }
 
 async function loadLogs(){
@@ -3094,9 +3230,9 @@ async function loadAppSettings(){
 
   if(error){
     console.warn("app_settings:",error.message);
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,show_dashboard_profit:true,card_accounts:null,card_counter_reset_at:null};
   }else{
-    appSettings=data||{logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,show_dashboard_profit:true,card_accounts:null,card_counter_reset_at:null,...(data||{})};
   }
 
   applyBranding();
@@ -3104,7 +3240,7 @@ async function loadAppSettings(){
 }
 
 async function loadAll(){
-  await Promise.all([loadCategories(),loadProducts(),loadSales(),loadExpenses(),loadNotes(),loadLogs(),loadAppSettings()]);
+  await Promise.all([loadCategories(),loadProducts(),loadSales(),loadExpenses(),loadNotes(),loadDeletedRecords(),loadLogs(),loadAppSettings()]);
   renderAll();
 }
 
@@ -3133,6 +3269,25 @@ function findTrustCategory(){
   return categories.find(category=>normalizeCategoryName(category.name)===normalizeCategoryName(TRUST_CATEGORY_NAME))||null;
 }
 
+function findOutsideIncomeCategory(name){
+  return categories.find(category=>normalizeCategoryName(category.name)===normalizeCategoryName(name))||null;
+}
+
+function isOutsideIncomeCategoryId(categoryId){
+  if(!categoryId)return false;
+  return categories.some(category=>
+    category.id===categoryId &&
+    OUTSIDE_INCOME_NAMES.some(name=>normalizeCategoryName(category.name)===normalizeCategoryName(name))
+  );
+}
+
+function isOutsideIncomeSale(sale){
+  const categoryId=sale?.category_id||sale?.products?.category_id||null;
+  if(isOutsideIncomeCategoryId(categoryId))return true;
+  const title=normalizeCategoryName(saleTitle(sale));
+  return OUTSIDE_INCOME_NAMES.some(name=>title===normalizeCategoryName(name));
+}
+
 async function ensureShalvarCategory(){
   const existing=findShalvarCategory();
   if(existing)return existing.id;
@@ -3152,13 +3307,24 @@ async function ensureShalvarCategory(){
 }
 
 async function ensureTrustCategory(){
-  const existing=findTrustCategory();
+  const existing=findOutsideIncomeCategory(TRUST_CATEGORY_NAME);
+  if(existing)return existing.id;
+
+  return ensureOutsideIncomeCategory(TRUST_CATEGORY_NAME);
+}
+
+async function ensureTailorCategory(){
+  return ensureOutsideIncomeCategory(TAILOR_CATEGORY_NAME);
+}
+
+async function ensureOutsideIncomeCategory(name){
+  const existing=findOutsideIncomeCategory(name);
   if(existing)return existing.id;
 
   const {data,error}=await sb.from("categories")
     .insert({
       user_id:currentUser.id,
-      name:TRUST_CATEGORY_NAME
+      name
     })
     .select("id,name")
     .single();
@@ -3192,6 +3358,10 @@ function renderReportSectionControls(){
       </label>
     `).join("");
   }
+
+  if($("dashboardProfitVisible")){
+    $("dashboardProfitVisible").checked=appSettings?.show_dashboard_profit!==false;
+  }
 }
 
 async function saveReportSections(sections){
@@ -3212,6 +3382,121 @@ async function saveReportSections(sections){
 
   await loadLogs();
   renderLogs();
+}
+
+async function saveDashboardProfitVisibility(visible){
+  appSettings={...appSettings,show_dashboard_profit:visible};
+  renderStats();
+
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    show_dashboard_profit:visible,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+
+  if(error)toast(error.message);
+}
+
+function cardAccounts(){
+  const list=Array.isArray(appSettings?.card_accounts)
+    ? appSettings.card_accounts.filter(Boolean)
+    : [];
+  return list.length?list:[...DEFAULT_CARD_ACCOUNTS];
+}
+
+function renderCardAccountOptions(){
+  const options=cardAccounts().map(name=>`<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+  if($("saleCardAccount"))$("saleCardAccount").innerHTML=options;
+  if($("looseSaleCardAccount"))$("looseSaleCardAccount").innerHTML=options;
+}
+
+function cardSalesForCurrentDay(){
+  const resetAt=appSettings?.card_counter_reset_at?new Date(appSettings.card_counter_reset_at):null;
+  return sales.filter(sale=>
+    sale.payment_method==="card" &&
+    dateMatches(sale.created_at,"today","") &&
+    (!resetAt || new Date(sale.created_at)>=resetAt)
+  );
+}
+
+function cardAccountStats(list=filteredSalesList()){
+  return cardAccounts().reduce((acc,name)=>{
+    acc[name]={amount:0,count:0};
+    return acc;
+  },list.filter(sale=>sale.payment_method==="card").reduce((acc,sale)=>{
+    const name=sale.card_account||cardAccounts()[0];
+    acc[name]=acc[name]||{amount:0,count:0};
+    acc[name].amount+=Number(sale.total_revenue||0);
+    acc[name].count+=1;
+    return acc;
+  },{}));
+}
+
+function renderCardLimitStrip(){
+  const todayStats=cardSalesForCurrentDay().reduce((acc,sale)=>{
+    const name=sale.card_account||cardAccounts()[0];
+    acc[name]=(acc[name]||0)+1;
+    return acc;
+  },{});
+
+  $("cardLimitStrip").innerHTML=cardAccounts().map(name=>{
+    const used=todayStats[name]||0;
+    const left=Math.max(0,5-used);
+    return `<button class="card-limit" type="button" data-open-card-settings>
+      ${escapeHtml(name)}
+      <small>${left} mədaxil limiti</small>
+    </button>`;
+  }).join("");
+
+  document.querySelectorAll("[data-open-card-settings]").forEach(button=>{
+    button.addEventListener("click",openCardSettingsModal);
+  });
+}
+
+async function saveCardAccounts(accounts){
+  appSettings={...appSettings,card_accounts:accounts};
+  renderCardAccountOptions();
+  renderCardLimitStrip();
+  renderCardSettingsModal();
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    card_accounts:accounts,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+  if(error)toast(error.message);
+}
+
+function renderCardSettingsModal(){
+  if(!$("cardSettingsList"))return;
+  const todayStats=cardSalesForCurrentDay().reduce((acc,sale)=>{
+    const name=sale.card_account||cardAccounts()[0];
+    acc[name]=(acc[name]||0)+1;
+    return acc;
+  },{});
+
+  $("cardSettingsList").innerHTML=cardAccounts().map(name=>`
+    <div class="log-item">
+      <div class="log-top">
+        <div>
+          <div class="log-title">${escapeHtml(name)}</div>
+          <div class="log-tags"><span class="log-tag">${todayStats[name]||0} mədaxil</span></div>
+        </div>
+        <button class="btn danger" data-remove-card-account="${escapeHtml(name)}" type="button">Sil</button>
+      </div>
+    </div>
+  `).join("");
+
+  document.querySelectorAll("[data-remove-card-account]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const next=cardAccounts().filter(name=>name!==button.dataset.removeCardAccount);
+      saveCardAccounts(next.length?next:[...DEFAULT_CARD_ACCOUNTS]);
+    });
+  });
+}
+
+function openCardSettingsModal(){
+  renderCardSettingsModal();
+  openModal("cardSettingsModal");
 }
 
 function closeProductCategoryMenu(){
@@ -3287,14 +3572,19 @@ function renderCategoryOptions(){
 }
 
 function renderStats(){
-  const revenue=sales.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const cost=sales.reduce((sum,s)=>sum+Number(s.total_cost||0),0);
-  const profit=sales.reduce((sum,s)=>sum+Number(s.profit||0),0);
+  const regularSales=sales.filter(sale=>!isOutsideIncomeSale(sale));
+  const revenue=regularSales.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
+  const cost=regularSales.reduce((sum,s)=>sum+Number(s.total_cost||0),0);
+  const profit=regularSales.reduce((sum,s)=>sum+Number(s.profit||0),0);
 
   $("statProducts").textContent=products.length;
   $("statRevenue").textContent=money(revenue);
   $("statCost").textContent=money(cost);
   $("statProfit").textContent=money(profit);
+  $("dashboardProfitStat").classList.toggle(
+    "hidden-profit",
+    appSettings?.show_dashboard_profit===false || Math.abs(profit)<0.000001
+  );
 
   fitValues();
 }
@@ -3315,7 +3605,7 @@ function openImageLightbox(images,startIndex=0){
   lightboxIndex=Math.max(0,Math.min(Number(startIndex)||0,lightboxImages.length-1));
   renderImageLightbox();
   $("imageLightbox").classList.remove("hidden");
-  document.body.style.overflow="hidden";
+  syncModalScrollLock();
 }
 
 function renderImageLightbox(){
@@ -3341,7 +3631,7 @@ function closeImageLightbox(){
   $("lightboxImage").removeAttribute("src");
   lightboxImages=[];
   lightboxIndex=0;
-  document.body.style.overflow="";
+  syncModalScrollLock();
 }
 
 function currentProductPreviewEntries(){
@@ -3676,6 +3966,7 @@ function filteredSalesList(){
     const qty=Number(sale.quantity||0);
 
     if(!dateMatches(sale.created_at,salesDateMode,selectedDate))return false;
+    if(isOutsideIncomeSale(sale))return false;
     if(query&&!name.includes(query))return false;
     if(category&&(sale.category_id||sale.products?.category_id)!==category)return false;
 
@@ -3713,6 +4004,25 @@ function expensesForSalesDate(){
   return expenses.filter(expense=>dateMatches(expense.created_at,salesDateMode,selectedDate));
 }
 
+function outsideIncomeForSalesDate(){
+  const selectedDate=$("salesSingleDate").value;
+  return sales.filter(sale=>
+    isOutsideIncomeSale(sale) &&
+    dateMatches(sale.created_at,salesDateMode,selectedDate)
+  );
+}
+
+function outsideIncomeTotals(){
+  return outsideIncomeForSalesDate().reduce((totals,sale)=>{
+    const title=OUTSIDE_INCOME_NAMES.find(name=>normalizeCategoryName(name)===normalizeCategoryName(saleTitle(sale)))
+      || categories.find(category=>category.id===(sale.category_id||sale.products?.category_id))?.name
+      || saleTitle(sale);
+    totals[title]=(totals[title]||0)+Number(sale.total_revenue||0);
+    totals.total+=Number(sale.total_revenue||0);
+    return totals;
+  },{total:0});
+}
+
 function currentPocketKey(){
   if(salesDateMode==="today")return `date:${isoLocalDate(new Date())}`;
   if(salesDateMode==="yesterday"){
@@ -3740,7 +4050,7 @@ function pocketOverrideValue(){
 function computedPocketValue(list=filteredSalesList()){
   const revenue=list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
   const expenseTotal=expensesForSalesDate().reduce((sum,expense)=>sum+Number(expense.amount||0),0);
-  return revenue-expenseTotal;
+  return revenue-expenseTotal+outsideIncomeTotals().total;
 }
 
 function displayedPocketValue(list=filteredSalesList()){
@@ -3786,6 +4096,17 @@ function openPocketEditModal(){
   $("pocketCurrentValue").textContent=money(shown);
   $("pocketOverrideInput").value=override===null?shown:override;
   $("pocketEditLabel").textContent=`${$("salesSummaryPocketLabel").textContent} məbləği`;
+  const outside=outsideIncomeTotals();
+  $("pocketIncomeBreakdown").innerHTML=Object.entries(outside)
+    .filter(([key,value])=>key!=="total"&&Math.abs(Number(value||0))>0.000001)
+    .map(([key,value])=>`
+      <div class="log-item">
+        <div class="log-top">
+          <div class="log-title">${escapeHtml(key)}</div>
+          <div class="log-date">${money(value)}</div>
+        </div>
+      </div>
+    `).join("") || '<div class="meta">Kənar gəlir yoxdur.</div>';
   openModal("pocketEditModal");
 }
 
@@ -3794,17 +4115,32 @@ function currentPaymentSummary(list=filteredSalesList()){
     const amount=Number(sale.total_revenue||0);
     if(sale.payment_method==="card"){
       totals.card+=amount;
+      const account=sale.card_account||cardAccounts()[0];
+      totals.accounts[account]=totals.accounts[account]||{amount:0,count:0};
+      totals.accounts[account].amount+=amount;
+      totals.accounts[account].count+=1;
     }else{
       totals.cash+=amount;
     }
     return totals;
-  },{cash:0,card:0});
+  },{cash:0,card:0,accounts:{}});
 }
 
 function updatePaymentSummaryModal(){
   const totals=currentPaymentSummary();
   $("paymentCashTotal").textContent=money(totals.cash);
   $("paymentCardTotal").textContent=money(totals.card);
+  $("paymentCardBreakdown").innerHTML=Object.entries(totals.accounts).length
+    ? Object.entries(totals.accounts).map(([name,data])=>`
+      <div class="log-item">
+        <div class="log-top">
+          <div class="log-title">${escapeHtml(name)}</div>
+          <div class="log-date">${money(data.amount)}</div>
+        </div>
+        <div class="log-tags"><span class="log-tag">${data.count} mədaxil</span></div>
+      </div>
+    `).join("")
+    : '<div class="meta">Kart satışı yoxdur.</div>';
 }
 
 function renderSales(){
@@ -3849,7 +4185,10 @@ function renderSales(){
                   :""}
               </div>
             </div>
-            <div class="sale-total ${sale.sale_price_provided===false?"not-recorded":""}">${displaySalePrice(sale)}</div>
+            <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
+              <span class="sale-check" aria-hidden="true"></span>
+              <div class="sale-total ${sale.sale_price_provided===false?"not-recorded":""}">${displaySalePrice(sale)}</div>
+            </div>
           </div>
 
           <div class="price-row">
@@ -4277,8 +4616,10 @@ function renderLogs(){
   });
 
   $("logCount").textContent=`${list.length} qeyd`;
+  const visible=list.slice(0,logVisibleCount);
+  $("loadMoreLogsBtn").classList.toggle("hidden",list.length<=logVisibleCount);
 
-  $("logList").innerHTML=list.length?list.map(log=>`
+  $("logList").innerHTML=visible.length?visible.map(log=>`
     <div class="log-item">
       <div class="log-top">
         <div class="log-title">${escapeHtml(log.title||"Qeyd")}</div>
@@ -4292,6 +4633,32 @@ function renderLogs(){
   `).join(""):'<div class="empty" style="padding:14px">Bu filterə uyğun log yoxdur.</div>';
 }
 
+function renderDeletedRecords(){
+  if(!$("deletedList"))return;
+  const list=deletedRecords.filter(item=>dateMatches(item.row.deleted_at,deletedDateMode,""));
+  $("deletedList").innerHTML=list.length?list.map(item=>`
+    <div class="log-item">
+      <div class="log-top">
+        <div>
+          <div class="log-title">${escapeHtml(item.title)}</div>
+          <div class="log-tags">
+            <span class="log-tag">${escapeHtml(item.label)}</span>
+            <span class="log-tag">${formatDate(item.row.deleted_at)}</span>
+          </div>
+        </div>
+        <button class="btn secondary" data-restore="${escapeHtml(item.table)}:${escapeHtml(item.row.id)}" type="button">Geri qaytar</button>
+      </div>
+    </div>
+  `).join(""):'<div class="empty" style="padding:14px">Bu tarixdə silinən qeyd yoxdur.</div>';
+
+  document.querySelectorAll("[data-restore]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const [table,id]=button.dataset.restore.split(":");
+      restoreDeletedRecord(table,id);
+    });
+  });
+}
+
 function renderAll(){
   renderCategoryOptions();
   renderProducts();
@@ -4300,8 +4667,11 @@ function renderAll(){
   renderNotes();
   renderCategories();
   renderLogs();
+  renderDeletedRecords();
   renderStats();
   renderReportSectionControls();
+  renderCardAccountOptions();
+  renderCardLimitStrip();
 }
 
 function showPage(page,options={}){
@@ -4446,14 +4816,14 @@ async function deleteProduct(id){
     tone:"danger"
   }))return;
 
-  const {data,error}=await sb.from("products").delete().eq("id",id).select("id");
+  const {data,error}=await sb.from("products").update({deleted_at:new Date().toISOString()}).eq("id",id).select("id");
   if(error){
     toast(error.message);
     return;
   }
 
   if(!data||!data.length){
-    toast("Silinmədi. Supabase DELETE policy-ni yeniləyin.");
+    toast("Silinmədi. Supabase SQL-də deleted_at sütununu əlavə edin.");
     return;
   }
 
@@ -4506,6 +4876,8 @@ function openSale(id){
   $("saleQuantity").value=1;
   $("salePriceOverride").value="";
   $("salePaymentMethod").value="cash";
+  $("saleCardAccount").value=cardAccounts()[0];
+  updatePaymentAccountFields();
   setSaleProduct(product);
   openModal("saleModal");
 }
@@ -4521,6 +4893,8 @@ function openDirectSale(){
   $("saleQuantity").value=1;
   $("salePriceOverride").value="";
   $("salePaymentMethod").value="cash";
+  $("saleCardAccount").value=cardAccounts()[0];
+  updatePaymentAccountFields();
   $("saleProductSelectWrap").classList.remove("hidden");
   $("saleProductInfo").classList.remove("hidden");
 
@@ -4580,14 +4954,14 @@ async function deleteSale(id){
     tone:"danger"
   }))return;
 
-  const {data,error}=await sb.from("sales").delete().eq("id",id).select("id");
+  const {data,error}=await sb.from("sales").update({deleted_at:new Date().toISOString()}).eq("id",id).select("id");
   if(error){
     toast(error.message);
     return;
   }
 
   if(!data||!data.length){
-    toast("Silinmədi. Supabase DELETE policy-ni yeniləyin.");
+    toast("Silinmədi. Supabase SQL-də deleted_at sütununu əlavə edin.");
     return;
   }
 
@@ -4655,11 +5029,11 @@ async function deleteExpense(id){
     tone:"danger"
   }))return;
 
-  const {data,error}=await sb.from("expenses").delete().eq("id",id).select("id");
+  const {data,error}=await sb.from("expenses").update({deleted_at:new Date().toISOString()}).eq("id",id).select("id");
   if(error){toast(error.message);return}
 
   if(!data||!data.length){
-    toast("Silinmədi. Supabase DELETE policy-ni yeniləyin.");
+    toast("Silinmədi. Supabase SQL-də deleted_at sütununu əlavə edin.");
     return;
   }
 
@@ -4705,16 +5079,27 @@ async function deleteNote(id){
     tone:"danger"
   }))return;
 
-  const {data,error}=await sb.from("notes").delete().eq("id",id).select("id");
+  const {data,error}=await sb.from("notes").update({deleted_at:new Date().toISOString()}).eq("id",id).select("id");
   if(error){toast(error.message);return}
 
   if(!data||!data.length){
-    toast("Silinmədi. Supabase DELETE policy-ni yeniləyin.");
+    toast("Silinmədi. Supabase SQL-də deleted_at sütununu əlavə edin.");
     return;
   }
 
   await loadAll();
   toast("Qeyd silindi");
+}
+
+async function restoreDeletedRecord(table,id){
+  if(!["products","sales","expenses","notes"].includes(table))return;
+  const {error}=await sb.from(table).update({deleted_at:null}).eq("id",id);
+  if(error){
+    toast(error.message);
+    return;
+  }
+  await loadAll();
+  toast("Geri qaytarıldı");
 }
 
 /* Branding */
@@ -5295,7 +5680,8 @@ $("confirmMultiSale").addEventListener("click",async()=>{
       unit_cost_price:Number(product.cost_price||0),
       sale_price_provided:true,
       cost_price_provided:true,
-      payment_method:"cash",
+    payment_method:"cash",
+    card_account:null,
       image_url:images[0]||null,
       image_urls:images,
       note:null
@@ -5376,6 +5762,11 @@ $("addProductCategoryBtn").addEventListener("click",()=>{
 });
 $("addSaleFromSales").addEventListener("click",()=>{
   openSaleEntry("regular");
+});
+
+$("goSellFromProducts").addEventListener("click",()=>{
+  setProductDate("all");
+  showPage("dashboard");
 });
 
 $("salesAddBtn").addEventListener("click",()=>{
@@ -5596,6 +5987,14 @@ $("saleProductSelect").addEventListener("change",()=>{
   setSaleProduct(product||null);
 });
 
+function updatePaymentAccountFields(){
+  $("saleCardAccountBlock").classList.toggle("hidden",$("salePaymentMethod").value!=="card");
+  $("looseSaleCardAccountBlock").classList.toggle("hidden",$("looseSalePaymentMethod").value!=="card");
+}
+
+$("salePaymentMethod").addEventListener("change",updatePaymentAccountFields);
+$("looseSalePaymentMethod").addEventListener("change",updatePaymentAccountFields);
+
 ["saleQuantity","salePriceOverride"].forEach(id=>{
   $(id).addEventListener("input",updateSalePreview);
 });
@@ -5628,6 +6027,7 @@ $("saleForm").addEventListener("submit",async event=>{
     sale_price_provided:salePriceProvided,
     cost_price_provided:costPriceProvided,
     payment_method:$("salePaymentMethod").value||"cash",
+    card_account:$("salePaymentMethod").value==="card"?$("saleCardAccount").value:null,
     image_url:images[0]||null,
     image_urls:images
   });
@@ -5648,6 +6048,8 @@ function resetLooseSaleForm(){
   $("looseSaleId").value="";
   $("looseSaleName").value="";
   $("looseSalePaymentMethod").value="cash";
+  $("looseSaleCardAccount").value=cardAccounts()[0];
+  updatePaymentAccountFields();
 
   pendingSalePreviewUrls.forEach(url=>URL.revokeObjectURL(url));
   pendingSalePreviewUrls=[];
@@ -5666,23 +6068,22 @@ function resetLooseSaleForm(){
 }
 
 function isTrustCategoryId(categoryId){
-  const trust=findTrustCategory();
-  return !!trust && categoryId===trust.id;
+  return isOutsideIncomeCategoryId(categoryId);
 }
 
 function updateLooseSaleModeFields(){
-  const isTrust=saleEntryMode==="trust" || isTrustCategoryId($("looseSaleCategory").value);
-  $("looseSaleImageBlock").classList.toggle("hidden",isTrust);
-  $("openLooseSaleImagePicker").classList.toggle("hidden",isTrust);
-  $("looseSaleImageHelp").classList.toggle("hidden",isTrust);
-  $("looseSaleCategoryBlock").classList.toggle("hidden",isTrust);
-  $("looseSaleCostBlock").classList.toggle("hidden",isTrust);
-  $("looseSalePaymentBlock").classList.toggle("hidden",isTrust);
-  $("looseSaleQuantityBlock").classList.toggle("hidden",isTrust);
-  $("looseSalePreviewGrid").classList.toggle("hidden",isTrust);
-  $("looseSaleNote").classList.toggle("hidden",isTrust);
-  $("looseSaleName").placeholder=(saleEntryMode==="regular"||isTrust)?"Başlıq":"Satış";
-  $("looseSalePrice").placeholder=isTrust?"Gəlir məbləği":"Qeyd edilməyib";
+  const isOutside=saleEntryMode==="trust" || isTrustCategoryId($("looseSaleCategory").value);
+  $("looseSaleImageBlock").classList.toggle("hidden",isOutside);
+  $("openLooseSaleImagePicker").classList.toggle("hidden",isOutside);
+  $("looseSaleImageHelp").classList.toggle("hidden",isOutside);
+  $("looseSaleCategoryBlock").classList.toggle("hidden",isOutside);
+  $("looseSaleCostBlock").classList.toggle("hidden",isOutside);
+  $("looseSalePaymentBlock").classList.toggle("hidden",isOutside);
+  $("looseSaleQuantityBlock").classList.toggle("hidden",isOutside);
+  $("looseSalePreviewGrid").classList.toggle("hidden",isOutside);
+  $("looseSaleNote").classList.toggle("hidden",isOutside);
+  $("looseSaleName").placeholder=(saleEntryMode==="regular"||isOutside)?"Başlıq":"Satış";
+  $("looseSalePrice").placeholder=isOutside?"Gəlir məbləği":"Qeyd edilməyib";
 }
 
 function updateLooseSalePreview(){
@@ -5726,13 +6127,22 @@ function openLooseSale(){
 }
 
 async function openTrustIncome(){
+  await openOutsideIncome(TRUST_CATEGORY_NAME);
+}
+
+async function openTailorIncome(){
+  await openOutsideIncome(TAILOR_CATEGORY_NAME);
+}
+
+async function openOutsideIncome(name){
   resetLooseSaleForm();
-  const trustId=await ensureTrustCategory();
+  currentOutsideIncomeName=name;
+  const categoryId=await ensureOutsideIncomeCategory(name);
   saleEntryMode="trust";
-  $("looseSaleModalTitle").textContent="Etibar gəliri";
+  $("looseSaleModalTitle").textContent=`${name} gəliri`;
   $("saveLooseSaleBtn").textContent="Gəliri yadda saxla";
-  $("looseSaleName").value=TRUST_CATEGORY_NAME;
-  $("looseSaleCategory").value=trustId;
+  $("looseSaleName").value=name;
+  $("looseSaleCategory").value=categoryId;
   $("looseSaleCost").value="";
   $("looseSaleQuantity").value=1;
   updateLooseSaleModeFields();
@@ -5757,18 +6167,24 @@ function openEditSale(id){
   $("looseSaleNote").value=sale.note||"";
   $("looseSaleCategory").value=sale.category_id||sale.products?.category_id||findShalvarCategory()?.id||"";
   $("looseSalePaymentMethod").value=sale.payment_method||"cash";
-  if(isTrustCategoryId($("looseSaleCategory").value))saleEntryMode="trust";
+  $("looseSaleCardAccount").value=sale.card_account||cardAccounts()[0];
+  if(isTrustCategoryId($("looseSaleCategory").value)){
+    saleEntryMode="trust";
+    currentOutsideIncomeName=saleTitle(sale);
+  }
 
   editingSaleImageUrls=saleImages(sale);
   renderLooseSaleImagePreviews();
 
   updateLooseSalePreview();
   updateLooseSaleModeFields();
+  updatePaymentAccountFields();
   openModal("looseSaleModal");
 }
 
 $("addLooseSale").addEventListener("click",openLooseSale);
 $("addTrustIncome").addEventListener("click",openTrustIncome);
+$("addTailorIncome").addEventListener("click",openTailorIncome);
 
 ["looseSalePrice","looseSaleCost","looseSaleQuantity"].forEach(id=>{
   $(id).addEventListener("input",updateLooseSalePreview);
@@ -5776,6 +6192,7 @@ $("addTrustIncome").addEventListener("click",openTrustIncome);
 $("looseSaleCategory").addEventListener("change",()=>{
   if(isTrustCategoryId($("looseSaleCategory").value)){
     saleEntryMode="trust";
+    currentOutsideIncomeName=categories.find(category=>category.id===$("looseSaleCategory").value)?.name||TRUST_CATEGORY_NAME;
     $("looseSaleCost").value="";
     $("looseSaleQuantity").value=1;
   }else if(saleEntryMode==="trust"){
@@ -5821,13 +6238,13 @@ $("looseSaleForm").addEventListener("submit",async event=>{
     const salePriceProvided=$("looseSalePrice").value!=="";
     const costPriceProvided=!isTrust && $("looseSaleCost").value!=="";
 
-    const name=$("looseSaleName").value.trim()||(isTrust?TRUST_CATEGORY_NAME:"Satış");
+    const name=$("looseSaleName").value.trim()||(isTrust?currentOutsideIncomeName:"Satış");
     const quantity=isTrust?1:Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1);
     const salePrice=Number($("looseSalePrice").value||0);
     const costPrice=isTrust?0:Number($("looseSaleCost").value||0);
     const note=$("looseSaleNote").value.trim()||null;
     const categoryId=isTrust
-      ? ($("looseSaleCategory").value||await ensureTrustCategory())
+      ? ($("looseSaleCategory").value||await ensureOutsideIncomeCategory(currentOutsideIncomeName))
       : ($("looseSaleCategory").value||await ensureShalvarCategory());
 
     const salePayload={
@@ -5839,6 +6256,7 @@ $("looseSaleForm").addEventListener("submit",async event=>{
       sale_price_provided:salePriceProvided,
       cost_price_provided:costPriceProvided,
       payment_method:$("looseSalePaymentMethod").value||"cash",
+      card_account:$("looseSalePaymentMethod").value==="card"?$("looseSaleCardAccount").value:null,
       image_url:isTrust?null:imageUrl,
       image_urls:isTrust?[]:imageUrls,
       note
@@ -5957,6 +6375,58 @@ $("reportSectionsSettings").addEventListener("change",async()=>{
   await saveReportSections(sections);
 });
 
+$("dashboardProfitVisible").addEventListener("change",()=>{
+  saveDashboardProfitVisibility($("dashboardProfitVisible").checked);
+});
+
+function sqlValue(value){
+  if(value===null||value===undefined)return "null";
+  if(Array.isArray(value))return `array[${value.map(sqlValue).join(",")}]::text[]`;
+  if(typeof value==="number")return Number.isFinite(value)?String(value):"0";
+  if(typeof value==="boolean")return value?"true":"false";
+  return `'${String(value).replace(/'/g,"''")}'`;
+}
+
+function sqlInsert(table,rows,columns){
+  if(!rows.length)return `-- ${table}: məlumat yoxdur\n`;
+  return rows.map(row=>`insert into public.${table} (${columns.join(", ")}) values (${columns.map(column=>sqlValue(row[column])).join(", ")});\n`).join("");
+}
+
+async function downloadSqlPdf(){
+  const allDeleted=deletedRecords.map(item=>item.row);
+  const sql=[
+    "-- SellerNote backup",
+    `-- ${formatDate(new Date().toISOString())}`,
+    "",
+    sqlInsert("categories",categories,["id","user_id","name","created_at","updated_at"]),
+    sqlInsert("products",[...products,...allDeleted.filter(row=>"sale_price" in row&&"cost_price" in row)],["id","user_id","category_id","name","sale_price","cost_price","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
+    sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
+    sqlInsert("expenses",[...expenses,...allDeleted.filter(row=>"amount" in row&&"title" in row)],["id","user_id","title","amount","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
+    sqlInsert("notes",[...notes,...allDeleted.filter(row=>"body" in row)],["id","user_id","body","image_url","image_urls","deleted_at","created_at","updated_at"])
+  ].join("\n");
+
+  const page=document.createElement("div");
+  page.className="pdf-report sql-preview";
+  page.textContent=sql;
+  page.style.position="fixed";
+  page.style.left="-10000px";
+  page.style.top="0";
+  document.body.appendChild(page);
+
+  try{
+    await html2pdf().set({
+      margin:8,
+      filename:`seller-sql-${isoLocalDate(new Date())}.pdf`,
+      html2canvas:{scale:2,backgroundColor:"#ffffff"},
+      jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
+    }).from(page).save();
+  }finally{
+    page.remove();
+  }
+}
+
+$("downloadSqlPdfBtn").addEventListener("click",downloadSqlPdf);
+
 
 /* Report export */
 
@@ -5992,12 +6462,14 @@ function buildReport(from,to,sections=selectedReportSections()){
   const report=document.createElement("div");
   report.className="pdf-report";
 
-  const revenue=data.sales.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const cost=data.sales.reduce((sum,s)=>sum+Number(s.total_cost||0),0);
-  const profit=data.sales.reduce((sum,s)=>sum+Number(s.profit||0),0);
+  const reportSales=data.sales.filter(sale=>!isOutsideIncomeSale(sale));
+  const outsideIncome=data.sales.filter(sale=>isOutsideIncomeSale(sale)).reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const revenue=reportSales.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
+  const cost=reportSales.reduce((sum,s)=>sum+Number(s.total_cost||0),0);
+  const profit=reportSales.reduce((sum,s)=>sum+Number(s.profit||0),0);
   const expenseTotal=data.expenses.reduce((sum,e)=>sum+Number(e.amount||0),0);
-  const pocket=revenue-expenseTotal;
-  const soldQty=data.sales.reduce((sum,s)=>sum+Number(s.quantity||0),0);
+  const pocket=revenue-expenseTotal+outsideIncome;
+  const soldQty=reportSales.reduce((sum,s)=>sum+Number(s.quantity||0),0);
   const showCost=Math.abs(cost)>0.000001;
   const showProfit=Math.abs(profit)>0.000001;
 
@@ -6012,6 +6484,7 @@ function buildReport(from,to,sections=selectedReportSections()){
       <div class="pdf-summary">
         <div><div class="pdf-summary-label">Satış</div><div class="pdf-summary-value">${money(revenue)}</div></div>
         <div><div class="pdf-summary-label">Xərc</div><div class="pdf-summary-value">${money(expenseTotal)}</div></div>
+        ${Math.abs(outsideIncome)>0.000001?`<div><div class="pdf-summary-label">Kənar gəlir</div><div class="pdf-summary-value">${money(outsideIncome)}</div></div>`:""}
         <div><div class="pdf-summary-label">Cib</div><div class="pdf-summary-value">${money(pocket)}</div></div>
         <div><div class="pdf-summary-label">Satılan say</div><div class="pdf-summary-value">${soldQty}</div></div>
         ${showCost?`<div><div class="pdf-summary-label">Maya</div><div class="pdf-summary-value">${money(cost)}</div></div>`:""}
@@ -6025,7 +6498,7 @@ function buildReport(from,to,sections=selectedReportSections()){
     if(showCost)headers.push("Maya");
     if(showProfit)headers.push("Qazanc");
 
-    const rows=data.sales.map(sale=>{
+    const rows=reportSales.map(sale=>{
       const row=[
         formatDate(sale.created_at),
         saleTitle(sale),
@@ -6088,9 +6561,10 @@ function buildReport(from,to,sections=selectedReportSections()){
         <div>
           <h1>Mal uçotu hesabatı</h1>
           <div class="pdf-report-sub">${escapeHtml(from)} - ${escapeHtml(to)}</div>
+          <div class="pdf-report-sub">${escapeHtml(formatDate(new Date().toISOString()))}</div>
         </div>
       </div>
-      <div class="pdf-report-sub">${data.sales.length} satış · ${data.expenses.length} xərc</div>
+      <div class="pdf-report-sub">${reportSales.length} satış · ${data.expenses.length} xərc</div>
     </div>
     ${blocks.join("")}
   `;
@@ -6133,7 +6607,14 @@ function downloadBlob(blob,filename){
 
 async function renderReportElement(from,to,sections){
   const report=buildReport(from,to,sections);
+  report.style.position="fixed";
+  report.style.left="-10000px";
+  report.style.top="0";
+  report.style.width="760px";
+  report.style.maxWidth="760px";
+  report.style.zIndex="-1";
   document.body.appendChild(report);
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   return report;
 }
 
@@ -6166,14 +6647,49 @@ async function exportReportPdf({from,to,sections,share=false}){
   }
 }
 
-async function exportReportJpg({from,to,sections}){
+async function reportToJpgFiles({from,to,sections}){
   const report=await renderReportElement(from,to,sections);
   try{
     const canvas=await html2canvas(report,{scale:2,useCORS:true,backgroundColor:"#ffffff"});
-    const blob=await canvasToBlob(canvas,"image/jpeg",.94);
-    if(blob)downloadBlob(blob,`hesabat-${from}-${to}.jpg`);
+    const maxHeight=2400;
+    const files=[];
+    let part=1;
+
+    for(let y=0;y<canvas.height;y+=maxHeight){
+      const height=Math.min(maxHeight,canvas.height-y);
+      const page=document.createElement("canvas");
+      page.width=canvas.width;
+      page.height=height;
+      const ctx=page.getContext("2d");
+      ctx.fillStyle="#ffffff";
+      ctx.fillRect(0,0,page.width,page.height);
+      ctx.drawImage(canvas,0,y,canvas.width,height,0,0,canvas.width,height);
+      const blob=await canvasToBlob(page,"image/jpeg",.94);
+      if(blob){
+        files.push(new File([blob],`hesabat-${from}-${to}-${part}.jpg`,{type:"image/jpeg"}));
+        part+=1;
+      }
+    }
+
+    return files;
   }finally{
     report.remove();
+  }
+}
+
+async function exportReportJpg(config){
+  const files=await reportToJpgFiles(config);
+  files.forEach(file=>downloadBlob(file,file.name));
+  if(files.length>1)toast(`${files.length} JPG yaradıldı`);
+}
+
+async function shareReportJpg(config){
+  const files=await reportToJpgFiles(config);
+  if(navigator.canShare?.({files})){
+    await navigator.share({title:"Mal uçotu hesabatı",text:"Satış + xərc hesabatı",files});
+  }else{
+    files.forEach(file=>downloadBlob(file,file.name));
+    toast("Paylaşma dəstəklənmir, JPG endirildi.");
   }
 }
 
@@ -6187,6 +6703,8 @@ async function runReportExport(kind){
   try{
     if(kind==="jpg"){
       await exportReportJpg(config);
+    }else if(kind==="share-jpg"){
+      await shareReportJpg(config);
     }else{
       await exportReportPdf({...config,share:kind==="share"});
     }
@@ -6214,12 +6732,41 @@ $("pdfExportForm").addEventListener("submit",async event=>{
 
 $("exportJpgBtn").addEventListener("click",()=>runReportExport("jpg"));
 $("sharePdfBtn").addEventListener("click",()=>runReportExport("share"));
+$("sendReportWhatsapp").addEventListener("click",async()=>{
+  const today=isoLocalDate(new Date());
+  const config={from:today,to:today,sections:["summary"]};
+  try{
+    await shareReportJpg(config);
+    window.open("https://wa.me/994705428880?text="+encodeURIComponent("Bu günün satış+xərc hesabatı"),"_blank");
+  }catch(error){
+    console.error(error);
+    toast("Hesabat göndərilmədi.");
+  }
+});
 
 
 /* Activity log filters */
 ["logSearch","logActionFilter","logEntityFilter","logDateFilter","logSingleDate"].forEach(id=>{
   const el=$(id);
-  el.addEventListener(id==="logSearch"?"input":"change",renderLogs);
+  el.addEventListener(id==="logSearch"?"input":"change",()=>{
+    logVisibleCount=5;
+    renderLogs();
+  });
+});
+
+$("loadMoreLogsBtn").addEventListener("click",()=>{
+  logVisibleCount+=5;
+  renderLogs();
+});
+
+$("toggleDeletedPanel").addEventListener("click",()=>{
+  $("deletedPanel").classList.toggle("hidden");
+  renderDeletedRecords();
+});
+
+$("deletedDateFilter").addEventListener("change",()=>{
+  deletedDateMode=$("deletedDateFilter").value;
+  renderDeletedRecords();
 });
 
 
@@ -6243,9 +6790,10 @@ function syncGlobalSearch(page){
     input.placeholder="Loglarda axtar...";
     input.value=$("logSearch").value;
   }
+  $("globalClearBtn").classList.toggle("hidden",!input.value.trim());
 }
 
-$("globalSearch").addEventListener("input",()=>{
+function applyGlobalSearch(){
   const active=document.querySelector(".nav-btn.active")?.dataset.page||"sales";
   const value=$("globalSearch").value;
 
@@ -6265,11 +6813,54 @@ $("globalSearch").addEventListener("input",()=>{
     $("logSearch").value=value;
     renderLogs();
   }
+  $("globalClearBtn").classList.toggle("hidden",!value.trim());
+  closeDropdowns();
+}
+
+function clearGlobalSearch(){
+  $("globalSearch").value="";
+  applyGlobalSearch();
+}
+
+$("globalSearchBtn").addEventListener("click",applyGlobalSearch);
+$("globalClearBtn").addEventListener("click",clearGlobalSearch);
+$("globalSearch").addEventListener("keydown",event=>{
+  if(event.key==="Enter"){
+    event.preventDefault();
+    applyGlobalSearch();
+  }
 });
 
 $("salesRevenueStat").addEventListener("click",()=>{
   updatePaymentSummaryModal();
   openModal("paymentSummaryModal");
+});
+
+$("paymentCardStat").addEventListener("click",()=>{
+  updatePaymentSummaryModal();
+  openCardSettingsModal();
+});
+
+$("addCardAccountBtn").addEventListener("click",()=>{
+  const name=$("newCardAccountName").value.trim();
+  if(!name)return;
+  const next=[...new Set([...cardAccounts(),name])];
+  $("newCardAccountName").value="";
+  saveCardAccounts(next);
+});
+
+$("resetCardCountersBtn").addEventListener("click",async()=>{
+  const resetAt=new Date().toISOString();
+  appSettings={...appSettings,card_counter_reset_at:resetAt};
+  renderCardLimitStrip();
+  renderCardSettingsModal();
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    card_counter_reset_at:resetAt,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+  if(error)toast(error.message);
+  else toast("Kart sayğacı sıfırlandı");
 });
 
 $("salesPocketStat").addEventListener("click",openPocketEditModal);
