@@ -143,7 +143,9 @@ create table if not exists public.app_settings (
   report_sections text[] not null default array['summary','sales','expenses'],
   pocket_overrides jsonb not null default '{}',
   show_dashboard_profit boolean not null default true,
+  show_card_limits boolean not null default false,
   card_accounts text[] not null default array['Əlinin kartı','Yusifin kartı'],
+  card_details jsonb not null default '{}',
   card_counter_reset_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -159,7 +161,13 @@ alter table public.app_settings
   add column if not exists show_dashboard_profit boolean not null default true;
 
 alter table public.app_settings
+  add column if not exists show_card_limits boolean not null default false;
+
+alter table public.app_settings
   add column if not exists card_accounts text[] not null default array['Əlinin kartı','Yusifin kartı'];
+
+alter table public.app_settings
+  add column if not exists card_details jsonb not null default '{}';
 
 alter table public.app_settings
   add column if not exists card_counter_reset_at timestamptz;

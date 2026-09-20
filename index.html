@@ -582,6 +582,22 @@
       margin-bottom:10px;
     }
     .card-info-box strong{display:block;font-size:16px;margin-bottom:4px}
+    .card-number-modal{width:min(96vw,760px)}
+    .card-number-display{
+      width:100%;
+      padding:22px 12px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:var(--card2);
+      color:var(--text);
+      font-size:clamp(24px,7vw,58px);
+      font-weight:950;
+      letter-spacing:.08em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-align:center;
+      font-variant-numeric:tabular-nums;
+    }
     .sale-check{
       width:26px;height:26px;border:2px solid var(--line);border-radius:8px;
       background:var(--card2);opacity:.62;flex:0 0 auto;
@@ -2109,6 +2125,17 @@
       <div class="card settings-card">
         <div class="settings-head">
           <div>
+            <div class="settings-title">Kartlar</div>
+            <div class="meta">Əlinin kartı, Yusifin kartı və mədaxil limitləri</div>
+          </div>
+          <button id="openCardSettingsFromSettings" class="btn secondary" type="button">Aç</button>
+        </div>
+        <label class="check-card"><input id="cardLimitsVisible" type="checkbox"> Ana ekranda kart limitləri görünsün</label>
+      </div>
+
+      <div class="card settings-card">
+        <div class="settings-head">
+          <div>
             <div class="settings-title">Silinənlər</div>
             <div class="meta">Məhsul, satış, xərc və qeydləri geri qaytar</div>
           </div>
@@ -2499,6 +2526,19 @@
     </div>
   </div>
 
+  <div id="cardNumberModal" class="modal-backdrop hidden">
+    <div class="modal card-number-modal">
+      <div class="modal-head">
+        <div>
+          <h3 id="cardNumberTitle">Kart</h3>
+          <div id="cardNumberBank" class="meta">Birbank</div>
+        </div>
+        <button class="close" data-close="cardNumberModal" type="button">×</button>
+      </div>
+      <div id="cardNumberValue" class="card-number-display">•••• •••• •••• ••••</div>
+    </div>
+  </div>
+
   <div id="pocketEditModal" class="modal-backdrop hidden">
     <div class="modal">
       <div class="modal-head">
@@ -2644,7 +2684,7 @@ let expenses=[];
 let notes=[];
 let activityLogs=[];
 let deletedRecords=[];
-let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,show_dashboard_profit:true,card_accounts:null,card_counter_reset_at:null};
+let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null};
 let currentSaleProduct=null;
 let displayedLocalDate=null;
 let editingImageUrls=[];
@@ -3248,9 +3288,9 @@ async function loadAppSettings(){
 
   if(error){
     console.warn("app_settings:",error.message);
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,show_dashboard_profit:true,card_accounts:null,card_counter_reset_at:null};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null};
   }else{
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,show_dashboard_profit:true,card_accounts:null,card_counter_reset_at:null,...(data||{})};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,...(data||{})};
   }
 
   applyBranding();
@@ -3380,6 +3420,10 @@ function renderReportSectionControls(){
   if($("dashboardProfitVisible")){
     $("dashboardProfitVisible").checked=appSettings?.show_dashboard_profit!==false;
   }
+
+  if($("cardLimitsVisible")){
+    $("cardLimitsVisible").checked=appSettings?.show_card_limits===true;
+  }
 }
 
 async function saveReportSections(sections){
@@ -3415,6 +3459,19 @@ async function saveDashboardProfitVisibility(visible){
   if(error)toast(error.message);
 }
 
+async function saveCardLimitVisibility(visible){
+  appSettings={...appSettings,show_card_limits:visible};
+  renderCardLimitStrip();
+
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    show_card_limits:visible,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+
+  if(error)toast(error.message);
+}
+
 function cardAccounts(){
   const list=Array.isArray(appSettings?.card_accounts)
     ? appSettings.card_accounts.filter(Boolean)
@@ -3423,7 +3480,32 @@ function cardAccounts(){
 }
 
 function cardPublicInfo(name){
-  return CARD_PUBLIC_INFO[name]||null;
+  const details=appSettings?.card_details && typeof appSettings.card_details==="object"
+    ? appSettings.card_details
+    : {};
+  return details[name]||CARD_PUBLIC_INFO[name]||null;
+}
+
+function cardDetails(){
+  return appSettings?.card_details && typeof appSettings.card_details==="object"
+    ? appSettings.card_details
+    : {};
+}
+
+async function saveCardDetail(name,detail){
+  const next={...cardDetails(),[name]:detail};
+  appSettings={...appSettings,card_details:next};
+  renderCardLimitStrip();
+  renderCardSettingsModal();
+
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    card_details:next,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+
+  if(error)toast(error.message);
+  else toast("Kart məlumatı saxlandı");
 }
 
 function renderCardAccountOptions(){
@@ -3455,6 +3537,14 @@ function cardAccountStats(list=filteredSalesList()){
 }
 
 function renderCardLimitStrip(){
+  if(!$("cardLimitStrip"))return;
+  if(appSettings?.show_card_limits!==true){
+    $("cardLimitStrip").classList.add("hidden");
+    $("cardLimitStrip").innerHTML="";
+    return;
+  }
+
+  $("cardLimitStrip").classList.remove("hidden");
   const todayStats=cardSalesForCurrentDay().reduce((acc,sale)=>{
     const name=sale.card_account||cardAccounts()[0];
     acc[name]=(acc[name]||0)+1;
@@ -3465,14 +3555,14 @@ function renderCardLimitStrip(){
     const used=todayStats[name]||0;
     const left=Math.max(0,5-used);
     const info=cardPublicInfo(name);
-    return `<button class="card-limit" type="button" data-open-card-settings="${escapeHtml(name)}">
+    return `<button class="card-limit" type="button" data-show-card-number="${escapeHtml(name)}">
       ${escapeHtml(name)}
       <small>${left} mədaxil limiti${info?` · ${escapeHtml(info.bank)} · ${escapeHtml(info.masked)}`:""}</small>
     </button>`;
   }).join("");
 
-  document.querySelectorAll("[data-open-card-settings]").forEach(button=>{
-    button.addEventListener("click",()=>openCardSettingsModal(button.dataset.openCardSettings));
+  document.querySelectorAll("[data-show-card-number]").forEach(button=>{
+    button.addEventListener("click",()=>openCardNumberModal(button.dataset.showCardNumber));
   });
 }
 
@@ -3497,23 +3587,50 @@ function renderCardSettingsModal(){
     return acc;
   },{});
 
-  $("cardSettingsList").innerHTML=cardAccounts().map(name=>`
+  $("cardSettingsList").innerHTML=cardAccounts().map(name=>{
+    const info=cardPublicInfo(name)||{};
+    return `
     <div class="log-item">
       <div class="log-top">
         <div>
           <div class="log-title">${escapeHtml(name)}</div>
-          <div class="log-tags"><span class="log-tag">${todayStats[name]||0} mədaxil</span></div>
+          <div class="log-tags">
+            <span class="log-tag">${todayStats[name]||0} mədaxil</span>
+            ${info.bank?`<span class="log-tag">${escapeHtml(info.bank)}</span>`:""}
+          </div>
         </div>
         <button class="btn danger" data-remove-card-account="${escapeHtml(name)}" type="button">Sil</button>
       </div>
+      <div class="row2" style="margin-top:10px">
+        <input class="input" data-card-bank="${escapeHtml(name)}" placeholder="Bank" value="${escapeHtml(info.bank||"Birbank")}">
+        <input class="input" data-card-number="${escapeHtml(name)}" placeholder="Kart kodu / nömrəsi" value="${escapeHtml(info.number||info.masked||"")}">
+      </div>
+      <div class="row2" style="margin-top:8px">
+        <button class="btn secondary full" data-save-card-detail="${escapeHtml(name)}" type="button">Yadda saxla</button>
+        <button class="btn full" data-preview-card-number="${escapeHtml(name)}" type="button">Böyük göstər</button>
+      </div>
     </div>
-  `).join("");
+  `}).join("");
 
   document.querySelectorAll("[data-remove-card-account]").forEach(button=>{
     button.addEventListener("click",()=>{
       const next=cardAccounts().filter(name=>name!==button.dataset.removeCardAccount);
       saveCardAccounts(next.length?next:[...DEFAULT_CARD_ACCOUNTS]);
     });
+  });
+
+  document.querySelectorAll("[data-save-card-detail]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const name=button.dataset.saveCardDetail;
+      saveCardDetail(name,{
+        bank:document.querySelector(`[data-card-bank="${CSS.escape(name)}"]`)?.value.trim()||"Birbank",
+        number:document.querySelector(`[data-card-number="${CSS.escape(name)}"]`)?.value.trim()||""
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-preview-card-number]").forEach(button=>{
+    button.addEventListener("click",()=>openCardNumberModal(button.dataset.previewCardNumber));
   });
 }
 
@@ -3528,8 +3645,16 @@ function renderSelectedCardInfo(name){
   $("selectedCardInfo").classList.toggle("hidden",!info);
   $("selectedCardInfo").innerHTML=info?`
     <strong>${escapeHtml(name)}</strong>
-    <div class="meta">${escapeHtml(info.bank)} · ${escapeHtml(info.masked)}</div>
+    <div class="meta">${escapeHtml(info.bank||"Birbank")} · ${escapeHtml(info.number||info.masked||"Kart kodu əlavə edilməyib")}</div>
   `:"";
+}
+
+function openCardNumberModal(name){
+  const info=cardPublicInfo(name)||{};
+  $("cardNumberTitle").textContent=name||"Kart";
+  $("cardNumberBank").textContent=info.bank||"Birbank";
+  $("cardNumberValue").textContent=info.number||info.masked||"Kart kodu əlavə edilməyib";
+  openModal("cardNumberModal");
 }
 
 function openCardSettingsModal(name=""){
@@ -6443,6 +6568,14 @@ $("reportSectionsSettings").addEventListener("change",async()=>{
 
 $("dashboardProfitVisible").addEventListener("change",()=>{
   saveDashboardProfitVisibility($("dashboardProfitVisible").checked);
+});
+
+$("cardLimitsVisible").addEventListener("change",()=>{
+  saveCardLimitVisibility($("cardLimitsVisible").checked);
+});
+
+$("openCardSettingsFromSettings").addEventListener("click",()=>{
+  openCardSettingsModal();
 });
 
 function sqlValue(value){
