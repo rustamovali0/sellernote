@@ -582,6 +582,10 @@
       margin-bottom:10px;
     }
     .card-info-box strong{display:block;font-size:16px;margin-bottom:4px}
+    #cardNumberModal{
+      align-items:center;
+      padding:16px;
+    }
     .card-number-modal{width:min(96vw,760px)}
     .card-number-display{
       width:100%;
@@ -597,6 +601,25 @@
       overflow:hidden;
       text-align:center;
       font-variant-numeric:tabular-nums;
+    }
+    @media(max-width:619px){
+      #cardNumberModal{
+        align-items:center;
+        padding:0;
+      }
+      #cardNumberModal .card-number-modal{
+        width:min(88dvh,760px);
+        max-width:none;
+        max-height:92vw;
+        overflow:visible;
+        transform:rotate(90deg);
+        border-radius:24px;
+        padding:14px;
+      }
+      #cardNumberModal .card-number-display{
+        font-size:clamp(30px,8dvh,66px);
+        padding:24px 14px;
+      }
     }
     .sale-check{
       width:26px;height:26px;border:2px solid var(--line);border-radius:8px;
@@ -3554,10 +3577,9 @@ function renderCardLimitStrip(){
   $("cardLimitStrip").innerHTML=cardAccounts().map(name=>{
     const used=todayStats[name]||0;
     const left=Math.max(0,5-used);
-    const info=cardPublicInfo(name);
     return `<button class="card-limit" type="button" data-show-card-number="${escapeHtml(name)}">
       ${escapeHtml(name)}
-      <small>${left} mədaxil limiti${info?` · ${escapeHtml(info.bank)} · ${escapeHtml(info.masked)}`:""}</small>
+      <small>${left} mədaxil limiti</small>
     </button>`;
   }).join("");
 
