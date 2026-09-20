@@ -578,6 +578,11 @@
       width:26px;height:26px;border:2px solid var(--line);border-radius:8px;
       background:var(--card2);opacity:.62;flex:0 0 auto;
     }
+    .sale-check-input{
+      width:26px;height:26px;flex:0 0 auto;
+      accent-color:var(--success);
+      cursor:pointer;
+    }
     .sale-card-line{display:flex;gap:10px;align-items:flex-start}
     .hidden-profit{display:none!important}
     .sql-preview{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;line-height:1.45;color:#111827}
@@ -4186,7 +4191,11 @@ function renderSales(){
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
-              <span class="sale-check" aria-hidden="true"></span>
+              <input class="sale-check-input"
+                     type="checkbox"
+                     data-sale-check="${sale.id}"
+                     ${sale.is_checked?"checked":""}
+                     aria-label="Satış statusu">
               <div class="sale-total ${sale.sale_price_provided===false?"not-recorded":""}">${displaySalePrice(sale)}</div>
             </div>
           </div>
@@ -4218,6 +4227,10 @@ function renderSales(){
 
   document.querySelectorAll("[data-edit-sale]").forEach(button=>{
     button.addEventListener("click",()=>openEditSale(button.dataset.editSale));
+  });
+
+  document.querySelectorAll("[data-sale-check]").forEach(input=>{
+    input.addEventListener("change",()=>toggleSaleChecked(input.dataset.saleCheck,input.checked,input));
   });
 
   document.querySelectorAll("[data-delete-sale]").forEach(button=>{
@@ -4967,6 +4980,25 @@ async function deleteSale(id){
 
   await loadAll();
   toast("Satış silindi");
+}
+
+async function toggleSaleChecked(id,checked,input){
+  const sale=sales.find(item=>item.id===id);
+  const previous=!!sale?.is_checked;
+  if(sale)sale.is_checked=checked;
+  input.disabled=true;
+
+  const {error}=await sb.from("sales").update({is_checked:checked}).eq("id",id);
+  input.disabled=false;
+
+  if(error){
+    if(sale)sale.is_checked=previous;
+    input.checked=previous;
+    toast("Status saxlanmadı. Supabase SQL-də is_checked sütununu əlavə edin.");
+    return;
+  }
+
+  toast(checked?"Status işarələndi":"Status silindi");
 }
 
 async function deleteCategory(id){
@@ -6400,7 +6432,7 @@ async function downloadSqlPdf(){
     "",
     sqlInsert("categories",categories,["id","user_id","name","created_at","updated_at"]),
     sqlInsert("products",[...products,...allDeleted.filter(row=>"sale_price" in row&&"cost_price" in row)],["id","user_id","category_id","name","sale_price","cost_price","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
-    sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
+    sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","is_checked","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
     sqlInsert("expenses",[...expenses,...allDeleted.filter(row=>"amount" in row&&"title" in row)],["id","user_id","title","amount","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("notes",[...notes,...allDeleted.filter(row=>"body" in row)],["id","user_id","body","image_url","image_urls","deleted_at","created_at","updated_at"])
   ].join("\n");

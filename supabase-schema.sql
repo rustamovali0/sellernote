@@ -59,6 +59,7 @@ create table if not exists public.sales (
   cost_price_provided boolean not null default true,
   payment_method text not null default 'cash' check (payment_method in ('cash','card')),
   card_account text,
+  is_checked boolean not null default false,
   total_revenue numeric(12,2) generated always as (
     case when sale_price_provided then quantity * unit_sale_price else 0 end
   ) stored,
@@ -171,6 +172,9 @@ alter table public.sales
 
 alter table public.sales
   add column if not exists card_account text;
+
+alter table public.sales
+  add column if not exists is_checked boolean not null default false;
 
 alter table public.expenses
   add column if not exists deleted_at timestamptz;
