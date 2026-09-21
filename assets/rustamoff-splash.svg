@@ -1,32 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1179" height="2556" viewBox="0 0 1179 2556">
   <defs>
-    <radialGradient id="glow" cx="50%" cy="42%" r="54%">
-      <stop offset="0" stop-color="#0f766e" stop-opacity=".75"/>
-      <stop offset=".46" stop-color="#042f2e" stop-opacity=".36"/>
-      <stop offset="1" stop-color="#020617" stop-opacity="0"/>
+    <radialGradient id="blue" cx="18%" cy="16%" r="45%">
+      <stop offset="0" stop-color="#bfdbfe"/>
+      <stop offset="1" stop-color="#bfdbfe" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#22c55e"/>
-      <stop offset="1" stop-color="#06b6d4"/>
+    <radialGradient id="green" cx="84%" cy="78%" r="44%">
+      <stop offset="0" stop-color="#bbf7d0"/>
+      <stop offset="1" stop-color="#bbf7d0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset=".52" stop-color="#eff6ff"/>
+      <stop offset="1" stop-color="#f0fdf4"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#16a34a"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
     </linearGradient>
   </defs>
-  <rect width="1179" height="2556" fill="#020617"/>
-  <rect width="1179" height="2556" fill="url(#glow)"/>
-  <g stroke="#134e4a" stroke-width="2" opacity=".32">
-    <path d="M0 120h1179M0 180h1179M0 240h1179M0 300h1179M0 360h1179M0 420h1179M0 480h1179M0 540h1179M0 600h1179M0 660h1179M0 720h1179M0 780h1179M0 840h1179M0 900h1179M0 960h1179M0 1020h1179M0 1080h1179M0 1140h1179M0 1200h1179M0 1260h1179M0 1320h1179M0 1380h1179M0 1440h1179M0 1500h1179M0 1560h1179M0 1620h1179M0 1680h1179M0 1740h1179M0 1800h1179M0 1860h1179M0 1920h1179M0 1980h1179M0 2040h1179M0 2100h1179M0 2160h1179M0 2220h1179M0 2280h1179M0 2340h1179M0 2400h1179"/>
-    <path d="M60 0v2556M120 0v2556M180 0v2556M240 0v2556M300 0v2556M360 0v2556M420 0v2556M480 0v2556M540 0v2556M600 0v2556M660 0v2556M720 0v2556M780 0v2556M840 0v2556M900 0v2556M960 0v2556M1020 0v2556M1080 0v2556M1140 0v2556"/>
+  <rect width="1179" height="2556" fill="url(#bg)"/>
+  <rect width="1179" height="2556" fill="url(#blue)"/>
+  <rect width="1179" height="2556" fill="url(#green)"/>
+  <g transform="translate(181 830)">
+    <rect width="817" height="760" rx="72" fill="#ffffff" stroke="#e2e8f0" stroke-width="4"/>
+    <rect x="72" y="76" width="108" height="108" rx="34" fill="#0f172a"/>
+    <text x="126" y="151" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="900" fill="#ffffff">₼</text>
+    <text x="72" y="270" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="900" letter-spacing="7" fill="#15803d">SATIŞ PANELI</text>
+    <text x="72" y="392" font-family="Arial, Helvetica, sans-serif" font-size="112" font-weight="900" fill="#0f172a">Rustamoff</text>
+    <text x="76" y="458" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#64748b">Satış, xərc və qazanc uçotu</text>
+    <g transform="translate(72 532)">
+      <rect width="305" height="122" rx="30" fill="#f8fafc" stroke="#e2e8f0" stroke-width="3"/>
+      <text x="30" y="45" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="800" fill="#64748b">Satış</text>
+      <text x="30" y="96" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="900" fill="#0f172a">₼</text>
+    </g>
+    <g transform="translate(408 532)">
+      <rect width="305" height="122" rx="30" fill="#f8fafc" stroke="#e2e8f0" stroke-width="3"/>
+      <text x="30" y="45" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="800" fill="#64748b">Hesabat</text>
+      <text x="30" y="96" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="900" fill="#0f172a">PDF</text>
+    </g>
+    <rect x="72" y="700" width="673" height="18" rx="9" fill="#e2e8f0"/>
+    <rect x="72" y="700" width="498" height="18" rx="9" fill="url(#accent)"/>
   </g>
-  <g transform="translate(195 948)">
-    <rect width="789" height="560" rx="54" fill="#06111f" stroke="#10b981" stroke-width="4"/>
-    <circle cx="78" cy="78" r="14" fill="#34d399"/>
-    <circle cx="126" cy="78" r="14" fill="#22d3ee"/>
-    <circle cx="174" cy="78" r="14" fill="#facc15"/>
-    <text x="596" y="82" font-family="Menlo, monospace" font-size="24" font-weight="800" fill="#10b981" opacity=".65">01010010 01010101</text>
-    <text x="70" y="184" font-family="Menlo, monospace" font-size="26" font-weight="900" letter-spacing="8" fill="#34d399">SECURE NODE</text>
-    <text x="70" y="315" font-family="Arial, Helvetica, sans-serif" font-size="118" font-weight="900" fill="#f0fdf4">Rustamoff</text>
-    <text x="75" y="380" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#94a3b8">Mal uçotu sistemi</text>
-    <rect x="74" y="448" width="635" height="18" rx="9" fill="#0f2d36"/>
-    <rect x="74" y="448" width="474" height="18" rx="9" fill="url(#accent)"/>
-  </g>
-  <text x="82" y="2370" font-family="Menlo, monospace" font-size="26" font-weight="900" letter-spacing="5" fill="#10b981" opacity=".55">ACCESS NODE // SELLERNOTE</text>
 </svg>

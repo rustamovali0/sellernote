@@ -76,43 +76,64 @@
       place-items:center;
       overflow:hidden;
       background:
-        radial-gradient(circle at 50% 38%,rgba(20,184,166,.35),transparent 34%),
-        linear-gradient(rgba(34,211,238,.045) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(34,211,238,.045) 1px,transparent 1px),
-        #020617;
-      background-size:auto,34px 34px,34px 34px,auto;
-      color:#f0fdf4;
+        radial-gradient(circle at 22% 18%,rgba(14,165,233,.18),transparent 30%),
+        radial-gradient(circle at 82% 78%,rgba(22,163,74,.18),transparent 32%),
+        linear-gradient(145deg,#f8fafc 0%,#eef6ff 46%,#f0fdf4 100%);
+      color:#0f172a;
       transition:opacity .45s ease,visibility .45s ease;
     }
     .launch-splash.done{opacity:0;visibility:hidden;pointer-events:none}
     .launch-card{
       width:min(78vw,430px);
       padding:34px 28px;
-      border:1px solid rgba(52,211,153,.6);
-      border-radius:28px;
-      background:rgba(6,17,31,.92);
-      box-shadow:0 0 46px rgba(16,185,129,.2);
+      border:1px solid rgba(226,232,240,.95);
+      border-radius:32px;
+      background:rgba(255,255,255,.94);
+      box-shadow:0 24px 70px rgba(15,23,42,.13);
     }
-    .launch-dots{display:flex;gap:9px;margin-bottom:25px}
-    .launch-dots span{width:11px;height:11px;border-radius:999px}
-    .launch-dots span:nth-child(1){background:#34d399}
-    .launch-dots span:nth-child(2){background:#22d3ee}
-    .launch-dots span:nth-child(3){background:#facc15}
+    .launch-icon{
+      width:72px;
+      height:72px;
+      margin-bottom:24px;
+      border-radius:24px;
+      display:grid;
+      place-items:center;
+      background:#0f172a;
+      color:#fff;
+      font-size:36px;
+      font-weight:950;
+      box-shadow:0 18px 38px rgba(15,23,42,.2);
+    }
     .launch-kicker{
       margin:0 0 10px;
-      color:#34d399;
-      font:800 12px/1.2 Menlo,Consolas,monospace;
-      letter-spacing:.32em;
+      color:#15803d;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.16em;
       text-transform:uppercase;
     }
     .launch-title{margin:0;font-size:clamp(40px,10vw,62px);font-weight:950;letter-spacing:0}
-    .launch-sub{margin:8px 0 0;color:#94a3b8;font-size:15px;font-weight:750}
+    .launch-sub{margin:8px 0 0;color:#64748b;font-size:15px;font-weight:750}
+    .launch-metrics{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:26px;
+    }
+    .launch-metric{
+      padding:12px;
+      border:1px solid #e2e8f0;
+      border-radius:18px;
+      background:#f8fafc;
+    }
+    .launch-metric span{display:block;color:#64748b;font-size:11px;font-weight:800}
+    .launch-metric strong{display:block;margin-top:5px;font-size:22px;color:#0f172a}
     .launch-bar{
       height:9px;
       margin-top:28px;
       border-radius:999px;
       overflow:hidden;
-      background:#0f2d36;
+      background:#e2e8f0;
     }
     .launch-bar::before{
       content:"";
@@ -120,7 +141,7 @@
       width:72%;
       height:100%;
       border-radius:inherit;
-      background:linear-gradient(90deg,#22c55e,#06b6d4);
+      background:linear-gradient(90deg,#16a34a,#0ea5e9);
     }
 
     .app{
@@ -578,6 +599,36 @@
       padding:13px;
       margin-bottom:12px;
     }
+    details.settings-card{display:block;overflow:hidden}
+    .settings-toggle{
+      list-style:none;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      min-height:48px;
+      cursor:pointer;
+    }
+    .settings-toggle::-webkit-details-marker{display:none}
+    .settings-toggle::after{
+      content:"⌄";
+      width:34px;
+      height:34px;
+      border-radius:12px;
+      flex:0 0 auto;
+      display:grid;
+      place-items:center;
+      background:var(--card2);
+      color:var(--muted);
+      font-weight:950;
+      transition:transform .18s ease;
+    }
+    details[open]>.settings-toggle::after{transform:rotate(180deg)}
+    .settings-body{
+      padding-top:12px;
+      margin-top:12px;
+      border-top:1px solid var(--line);
+    }
     .settings-head{
       display:flex;
       align-items:center;
@@ -661,14 +712,6 @@
       position:relative;
       z-index:2;
       margin:0;
-    }
-    .card-number-modal .close{
-      background:#eef2f7;
-      color:#0f172a;
-      width:46px;
-      height:46px;
-      border-radius:16px;
-      font-size:24px;
     }
     .card-number-display{
       position:absolute;
@@ -1798,10 +1841,14 @@
 <body>
   <div id="launchSplash" class="launch-splash" aria-label="Rustamoff yüklənir">
     <div class="launch-card">
-      <div class="launch-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-      <p class="launch-kicker">secure node</p>
+      <div class="launch-icon" aria-hidden="true">₼</div>
+      <p class="launch-kicker">satış paneli</p>
       <h1 class="launch-title">Rustamoff</h1>
-      <p class="launch-sub">Mal uçotu sistemi</p>
+      <p class="launch-sub">Satış, xərc və qazanc uçotu</p>
+      <div class="launch-metrics" aria-hidden="true">
+        <div class="launch-metric"><span>Satış</span><strong>₼</strong></div>
+        <div class="launch-metric"><span>Hesabat</span><strong>PDF</strong></div>
+      </div>
       <div class="launch-bar" aria-hidden="true"></div>
     </div>
   </div>
@@ -2187,13 +2234,14 @@
         <h2>Ayarlar</h2>
       </div>
 
-      <div class="card settings-card">
-        <div class="settings-head">
+      <details class="card settings-card">
+        <summary class="settings-toggle">
           <div>
             <div class="settings-title">Kartlar</div>
             <div class="meta">Kart adlarını, bankı və nömrəni buradan dəyiş</div>
           </div>
-        </div>
+        </summary>
+        <div class="settings-body">
         <label class="check-card"><input id="cardLimitsVisible" type="checkbox"> Ana ekranda kart limitləri görünsün</label>
         <div id="cardSettingsInlineList" class="log-list" style="margin-top:10px"></div>
         <div class="row2" style="margin-top:10px">
@@ -2201,21 +2249,22 @@
           <button id="addCardAccountInlineBtn" class="btn" type="button">Əlavə et</button>
         </div>
         <button id="resetCardCountersInlineBtn" class="btn secondary full" type="button" style="margin-top:10px">Sayğacı sıfırla</button>
-      </div>
+        </div>
+      </details>
 
-      <div class="card settings-card">
-        <div class="settings-head">
+      <details class="card settings-card">
+        <summary class="settings-toggle">
           <div>
             <div class="settings-title">Gündəlik qazanc</div>
             <div class="meta">Hər günün sonunda qazandığın məbləği tarixlə qeyd et</div>
           </div>
-          <button id="toggleDailyProfitPanel" class="btn secondary" type="button">Bu günün qazancı</button>
-        </div>
+        </summary>
+        <div class="settings-body">
         <div id="dailyProfitSummary" class="stat" style="margin-top:10px">
           <div class="label">Ümumi cəm</div>
           <div id="dailyProfitTotal" class="value profit">0 ₼</div>
         </div>
-        <div id="dailyProfitPanel" class="settings-subview hidden">
+        <div id="dailyProfitPanel" class="settings-subview">
           <div class="row2" style="margin-top:10px">
             <div>
               <label class="label">Tarix</label>
@@ -2229,17 +2278,18 @@
           <button id="saveDailyProfitBtn" class="btn full" type="button" style="margin-top:10px">Yadda saxla</button>
           <div id="dailyProfitList" class="log-list" style="margin-top:10px"></div>
         </div>
-      </div>
+        </div>
+      </details>
 
-      <div class="card settings-card">
-        <div class="settings-head">
+      <details class="card settings-card">
+        <summary class="settings-toggle">
           <div>
             <div class="settings-title">Logo və favicon</div>
             <div class="meta">Şəkli sürüklə-burax və ya üzərinə bas</div>
           </div>
-        </div>
+        </summary>
 
-        <div class="branding-grid">
+        <div class="settings-body branding-grid">
           <div>
             <div class="label" style="margin-bottom:7px">Logo</div>
             <button id="logoDropZone" class="asset-drop" type="button">
@@ -2260,26 +2310,29 @@
             <button id="resetFaviconBtn" class="btn secondary full asset-reset" type="button">Faviconu sıfırla</button>
           </div>
         </div>
-      </div>
+      </details>
 
-      <div class="card settings-card">
-        <div class="settings-head">
+      <details class="card settings-card">
+        <summary class="settings-toggle">
           <div>
             <div class="settings-title">Kateqoriyalar</div>
             <div class="meta">Məhsulları qruplaşdırmaq üçün</div>
           </div>
+        </summary>
+        <div class="settings-body">
           <button id="newCategoryBtn" class="btn" type="button">+ Əlavə et</button>
+          <div id="categoryList" class="category-list" style="margin-top:10px"></div>
         </div>
-        <div id="categoryList" class="category-list"></div>
-      </div>
+      </details>
 
-      <div class="card settings-card">
-        <div class="settings-head">
+      <details class="card settings-card">
+        <summary class="settings-toggle">
           <div>
             <div class="settings-title">PDF / JPG hesabatı</div>
             <div class="meta">Hesabatda hansı bölmələrin görünəcəyini seç</div>
           </div>
-        </div>
+        </summary>
+        <div class="settings-body">
         <div id="reportSectionsSettings" class="report-options">
           <label class="check-card"><input type="checkbox" value="summary"> Satış + xərc</label>
           <label class="check-card"><input type="checkbox" value="sales"> Satış</label>
@@ -2289,17 +2342,17 @@
         </div>
         <label class="check-card" style="margin-top:10px"><input id="dashboardProfitVisible" type="checkbox"> Ana ekranda qazanc görünsün</label>
         <button id="downloadSqlPdfBtn" class="btn secondary full" type="button" style="margin-top:10px">SQL yüklə</button>
-      </div>
+        </div>
+      </details>
 
-      <div class="card settings-card">
-        <div class="settings-head">
+      <details class="card settings-card">
+        <summary class="settings-toggle">
           <div>
             <div class="settings-title">Silinənlər</div>
             <div class="meta">Məhsul, satış, xərc və qeydləri geri qaytar</div>
           </div>
-          <button id="toggleDeletedPanel" class="btn secondary" type="button">Silinənlər</button>
-        </div>
-        <div id="deletedPanel" class="settings-subview hidden">
+        </summary>
+        <div id="deletedPanel" class="settings-body settings-subview">
           <select id="deletedDateFilter" class="select" style="margin-bottom:10px">
             <option value="today">Bu gün</option>
             <option value="yesterday">Dünən</option>
@@ -2307,18 +2360,18 @@
           </select>
           <div id="deletedList" class="deleted-list"></div>
         </div>
-      </div>
+      </details>
 
-      <div class="card settings-card">
-        <div class="settings-head">
+      <details class="card settings-card">
+        <summary class="settings-toggle">
           <div>
             <div class="settings-title">Fəaliyyət tarixçəsi</div>
             <div class="meta">Əlavə, düzəliş və silinmə qeydləri</div>
           </div>
           <span id="logCount" class="count">0 qeyd</span>
-        </div>
+        </summary>
 
-        <div class="log-filters">
+        <div class="settings-body log-filters">
           <input id="logSearch" class="input" type="search" placeholder="Ada görə axtar..." />
 
           <div class="row2">
@@ -2354,13 +2407,19 @@
 
         <div id="logList" class="log-list"></div>
         <button id="loadMoreLogsBtn" class="btn secondary full hidden" type="button" style="margin-top:10px">Daha çox</button>
-      </div>
+      </details>
 
-      <div class="card settings-card">
-        <div class="settings-title">Hesab</div>
-        <div class="meta" style="margin-bottom:12px">Şəxsi hesab</div>
+      <details class="card settings-card">
+        <summary class="settings-toggle">
+          <div>
+            <div class="settings-title">Hesab</div>
+            <div class="meta">Şəxsi hesab</div>
+          </div>
+        </summary>
+        <div class="settings-body">
         <button id="logoutBtn" class="btn danger full" type="button">Hesabdan çıx</button>
-      </div>
+        </div>
+      </details>
     </section>
 
     <nav class="bottom-nav">
@@ -2691,7 +2750,6 @@
           <h3 id="cardNumberTitle">Kart</h3>
           <div id="cardNumberBank" class="meta">Birbank</div>
         </div>
-        <button class="close" data-close="cardNumberModal" type="button">×</button>
       </div>
       <div id="cardNumberValue" class="card-number-display">•••• •••• •••• ••••</div>
     </div>
@@ -2791,10 +2849,11 @@
   <div id="categoryModal" class="modal-backdrop hidden">
     <div class="modal">
       <div class="modal-head">
-        <h3>Kateqoriya əlavə et</h3>
+        <h3 id="categoryModalTitle">Kateqoriya əlavə et</h3>
         <button class="close" data-close="categoryModal" type="button">×</button>
       </div>
       <form id="categoryForm" class="form" novalidate>
+        <input id="categoryId" type="hidden" />
         <input id="categoryName" class="input" placeholder="Məs: Telefonlar (boş qala bilər)" />
         <button class="btn full" type="submit">Yadda saxla</button>
       </form>
@@ -2895,7 +2954,7 @@ const CARD_PUBLIC_INFO={
   "Əlinin kartı":{bank:"Birbank",masked:"•••• •••• •••• 0323"},
   "Yusifin kartı":{bank:"Birbank",masked:"•••• •••• •••• 4477"}
 };
-const DEFAULT_REPORT_SECTIONS=["summary","sales","expenses"];
+const DEFAULT_REPORT_SECTIONS=["sales","expenses"];
 const REPORT_SECTION_LABELS={
   summary:"Satış + xərc",
   sales:"Satış",
@@ -4997,9 +5056,14 @@ function renderCategories(){
         <div class="category-name">${escapeHtml(category.name)}</div>
         <div class="meta">${count} məhsul</div>
       </div>
+      <button class="btn secondary" data-edit-category="${category.id}" type="button">Düzəliş</button>
       <button class="btn danger" data-delete-category="${category.id}" type="button">Sil</button>
     </div>`;
   }).join(""):'<div class="card empty">Kateqoriya yoxdur.</div>';
+
+  document.querySelectorAll("[data-edit-category]").forEach(button=>{
+    button.addEventListener("click",()=>openEditCategory(button.dataset.editCategory));
+  });
 
   document.querySelectorAll("[data-delete-category]").forEach(button=>{
     button.addEventListener("click",()=>deleteCategory(button.dataset.deleteCategory));
@@ -5435,6 +5499,21 @@ async function deleteCategory(id){
   toast("Kateqoriya silindi");
 }
 
+function resetCategoryForm(){
+  $("categoryId").value="";
+  $("categoryName").value="";
+  $("categoryModalTitle").textContent="Kateqoriya əlavə et";
+}
+
+function openEditCategory(id){
+  const category=categories.find(item=>item.id===id);
+  if(!category)return;
+  $("categoryId").value=category.id;
+  $("categoryName").value=category.name||"";
+  $("categoryModalTitle").textContent="Kateqoriyanı düzəlt";
+  openModal("categoryModal");
+}
+
 function resetExpenseForm(){
   $("expenseForm").reset();
   $("expenseId").value="";
@@ -5743,6 +5822,12 @@ document.querySelectorAll(".modal-backdrop").forEach(backdrop=>{
     if(event.target===backdrop)closeModal(backdrop.id);
   });
 });
+
+$("cardNumberModal").addEventListener("click",event=>{
+  if(!event.target.closest("#cardNumberValue"))closeModal("cardNumberModal");
+});
+
+$("cardNumberModal").addEventListener("dblclick",()=>closeModal("cardNumberModal"));
 
 /* Dropdowns */
 bindDropdown("productDateBtn","productDatePanel");
@@ -6203,7 +6288,7 @@ $("addProductBtn").addEventListener("click",openNewProductModal);
 
 $("addProductCategoryBtn").addEventListener("click",()=>{
   categoryCreateContext="product";
-  $("categoryName").value="";
+  resetCategoryForm();
   openModal("categoryModal");
 });
 $("addSaleFromSales").addEventListener("click",()=>{
@@ -6784,36 +6869,41 @@ $("looseSaleForm").addEventListener("submit",async event=>{
 /* Categories */
 $("newCategoryBtn").addEventListener("click",()=>{
   categoryCreateContext="settings";
-  $("categoryName").value="";
+  resetCategoryForm();
   openModal("categoryModal");
 });
 
 $("categoryForm").addEventListener("submit",async event=>{
   event.preventDefault();
 
+  const id=$("categoryId").value;
   const typedName=$("categoryName").value.trim();
   const generatedName="Kateqoriya "+new Intl.DateTimeFormat("az-AZ",{
     day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"
   }).format(new Date());
   const name=typedName||generatedName;
 
-  const {data,error}=await sb.from("categories").insert({
-    user_id:currentUser.id,
-    name
-  }).select("id,name").single();
+  const request=id
+    ? sb.from("categories").update({name}).eq("id",id).select("id,name").single()
+    : sb.from("categories").insert({
+        user_id:currentUser.id,
+        name
+      }).select("id,name").single();
+
+  const {data,error}=await request;
 
   if(error){toast(error.message);return}
 
   closeModal("categoryModal");
   await loadAll();
 
-  if(categoryCreateContext==="product" && data?.id){
+  if(!id && categoryCreateContext==="product" && data?.id){
     $("productCategory").value=data.id;
     syncProductCategoryCustom();
   }
 
   categoryCreateContext="settings";
-  toast("Kateqoriya əlavə edildi");
+  toast(id?"Kateqoriya yeniləndi":"Kateqoriya əlavə edildi");
 });
 
 $("reportSectionsSettings").addEventListener("change",async()=>{
@@ -7226,11 +7316,6 @@ $("loadMoreLogsBtn").addEventListener("click",()=>{
   renderLogs();
 });
 
-$("toggleDeletedPanel").addEventListener("click",()=>{
-  $("deletedPanel").classList.toggle("hidden");
-  renderDeletedRecords();
-});
-
 $("deletedDateFilter").addEventListener("change",()=>{
   deletedDateMode=$("deletedDateFilter").value;
   renderDeletedRecords();
@@ -7341,11 +7426,6 @@ $("addCardAccountInlineBtn").addEventListener("click",()=>{
 
 $("resetCardCountersBtn").addEventListener("click",resetCardCounters);
 $("resetCardCountersInlineBtn").addEventListener("click",resetCardCounters);
-
-$("toggleDailyProfitPanel").addEventListener("click",()=>{
-  $("dailyProfitPanel").classList.toggle("hidden");
-  renderDailyProfits();
-});
 
 $("dailyProfitDate").addEventListener("change",renderDailyProfits);
 $("saveDailyProfitBtn").addEventListener("click",saveDailyProfit);
