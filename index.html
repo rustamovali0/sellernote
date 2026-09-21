@@ -2104,6 +2104,34 @@
       <div class="card settings-card">
         <div class="settings-head">
           <div>
+            <div class="settings-title">Gündəlik qazanc</div>
+            <div class="meta">Hər günün sonunda qazandığın məbləği tarixlə qeyd et</div>
+          </div>
+          <button id="toggleDailyProfitPanel" class="btn secondary" type="button">Bu günün qazancı</button>
+        </div>
+        <div id="dailyProfitSummary" class="stat" style="margin-top:10px">
+          <div class="label">Ümumi cəm</div>
+          <div id="dailyProfitTotal" class="value profit">0 ₼</div>
+        </div>
+        <div id="dailyProfitPanel" class="settings-subview hidden">
+          <div class="row2" style="margin-top:10px">
+            <div>
+              <label class="label">Tarix</label>
+              <input id="dailyProfitDate" class="input" type="date" />
+            </div>
+            <div>
+              <label class="label">Məbləğ</label>
+              <input id="dailyProfitAmount" class="input" type="number" step="0.01" inputmode="decimal" placeholder="0" />
+            </div>
+          </div>
+          <button id="saveDailyProfitBtn" class="btn full" type="button" style="margin-top:10px">Yadda saxla</button>
+          <div id="dailyProfitList" class="log-list" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <div class="card settings-card">
+        <div class="settings-head">
+          <div>
             <div class="settings-title">Logo və favicon</div>
             <div class="meta">Şəkli sürüklə-burax və ya üzərinə bas</div>
           </div>
@@ -3316,9 +3344,9 @@ async function loadAppSettings(){
 
   if(error){
     console.warn("app_settings:",error.message);
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null};
   }else{
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,...(data||{})};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,...(data||{})};
   }
 
   applyBranding();
@@ -3534,6 +3562,75 @@ async function saveCardDetail(name,detail){
 
   if(error)toast(error.message);
   else toast("Kart məlumatı saxlandı");
+}
+
+function dailyProfits(){
+  return appSettings?.daily_profits && typeof appSettings.daily_profits==="object"
+    ? appSettings.daily_profits
+    : {};
+}
+
+function renderDailyProfits(){
+  if(!$("dailyProfitTotal"))return;
+
+  const entries=Object.entries(dailyProfits())
+    .filter(([date,value])=>date && Number.isFinite(Number(value)))
+    .sort(([a],[b])=>b.localeCompare(a));
+  const total=entries.reduce((sum,[,value])=>sum+Number(value||0),0);
+
+  $("dailyProfitTotal").textContent=money(total);
+  if(!$("dailyProfitDate").value)$("dailyProfitDate").value=isoLocalDate(new Date());
+
+  const selectedAmount=dailyProfits()[$("dailyProfitDate").value];
+  $("dailyProfitAmount").value=Number.isFinite(Number(selectedAmount)) ? String(selectedAmount) : "";
+
+  $("dailyProfitList").innerHTML=entries.length?entries.map(([date,value])=>`
+    <div class="log-item">
+      <div class="log-top">
+        <div>
+          <div class="log-title">${escapeHtml(new Intl.DateTimeFormat("az-AZ",{day:"numeric",month:"long",year:"numeric"}).format(parseIsoLocalDate(date)))}</div>
+          <div class="log-tags"><span class="log-tag">${escapeHtml(date)}</span></div>
+        </div>
+        <div class="value profit">${money(value)}</div>
+      </div>
+    </div>
+  `).join(""):'<div class="empty" style="padding:14px">Hələ qazanc qeydi yoxdur.</div>';
+}
+
+async function saveDailyProfit(){
+  const date=$("dailyProfitDate").value||isoLocalDate(new Date());
+  const amount=Number($("dailyProfitAmount").value||0);
+
+  if(!date){
+    toast("Tarix seçin.");
+    return;
+  }
+
+  if(!Number.isFinite(amount)){
+    toast("Məbləği düzgün yazın.");
+    return;
+  }
+
+  const next={...dailyProfits(),[date]:amount};
+  appSettings={...appSettings,daily_profits:next};
+  renderDailyProfits();
+
+  $("saveDailyProfitBtn").disabled=true;
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    daily_profits:next,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+  $("saveDailyProfitBtn").disabled=false;
+
+  if(error){
+    toast(error.message);
+    return;
+  }
+
+  await loadLogs();
+  renderLogs();
+  toast("Gündəlik qazanc saxlandı");
 }
 
 function renderCardAccountOptions(){
@@ -4878,6 +4975,7 @@ function renderAll(){
   renderCardAccountOptions();
   renderCardLimitStrip();
   renderCardSettingsModal();
+  renderDailyProfits();
 }
 
 function showPage(page,options={}){
@@ -6613,6 +6711,7 @@ function sqlValue(value){
   if(Array.isArray(value))return `array[${value.map(sqlValue).join(",")}]::text[]`;
   if(typeof value==="number")return Number.isFinite(value)?String(value):"0";
   if(typeof value==="boolean")return value?"true":"false";
+  if(typeof value==="object")return `'${JSON.stringify(value).replace(/'/g,"''")}'::jsonb`;
   return `'${String(value).replace(/'/g,"''")}'`;
 }
 
@@ -6623,10 +6722,26 @@ function sqlInsert(table,rows,columns){
 
 async function downloadSqlPdf(){
   const allDeleted=deletedRecords.map(item=>item.row);
+  const settingsRow=currentUser?{
+    user_id:currentUser.id,
+    logo_url:appSettings.logo_url,
+    favicon_url:appSettings.favicon_url,
+    report_sections:selectedReportSections(),
+    pocket_overrides:pocketOverrides(),
+    daily_profits:dailyProfits(),
+    show_dashboard_profit:appSettings.show_dashboard_profit!==false,
+    show_card_limits:appSettings.show_card_limits===true,
+    card_accounts:cardAccounts(),
+    card_details:cardDetails(),
+    card_counter_reset_at:appSettings.card_counter_reset_at,
+    created_at:appSettings.created_at,
+    updated_at:appSettings.updated_at
+  }:null;
   const sql=[
     "-- SellerNote backup",
     `-- ${formatDate(new Date().toISOString())}`,
     "",
+    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","report_sections","pocket_overrides","daily_profits","show_dashboard_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","created_at","updated_at"]),
     sqlInsert("categories",categories,["id","user_id","name","created_at","updated_at"]),
     sqlInsert("products",[...products,...allDeleted.filter(row=>"sale_price" in row&&"cost_price" in row)],["id","user_id","category_id","name","sale_price","cost_price","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","is_checked","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
@@ -7103,6 +7218,14 @@ $("addCardAccountInlineBtn").addEventListener("click",()=>{
 
 $("resetCardCountersBtn").addEventListener("click",resetCardCounters);
 $("resetCardCountersInlineBtn").addEventListener("click",resetCardCounters);
+
+$("toggleDailyProfitPanel").addEventListener("click",()=>{
+  $("dailyProfitPanel").classList.toggle("hidden");
+  renderDailyProfits();
+});
+
+$("dailyProfitDate").addEventListener("change",renderDailyProfits);
+$("saveDailyProfitBtn").addEventListener("click",saveDailyProfit);
 
 $("salesPocketStat").addEventListener("click",openPocketEditModal);
 

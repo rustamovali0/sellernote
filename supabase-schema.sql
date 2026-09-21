@@ -142,6 +142,7 @@ create table if not exists public.app_settings (
   favicon_url text,
   report_sections text[] not null default array['summary','sales','expenses'],
   pocket_overrides jsonb not null default '{}',
+  daily_profits jsonb not null default '{}',
   show_dashboard_profit boolean not null default true,
   show_card_limits boolean not null default false,
   card_accounts text[] not null default array['Əlinin kartı','Yusifin kartı'],
@@ -156,6 +157,9 @@ alter table public.app_settings
 
 alter table public.app_settings
   add column if not exists pocket_overrides jsonb not null default '{}';
+
+alter table public.app_settings
+  add column if not exists daily_profits jsonb not null default '{}';
 
 alter table public.app_settings
   add column if not exists show_dashboard_profit boolean not null default true;
