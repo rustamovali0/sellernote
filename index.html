@@ -2088,6 +2088,22 @@
       <div class="card settings-card">
         <div class="settings-head">
           <div>
+            <div class="settings-title">Kartlar</div>
+            <div class="meta">Kart adlarını, bankı və nömrəni buradan dəyiş</div>
+          </div>
+        </div>
+        <label class="check-card"><input id="cardLimitsVisible" type="checkbox"> Ana ekranda kart limitləri görünsün</label>
+        <div id="cardSettingsInlineList" class="log-list" style="margin-top:10px"></div>
+        <div class="row2" style="margin-top:10px">
+          <input id="newCardAccountInlineName" class="input" placeholder="Kart adı" />
+          <button id="addCardAccountInlineBtn" class="btn" type="button">Əlavə et</button>
+        </div>
+        <button id="resetCardCountersInlineBtn" class="btn secondary full" type="button" style="margin-top:10px">Sayğacı sıfırla</button>
+      </div>
+
+      <div class="card settings-card">
+        <div class="settings-head">
+          <div>
             <div class="settings-title">Logo və favicon</div>
             <div class="meta">Şəkli sürüklə-burax və ya üzərinə bas</div>
           </div>
@@ -2143,17 +2159,6 @@
         </div>
         <label class="check-card" style="margin-top:10px"><input id="dashboardProfitVisible" type="checkbox"> Ana ekranda qazanc görünsün</label>
         <button id="downloadSqlPdfBtn" class="btn secondary full" type="button" style="margin-top:10px">SQL yüklə</button>
-      </div>
-
-      <div class="card settings-card">
-        <div class="settings-head">
-          <div>
-            <div class="settings-title">Kartlar</div>
-            <div class="meta">Əlinin kartı, Yusifin kartı və mədaxil limitləri</div>
-          </div>
-          <button id="openCardSettingsFromSettings" class="btn secondary" type="button">Aç</button>
-        </div>
-        <label class="check-card"><input id="cardLimitsVisible" type="checkbox"> Ana ekranda kart limitləri görünsün</label>
       </div>
 
       <div class="card settings-card">
@@ -3601,15 +3606,16 @@ async function saveCardAccounts(accounts){
   if(error)toast(error.message);
 }
 
-function renderCardSettingsModal(){
-  if(!$("cardSettingsList"))return;
+function renderCardSettingsList(targetId){
+  const target=$(targetId);
+  if(!target)return;
   const todayStats=cardSalesForCurrentDay().reduce((acc,sale)=>{
     const name=sale.card_account||cardAccounts()[0];
     acc[name]=(acc[name]||0)+1;
     return acc;
   },{});
 
-  $("cardSettingsList").innerHTML=cardAccounts().map(name=>{
+  target.innerHTML=cardAccounts().map(name=>{
     const info=cardPublicInfo(name)||{};
     return `
     <div class="log-item">
@@ -3634,26 +3640,31 @@ function renderCardSettingsModal(){
     </div>
   `}).join("");
 
-  document.querySelectorAll("[data-remove-card-account]").forEach(button=>{
+  target.querySelectorAll("[data-remove-card-account]").forEach(button=>{
     button.addEventListener("click",()=>{
       const next=cardAccounts().filter(name=>name!==button.dataset.removeCardAccount);
       saveCardAccounts(next.length?next:[...DEFAULT_CARD_ACCOUNTS]);
     });
   });
 
-  document.querySelectorAll("[data-save-card-detail]").forEach(button=>{
+  target.querySelectorAll("[data-save-card-detail]").forEach(button=>{
     button.addEventListener("click",()=>{
       const name=button.dataset.saveCardDetail;
       saveCardDetail(name,{
-        bank:document.querySelector(`[data-card-bank="${CSS.escape(name)}"]`)?.value.trim()||"Birbank",
-        number:document.querySelector(`[data-card-number="${CSS.escape(name)}"]`)?.value.trim()||""
+        bank:target.querySelector(`[data-card-bank="${CSS.escape(name)}"]`)?.value.trim()||"Birbank",
+        number:target.querySelector(`[data-card-number="${CSS.escape(name)}"]`)?.value.trim()||""
       });
     });
   });
 
-  document.querySelectorAll("[data-preview-card-number]").forEach(button=>{
+  target.querySelectorAll("[data-preview-card-number]").forEach(button=>{
     button.addEventListener("click",()=>openCardNumberModal(button.dataset.previewCardNumber));
   });
+}
+
+function renderCardSettingsModal(){
+  renderCardSettingsList("cardSettingsList");
+  renderCardSettingsList("cardSettingsInlineList");
 }
 
 function renderSelectedCardInfo(name){
@@ -4866,6 +4877,7 @@ function renderAll(){
   renderReportSectionControls();
   renderCardAccountOptions();
   renderCardLimitStrip();
+  renderCardSettingsModal();
 }
 
 function showPage(page,options={}){
@@ -6596,10 +6608,6 @@ $("cardLimitsVisible").addEventListener("change",()=>{
   saveCardLimitVisibility($("cardLimitsVisible").checked);
 });
 
-$("openCardSettingsFromSettings").addEventListener("click",()=>{
-  openCardSettingsModal();
-});
-
 function sqlValue(value){
   if(value===null||value===undefined)return "null";
   if(Array.isArray(value))return `array[${value.map(sqlValue).join(",")}]::text[]`;
@@ -7062,15 +7070,16 @@ $("paymentCardStat").addEventListener("click",()=>{
   openCardSettingsModal();
 });
 
-$("addCardAccountBtn").addEventListener("click",()=>{
-  const name=$("newCardAccountName").value.trim();
+function addCardAccountFromInput(inputId){
+  const input=$(inputId);
+  const name=input?.value.trim()||"";
   if(!name)return;
   const next=[...new Set([...cardAccounts(),name])];
-  $("newCardAccountName").value="";
+  input.value="";
   saveCardAccounts(next);
-});
+}
 
-$("resetCardCountersBtn").addEventListener("click",async()=>{
+async function resetCardCounters(){
   const resetAt=new Date().toISOString();
   appSettings={...appSettings,card_counter_reset_at:resetAt};
   renderCardLimitStrip();
@@ -7082,7 +7091,18 @@ $("resetCardCountersBtn").addEventListener("click",async()=>{
   },{onConflict:"user_id"});
   if(error)toast(error.message);
   else toast("Kart sayğacı sıfırlandı");
+}
+
+$("addCardAccountBtn").addEventListener("click",()=>{
+  addCardAccountFromInput("newCardAccountName");
 });
+
+$("addCardAccountInlineBtn").addEventListener("click",()=>{
+  addCardAccountFromInput("newCardAccountInlineName");
+});
+
+$("resetCardCountersBtn").addEventListener("click",resetCardCounters);
+$("resetCardCountersInlineBtn").addEventListener("click",resetCardCounters);
 
 $("salesPocketStat").addEventListener("click",openPocketEditModal);
 
