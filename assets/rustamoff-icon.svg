@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#020617"/>
+      <stop offset="0.52" stop-color="#062f35"/>
+      <stop offset="1" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <path d="M0 256h1024M0 384h1024M0 512h1024M0 640h1024M0 768h1024M256 0v1024M384 0v1024M512 0v1024M640 0v1024M768 0v1024" stroke="#134e4a" stroke-width="4" opacity=".35"/>
+  <circle cx="512" cy="512" r="310" fill="none" stroke="#14b8a6" stroke-width="10" opacity=".22"/>
+  <rect x="197" y="255" width="630" height="514" rx="58" fill="#06111f" stroke="#10b981" stroke-width="10"/>
+  <circle cx="274" cy="331" r="18" fill="#34d399"/>
+  <circle cx="329" cy="331" r="18" fill="#22d3ee"/>
+  <circle cx="384" cy="331" r="18" fill="#facc15"/>
+  <text x="512" y="560" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="230" font-weight="900" fill="#f0fdf4">R</text>
+  <text x="512" y="650" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="70" font-weight="900" letter-spacing="8" fill="url(#mark)">OFF</text>
+</svg>

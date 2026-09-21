@@ -4,13 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
+  <meta name="application-name" content="Rustamoff" />
   <title>Rustamoff Jeans</title>
 
-  <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f172a'/%3E%3Cpath d='M13 44L25 32l9 6 17-18' fill='none' stroke='%2334d399' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M44 20h7v7' fill='none' stroke='%2334d399' stroke-width='5' stroke-linecap='round'/%3E%3Ctext x='13' y='27' font-size='19' font-family='Arial' font-weight='700' fill='white'%3E%E2%82%BC%3C/text%3E%3C/svg%3E" />
-  <link id="appAppleTouchIcon" rel="apple-touch-icon" sizes="180x180" href="">
+  <link id="appFavicon" rel="icon" type="image/png" href="assets/apple-touch-icon.png" />
+  <link id="appAppleTouchIcon" rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+  <link rel="apple-touch-startup-image" href="assets/splash-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
   <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Rustamoff Jeans">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Rustamoff">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -65,6 +68,60 @@
     button,input,select,textarea{font:inherit}
     button{border:0;cursor:pointer}
     .hidden{display:none!important}
+    .launch-splash{
+      position:fixed;
+      inset:0;
+      z-index:9999;
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      background:
+        radial-gradient(circle at 50% 38%,rgba(20,184,166,.35),transparent 34%),
+        linear-gradient(rgba(34,211,238,.045) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(34,211,238,.045) 1px,transparent 1px),
+        #020617;
+      background-size:auto,34px 34px,34px 34px,auto;
+      color:#f0fdf4;
+      transition:opacity .45s ease,visibility .45s ease;
+    }
+    .launch-splash.done{opacity:0;visibility:hidden;pointer-events:none}
+    .launch-card{
+      width:min(78vw,430px);
+      padding:34px 28px;
+      border:1px solid rgba(52,211,153,.6);
+      border-radius:28px;
+      background:rgba(6,17,31,.92);
+      box-shadow:0 0 46px rgba(16,185,129,.2);
+    }
+    .launch-dots{display:flex;gap:9px;margin-bottom:25px}
+    .launch-dots span{width:11px;height:11px;border-radius:999px}
+    .launch-dots span:nth-child(1){background:#34d399}
+    .launch-dots span:nth-child(2){background:#22d3ee}
+    .launch-dots span:nth-child(3){background:#facc15}
+    .launch-kicker{
+      margin:0 0 10px;
+      color:#34d399;
+      font:800 12px/1.2 Menlo,Consolas,monospace;
+      letter-spacing:.32em;
+      text-transform:uppercase;
+    }
+    .launch-title{margin:0;font-size:clamp(40px,10vw,62px);font-weight:950;letter-spacing:0}
+    .launch-sub{margin:8px 0 0;color:#94a3b8;font-size:15px;font-weight:750}
+    .launch-bar{
+      height:9px;
+      margin-top:28px;
+      border-radius:999px;
+      overflow:hidden;
+      background:#0f2d36;
+    }
+    .launch-bar::before{
+      content:"";
+      display:block;
+      width:72%;
+      height:100%;
+      border-radius:inherit;
+      background:linear-gradient(90deg,#22c55e,#06b6d4);
+    }
 
     .app{
       width:100%;
@@ -583,42 +640,78 @@
     }
     .card-info-box strong{display:block;font-size:16px;margin-bottom:4px}
     #cardNumberModal{
-      align-items:center;
-      padding:16px;
+      align-items:stretch;
+      padding:0;
+      background:#f8fafc;
     }
-    .card-number-modal{width:min(96vw,760px);max-width:760px}
-    .card-number-display{
-      width:100%;
-      padding:22px 12px;
-      border-radius:16px;
-      border:1px solid var(--line);
-      background:var(--card2);
-      color:var(--text);
-      font-size:clamp(24px,4vw,42px);
-      font-weight:950;
-      letter-spacing:.04em;
-      white-space:nowrap;
+    .card-number-modal{
+      position:relative;
+      width:100dvw;
+      max-width:none;
+      height:100dvh;
+      max-height:none;
       overflow:hidden;
+      border:0;
+      border-radius:0;
+      padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));
+      background:#f8fafc;
+      color:#0f172a;
+    }
+    .card-number-modal .modal-head{
+      position:relative;
+      z-index:2;
+      margin:0;
+    }
+    .card-number-modal .close{
+      background:#eef2f7;
+      color:#0f172a;
+      width:46px;
+      height:46px;
+      border-radius:16px;
+      font-size:24px;
+    }
+    .card-number-display{
+      position:absolute;
+      left:50%;
+      top:52%;
+      transform:translate(-50%,-50%);
+      width:min(92dvw,980px);
+      padding:28px 22px;
+      border-radius:28px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:#0f172a;
+      font-size:clamp(36px,7vw,86px);
+      font-weight:950;
+      letter-spacing:.02em;
+      white-space:nowrap;
+      overflow:visible;
       text-align:center;
       font-variant-numeric:tabular-nums;
+      line-height:1;
+      box-shadow:0 24px 70px rgba(15,23,42,.16);
     }
     @media(max-width:619px){
       #cardNumberModal{
-        align-items:center;
         padding:0;
       }
       #cardNumberModal .card-number-modal{
-        width:min(88dvh,760px);
-        max-width:none;
-        max-height:92vw;
-        overflow:visible;
-        transform:rotate(90deg);
-        border-radius:24px;
-        padding:14px;
+        padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
       }
       #cardNumberModal .card-number-display{
-        font-size:clamp(30px,8dvh,66px);
-        padding:24px 14px;
+        top:50%;
+        width:calc(100dvh - 120px);
+        max-width:none;
+        padding:24px 18px;
+        transform:translate(-50%,-50%) rotate(90deg);
+        font-size:clamp(42px,6.3dvh,62px);
+        border-radius:24px;
+      }
+      #cardNumberModal .modal-head{
+        align-items:flex-start;
+      }
+      #cardNumberModal .modal-head h3{
+        font-size:22px;
       }
     }
     .sale-check{
@@ -1703,6 +1796,15 @@
 </head>
 
 <body>
+  <div id="launchSplash" class="launch-splash" aria-label="Rustamoff yüklənir">
+    <div class="launch-card">
+      <div class="launch-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="launch-kicker">secure node</p>
+      <h1 class="launch-title">Rustamoff</h1>
+      <p class="launch-sub">Mal uçotu sistemi</p>
+      <div class="launch-bar" aria-hidden="true"></div>
+    </div>
+  </div>
   <div id="toast" class="toast hidden"></div>
 
   <div id="authView" class="auth-wrap">
@@ -2722,6 +2824,8 @@ const SUPABASE_URL="https://qzrysfkotffuajczxjnv.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_64yI1atj6OICqpr0B2AX1w_8il9qBlH";
 const FIXED_LOGIN_EMAIL="rustamovali664@gmail.com";
 const THEME_KEY="mal_ucotu_theme";
+const DEFAULT_APP_ICON="assets/apple-touch-icon.png";
+const launchSplashStartedAt=Date.now();
 
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
   auth:{
@@ -2740,7 +2844,7 @@ let expenses=[];
 let notes=[];
 let activityLogs=[];
 let deletedRecords=[];
-let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null};
+let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null};
 let currentSaleProduct=null;
 let displayedLocalDate=null;
 let editingImageUrls=[];
@@ -2905,6 +3009,16 @@ function openModal(id){
 function closeModal(id){
   $(id).classList.add("hidden");
   syncModalScrollLock();
+}
+
+function finishLaunchSplash(){
+  const splash=$("launchSplash");
+  if(!splash || splash.classList.contains("done"))return;
+  const remaining=Math.max(0,900-(Date.now()-launchSplashStartedAt));
+  setTimeout(()=>{
+    splash.classList.add("done");
+    setTimeout(()=>splash.remove(),520);
+  },remaining);
 }
 
 let confirmResolve=null;
@@ -3779,11 +3893,20 @@ function renderSelectedCardInfo(name){
   `:"";
 }
 
+function formatCardNumberDisplay(value){
+  const raw=String(value||"").trim();
+  const digits=raw.replace(/\D/g,"");
+  if(digits.length>=12 && digits.length<=19 && /^[\d\s-]+$/.test(raw)){
+    return digits.replace(/(.{4})/g,"$1 ").trim();
+  }
+  return raw;
+}
+
 function openCardNumberModal(name){
   const info=cardPublicInfo(name)||{};
   $("cardNumberTitle").textContent=name||"Kart";
   $("cardNumberBank").textContent=info.bank||"Birbank";
-  $("cardNumberValue").textContent=info.number||info.masked||"Kart kodu əlavə edilməyib";
+  $("cardNumberValue").textContent=formatCardNumberDisplay(info.number||info.masked||"Kart kodu əlavə edilməyib");
   openModal("cardNumberModal");
 }
 
@@ -5454,8 +5577,8 @@ function applyBranding(){
   $("faviconSettingsPreview").classList.remove("hidden");
   $("faviconDropText").classList.add("hidden");
 }else{
-  $("appFavicon").removeAttribute("href");
-  $("appAppleTouchIcon").removeAttribute("href");
+  $("appFavicon").href = DEFAULT_APP_ICON;
+  $("appAppleTouchIcon").href = DEFAULT_APP_ICON;
 
   $("faviconSettingsPreview").removeAttribute("src");
   $("faviconSettingsPreview").classList.add("hidden");
@@ -7408,6 +7531,7 @@ setInterval(setToday,30000);
 
 /* Initial session */
 (async()=>{
+  try{
   const {data:{session}}=await sb.auth.getSession();
 
   if(passwordRecoveryMode){
@@ -7439,6 +7563,13 @@ setInterval(setToday,30000);
 
   history.replaceState({page:"sales"},"","#sales");
   showPage("sales",{history:false});
+  }catch(error){
+    console.error(error);
+    showLoginForm();
+    toast("App yüklənəndə xəta oldu.");
+  }finally{
+    finishLaunchSplash();
+  }
 })();
 </script>
 </body>
