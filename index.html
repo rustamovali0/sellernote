@@ -423,6 +423,30 @@
       display:grid;place-items:center;
       box-shadow:var(--shadowStrong);border:1px solid var(--line);
     }
+    .scroll-top-btn{
+      position:fixed;
+      right:max(30px,calc((100vw - 560px)/2 + 30px));
+      bottom:150px;
+      z-index:41;
+      width:46px;
+      height:46px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:var(--card);
+      color:var(--text);
+      box-shadow:var(--shadowStrong);
+      font-size:24px;
+      font-weight:950;
+      line-height:1;
+      display:grid;
+      place-items:center;
+      transition:opacity .18s ease,transform .18s ease;
+    }
+    .scroll-top-btn.hidden{
+      opacity:0;
+      pointer-events:none;
+      transform:translateY(8px);
+    }
 
     .modal-backdrop{
       position:fixed;inset:0;z-index:90;
@@ -542,6 +566,7 @@
       .section-tools{max-width:64%}
       .count{max-width:70px}
       .floating-add{right:24px}
+      .scroll-top-btn{right:24px}
       .today{width:126px;min-height:44px;padding-left:8px;padding-right:8px}
       .today-day{font-size:13px}
       .today-time{font-size:11px}
@@ -954,6 +979,22 @@
     }
     .pdf-summary-label{font-size:9px;color:#6b7280}
     .pdf-summary-value{font-size:15px;font-weight:800;margin-top:3px}
+    .pdf-mini-list{
+      display:grid;
+      gap:7px;
+      margin-top:4px;
+    }
+    .pdf-mini-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border:1px solid #e5e7eb;
+      border-radius:9px;
+      padding:8px 10px;
+      font-size:10px;
+    }
+    .pdf-mini-row strong{font-size:12px}
     .pdf-section{
       margin-top:18px;
       page-break-inside:avoid;
@@ -1620,6 +1661,12 @@
       display:grid;
       gap:8px;
       margin:10px 0 12px;
+    }
+    #confirmMultiSale{
+      position:sticky;
+      bottom:0;
+      z-index:3;
+      box-shadow:0 -10px 24px rgba(15,23,42,.08),var(--shadow);
     }
     .multi-sale-item{
       border:1px solid var(--line);
@@ -2451,6 +2498,7 @@
     <button id="salesAddBtn" class="floating-add" type="button" aria-label="Satış əlavə et">+</button>
     <button id="expensesAddBtn" class="floating-add hidden" type="button" aria-label="Xərc əlavə et">+</button>
     <button id="notesAddBtn" class="floating-add hidden" type="button" aria-label="Qeyd əlavə et">+</button>
+    <button id="scrollTopBtn" class="scroll-top-btn hidden" type="button" aria-label="Yuxarı qalx">↑</button>
   </main>
 
   <div id="saleTypeModal" class="modal-backdrop hidden">
@@ -2951,6 +2999,7 @@ let deletedRecords=[];
 let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null};
 let currentSaleProduct=null;
 let displayedLocalDate=null;
+let currentPage="sales";
 let editingImageUrls=[];
 let editingSaleImageUrls=[];
 let editingExpenseImageUrls=[];
@@ -3862,10 +3911,12 @@ function renderCardAccountOptions(){
 
 function cardSalesForCurrentDay(){
   const resetAt=appSettings?.card_counter_reset_at?new Date(appSettings.card_counter_reset_at):null;
+  const today=isoLocalDate(new Date());
+  const activeResetAt=resetAt && isoLocalDate(resetAt)===today ? resetAt : null;
   return sales.filter(sale=>
     sale.payment_method==="card" &&
     dateMatches(sale.created_at,"today","") &&
-    (!resetAt || new Date(sale.created_at)>=resetAt)
+    (!activeResetAt || new Date(sale.created_at)>=activeResetAt)
   );
 }
 
@@ -5342,9 +5393,18 @@ function renderAll(){
   renderYusifMoneySettings();
 }
 
+function updateScrollTopButton(){
+  const button=$("scrollTopBtn");
+  if(!button)return;
+
+  const shouldShow=["sales","dashboard"].includes(currentPage) && window.scrollY>360;
+  button.classList.toggle("hidden",!shouldShow);
+}
+
 function showPage(page,options={}){
   const validPages=["sales","dashboard","expenses","notes","categories"];
   if(!validPages.includes(page))page="sales";
+  currentPage=page;
 
   ["dashboard","sales","expenses","notes","categories"].forEach(name=>{
     $(name+"Page").classList.toggle("hidden",name!==page);
@@ -5361,6 +5421,7 @@ function showPage(page,options={}){
   syncGlobalSearch(page);
   closeDropdowns();
   fitValues();
+  updateScrollTopButton();
 
   if(options.history!==false){
     const current=history.state?.page;
@@ -7197,6 +7258,45 @@ function reportSection(title,content){
   return `<div class="pdf-section"><h2>${escapeHtml(title)}</h2>${content}</div>`;
 }
 
+function reportMiniList(rows){
+  if(!rows.length)return "";
+  return `<div class="pdf-mini-list">
+    ${rows.map(row=>`
+      <div class="pdf-mini-row">
+        <div>
+          <strong>${escapeHtml(row.title)}</strong>
+          ${row.subtitle?`<div class="pdf-report-sub">${escapeHtml(row.subtitle)}</div>`:""}
+        </div>
+        <strong>${escapeHtml(row.value)}</strong>
+      </div>
+    `).join("")}
+  </div>`;
+}
+
+function salesCardBreakdown(list){
+  return list
+    .filter(sale=>sale.payment_method==="card")
+    .reduce((acc,sale)=>{
+      const name=sale.card_account||cardAccounts()[0]||"Kart";
+      acc[name]=acc[name]||{amount:0,count:0};
+      acc[name].amount+=Number(sale.total_revenue||0);
+      acc[name].count+=1;
+      return acc;
+    },{});
+}
+
+async function waitForReportAssets(root){
+  const images=Array.from(root.querySelectorAll("img"));
+  if(!images.length)return;
+  await Promise.all(images.map(image=>{
+    if(image.complete)return Promise.resolve();
+    return new Promise(resolve=>{
+      image.onload=resolve;
+      image.onerror=resolve;
+    });
+  }));
+}
+
 function buildReport(from,to,sections=selectedReportSections()){
   const data=reportData(from,to);
   const reportSections=new Set(sections);
@@ -7213,6 +7313,10 @@ function buildReport(from,to,sections=selectedReportSections()){
   const soldQty=reportSales.reduce((sum,s)=>sum+Number(s.quantity||0),0);
   const showCost=Math.abs(cost)>0.000001;
   const showProfit=Math.abs(profit)>0.000001;
+  const yusifReportExpenses=data.expenses.filter(isYusifExpense);
+  const yusifReportTotal=yusifExpenseTotal(yusifReportExpenses);
+  const yusifReportPayments=yusifExpensePaymentTotals(yusifReportExpenses);
+  const cardBreakdown=salesCardBreakdown(reportSales);
 
   const logo=appSettings?.logo_url
     ? `<img class="pdf-report-logo" src="${escapeHtml(appSettings.logo_url)}" alt="Logo">`
@@ -7232,6 +7336,32 @@ function buildReport(from,to,sections=selectedReportSections()){
         ${showProfit?`<div><div class="pdf-summary-label">Qazanc</div><div class="pdf-summary-value">${money(profit)}</div></div>`:""}
       </div>
     `));
+  }
+
+  const paymentRows=[];
+  const includesSalesMoney=reportSections.has("sales")||reportSections.has("summary");
+  const includesExpenseMoney=reportSections.has("expenses")||reportSections.has("summary");
+  if(includesSalesMoney){
+    Object.entries(cardBreakdown)
+      .filter(([,stats])=>Math.abs(stats.amount)>0.000001 || stats.count>0)
+      .sort(([a],[b])=>a.localeCompare(b,"az"))
+      .forEach(([name,stats])=>{
+        paymentRows.push({
+          title:name,
+          subtitle:`Kart satışı · ${stats.count} mədaxil`,
+          value:money(stats.amount)
+        });
+      });
+  }
+  if(includesExpenseMoney && yusifReportTotal>0){
+    paymentRows.push({
+      title:"Yusifdə olan pul",
+      subtitle:`Nağd ${money(yusifReportPayments.cash)} · Kart ${money(yusifReportPayments.card)}`,
+      value:money(yusifReportTotal)
+    });
+  }
+  if(paymentRows.length){
+    blocks.push(reportSection("Ödəniş xülasəsi",reportMiniList(paymentRows)));
   }
 
   if(reportSections.has("sales")){
@@ -7356,10 +7486,12 @@ async function renderReportElement(from,to,sections){
   report.style.zIndex="-1";
   document.body.appendChild(report);
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  await waitForReportAssets(report);
   return report;
 }
 
 async function exportReportPdf({from,to,sections,share=false}){
+  if(typeof html2pdf!=="function")throw new Error("PDF kitabxanası yüklənməyib.");
   const report=await renderReportElement(from,to,sections);
   try{
     const worker=html2pdf().set({
@@ -7389,6 +7521,7 @@ async function exportReportPdf({from,to,sections,share=false}){
 }
 
 async function reportToJpgFiles({from,to,sections}){
+  if(typeof html2canvas!=="function")throw new Error("JPG kitabxanası yüklənməyib.");
   const report=await renderReportElement(from,to,sections);
   try{
     const canvas=await html2canvas(report,{scale:2,useCORS:true,backgroundColor:"#ffffff"});
@@ -7451,7 +7584,7 @@ async function runReportExport(kind){
     }
   }catch(error){
     console.error(error);
-    toast("Hesabat yaradılmadı.");
+    toast(error.message||"Hesabat yaradılmadı.");
   }finally{
     buttons.forEach(button=>button.disabled=false);
     document.querySelectorAll(".pdf-report").forEach(el=>el.remove());
@@ -7475,7 +7608,7 @@ $("exportJpgBtn").addEventListener("click",()=>runReportExport("jpg"));
 $("sharePdfBtn").addEventListener("click",()=>runReportExport("share"));
 $("sendReportWhatsapp").addEventListener("click",async()=>{
   const today=isoLocalDate(new Date());
-  const config={from:today,to:today,sections:["summary"]};
+  const config={from:today,to:today,sections:[...DEFAULT_REPORT_SECTIONS]};
   try{
     await shareReportJpg(config);
     window.open("https://wa.me/994705428880?text="+encodeURIComponent("Bu günün satış+xərc hesabatı"),"_blank");
@@ -7685,6 +7818,12 @@ window.addEventListener("popstate",event=>{
 document.querySelectorAll(".nav-btn").forEach(button=>{
   button.addEventListener("click",()=>showPage(button.dataset.page));
 });
+
+$("scrollTopBtn").addEventListener("click",()=>{
+  window.scrollTo({top:0,behavior:"smooth"});
+});
+window.addEventListener("scroll",updateScrollTopButton,{passive:true});
+window.addEventListener("resize",updateScrollTopButton);
 
 /* Auth */
 $("authForm").addEventListener("submit",async event=>{
