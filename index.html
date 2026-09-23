@@ -12,7 +12,7 @@
   <link rel="apple-touch-startup-image" href="assets/splash-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Rustamoff">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -149,7 +149,7 @@
       max-width:560px;
       min-height:100vh;
       margin:0 auto;
-      padding:14px 14px 116px;
+      padding:calc(14px + env(safe-area-inset-top)) 14px calc(116px + env(safe-area-inset-bottom));
     }
 
     .topbar{
@@ -3094,13 +3094,16 @@ function closeModal(id){
 
 function finishLaunchSplash(){
   const splash=$("launchSplash");
-  if(!splash || splash.classList.contains("done"))return;
+  if(!splash || splash.classList.contains("done") || splash.dataset.closing==="true")return;
+  splash.dataset.closing="true";
   const remaining=Math.max(0,900-(Date.now()-launchSplashStartedAt));
   setTimeout(()=>{
     splash.classList.add("done");
     setTimeout(()=>splash.remove(),520);
   },remaining);
 }
+
+setTimeout(finishLaunchSplash,1600);
 
 let confirmResolve=null;
 
@@ -7601,6 +7604,7 @@ $("authForm").addEventListener("submit",async event=>{
 
   showApp();
   setToday();
+  finishLaunchSplash();
   await loadAll();
   history.replaceState({page:"sales"},"","#sales");
   showPage("sales",{history:false});
@@ -7708,6 +7712,7 @@ setInterval(setToday,30000);
 
   showApp();
   setToday();
+  finishLaunchSplash();
   await loadAll();
 
   history.replaceState({page:"sales"},"","#sales");
