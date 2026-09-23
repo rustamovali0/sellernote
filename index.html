@@ -2175,7 +2175,7 @@
       <div class="summary-grid">
         <div class="stat"><div id="expensesSummaryLabel" class="label">Bu günün xərci</div><div id="filterExpensesTotal" class="value">0 ₼</div></div>
         <div class="stat"><div class="label">Xərc sayı</div><div id="filterExpensesCount" class="value">0</div></div>
-        <div class="stat"><div class="label">Yusifdə var</div><div id="filterYusifExpenseTotal" class="value profit">0 ₼</div></div>
+        <button id="filterYusifExpenseStat" class="stat clickable-stat" type="button"><div class="label">Yusifdə var</div><div id="filterYusifExpenseTotal" class="value profit">0 ₼</div></button>
       </div>
 
       <div id="expensesList" class="expense-list"></div>
@@ -2744,6 +2744,21 @@
     </div>
   </div>
 
+  <div id="yusifExpenseModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Yusifdə olan pul</h3>
+        <button class="close" data-close="yusifExpenseModal" type="button">×</button>
+      </div>
+      <div class="summary-grid">
+        <div class="stat"><div class="label">Nağd</div><div id="yusifExpenseCashTotal" class="value">0 ₼</div></div>
+        <div class="stat"><div class="label">Kart</div><div id="yusifExpenseCardTotal" class="value">0 ₼</div></div>
+      </div>
+      <div id="yusifExpenseBreakdown" class="log-list" style="margin-top:10px"></div>
+      <div class="meta">Bu məbləğlər cari xərc filterinə görə hesablanır.</div>
+    </div>
+  </div>
+
   <div id="cardSettingsModal" class="modal-backdrop hidden">
     <div class="modal">
       <div class="modal-head">
@@ -2831,6 +2846,14 @@
           <input id="expenseYusifMoney" type="checkbox">
           Pul Yusifdədir
         </label>
+
+        <div>
+          <label class="label">Ödəniş</label>
+          <select id="expensePaymentMethod" class="select">
+            <option value="cash">Nağd</option>
+            <option value="card">Kart</option>
+          </select>
+        </div>
 
         <textarea id="expenseNote" class="textarea" placeholder="Qeyd (boş qala bilər)"></textarea>
         <button id="saveExpenseBtn" class="btn full" type="submit">Yadda saxla</button>
@@ -4753,6 +4776,51 @@ function yusifExpenseTotal(list=expenses){
     .reduce((sum,expense)=>sum+Number(expense.amount||0),0);
 }
 
+function expensePaymentMethod(expense){
+  return expense?.payment_method==="card"?"card":"cash";
+}
+
+function filteredExpensesList(){
+  const query=$("expensesSearchInput").value.trim().toLowerCase();
+  const minAmount=$("expensesMinAmount").value===""?null:Number($("expensesMinAmount").value);
+  const maxAmount=$("expensesMaxAmount").value===""?null:Number($("expensesMaxAmount").value);
+  const sort=$("expensesSort").value;
+  const selectedDate=$("expensesSingleDate").value;
+
+  const list=expenses.filter(expense=>{
+    const title=String(expense.title||"Xərc").toLowerCase();
+    const amount=Number(expense.amount||0);
+
+    if(!dateMatches(expense.created_at,expensesDateMode,selectedDate))return false;
+    if(query&&!title.includes(query))return false;
+    if(minAmount!==null&&amount<minAmount)return false;
+    if(maxAmount!==null&&amount>maxAmount)return false;
+
+    return true;
+  });
+
+  list.sort((a,b)=>{
+    if(sort==="oldest")return new Date(a.created_at)-new Date(b.created_at);
+    if(sort==="amount_desc")return Number(b.amount)-Number(a.amount);
+    if(sort==="amount_asc")return Number(a.amount)-Number(b.amount);
+    return new Date(b.created_at)-new Date(a.created_at);
+  });
+
+  return list;
+}
+
+function currentYusifExpenses(){
+  return filteredExpensesList().filter(isYusifExpense);
+}
+
+function yusifExpensePaymentTotals(list=currentYusifExpenses()){
+  return list.reduce((totals,expense)=>{
+    const key=expensePaymentMethod(expense)==="card"?"card":"cash";
+    totals[key]+=Number(expense.amount||0);
+    return totals;
+  },{cash:0,card:0});
+}
+
 function renderYusifMoneySettings(){
   if(!$("settingsYusifExpenseTotal"))return;
 
@@ -4782,6 +4850,69 @@ function renderYusifMoneySettings(){
   document.querySelectorAll("[data-edit-yusif-expense]").forEach(button=>{
     button.addEventListener("click",()=>openEditExpense(button.dataset.editYusifExpense));
   });
+}
+
+function updateYusifExpenseModal(){
+  const list=currentYusifExpenses();
+  const totals=yusifExpensePaymentTotals(list);
+
+  $("yusifExpenseCashTotal").textContent=money(totals.cash);
+  $("yusifExpenseCardTotal").textContent=money(totals.card);
+  $("yusifExpenseBreakdown").innerHTML=list.length?list.map(expense=>`
+    <div class="log-item">
+      <div class="log-top">
+        <div>
+          <div class="log-title">${escapeHtml(expense.title||"Xərc")}</div>
+          <div class="log-tags">
+            <span class="log-tag">${escapeHtml(formatDate(expense.created_at))}</span>
+            <span class="log-tag">${money(expense.amount)}</span>
+          </div>
+        </div>
+        <button class="btn secondary" data-edit-yusif-expense="${expense.id}" type="button">Düzəliş et</button>
+      </div>
+      <div class="row2" style="margin-top:10px">
+        <button class="btn ${expensePaymentMethod(expense)==="cash"?"":"secondary"} full" data-set-yusif-payment="${expense.id}:cash" type="button">Nağd</button>
+        <button class="btn ${expensePaymentMethod(expense)==="card"?"":"secondary"} full" data-set-yusif-payment="${expense.id}:card" type="button">Kart</button>
+      </div>
+    </div>
+  `).join(""):'<div class="empty" style="padding:14px">Bu filterdə Yusifdə olan pul yoxdur.</div>';
+
+  document.querySelectorAll("#yusifExpenseBreakdown [data-edit-yusif-expense]").forEach(button=>{
+    button.addEventListener("click",()=>openEditExpense(button.dataset.editYusifExpense));
+  });
+
+  document.querySelectorAll("[data-set-yusif-payment]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const [id,method]=button.dataset.setYusifPayment.split(":");
+      updateYusifExpensePayment(id,method);
+    });
+  });
+}
+
+async function updateYusifExpensePayment(id,method){
+  const clean=method==="card"?"card":"cash";
+  const expense=expenses.find(item=>item.id===id);
+  const previous=expense?.payment_method||"cash";
+  if(expense)expense.payment_method=clean;
+
+  updateYusifExpenseModal();
+  renderExpenses();
+  renderYusifMoneySettings();
+
+  const {error}=await sb.from("expenses").update({payment_method:clean}).eq("id",id);
+  if(error){
+    if(expense)expense.payment_method=previous;
+    updateYusifExpenseModal();
+    renderExpenses();
+    renderYusifMoneySettings();
+    toast("Nağd/Kart saxlanmadı. Supabase SQL-i işlədin.");
+    return;
+  }
+}
+
+function openYusifExpenseModal(){
+  updateYusifExpenseModal();
+  openModal("yusifExpenseModal");
 }
 
 function currentExpensePreviewEntries(){
@@ -4872,30 +5003,7 @@ function addExpenseImageFiles(files){
 }
 
 function renderExpenses(){
-  const query=$("expensesSearchInput").value.trim().toLowerCase();
-  const minAmount=$("expensesMinAmount").value===""?null:Number($("expensesMinAmount").value);
-  const maxAmount=$("expensesMaxAmount").value===""?null:Number($("expensesMaxAmount").value);
-  const sort=$("expensesSort").value;
-  const selectedDate=$("expensesSingleDate").value;
-
-  let list=expenses.filter(expense=>{
-    const title=String(expense.title||"Xərc").toLowerCase();
-    const amount=Number(expense.amount||0);
-
-    if(!dateMatches(expense.created_at,expensesDateMode,selectedDate))return false;
-    if(query&&!title.includes(query))return false;
-    if(minAmount!==null&&amount<minAmount)return false;
-    if(maxAmount!==null&&amount>maxAmount)return false;
-
-    return true;
-  });
-
-  list.sort((a,b)=>{
-    if(sort==="oldest")return new Date(a.created_at)-new Date(b.created_at);
-    if(sort==="amount_desc")return Number(b.amount)-Number(a.amount);
-    if(sort==="amount_asc")return Number(a.amount)-Number(b.amount);
-    return new Date(b.created_at)-new Date(a.created_at);
-  });
+  const list=filteredExpensesList();
 
   $("expensesCount").textContent=`${list.length} xərc`;
   updateExpensesSummaryLabel();
@@ -4928,7 +5036,7 @@ function renderExpenses(){
           </div>
 
           ${expense.note?`<div class="meta" style="margin-top:7px">${escapeHtml(expense.note)}</div>`:""}
-          ${isYusifExpense(expense)?'<div class="price-row" style="margin-top:8px"><span class="badge profit">Pul Yusifdədir</span></div>':""}
+          ${isYusifExpense(expense)?`<div class="price-row" style="margin-top:8px"><span class="badge profit">Pul Yusifdədir</span><span class="badge">${escapeHtml(paymentMethodLabel(expensePaymentMethod(expense)))}</span></div>`:""}
 
           <div class="actions">
             <button class="btn secondary" data-edit-expense="${expense.id}" type="button">Düzəliş</button>
@@ -5592,6 +5700,7 @@ function resetExpenseForm(){
   editingExpenseImageUrls=[];
   $("expenseImagePicker").value="";
   $("expenseYusifMoney").checked=false;
+  $("expensePaymentMethod").value="cash";
   renderExpenseImagePreviews();
   $("expenseModalTitle").textContent="Xərc əlavə et";
 }
@@ -5612,6 +5721,7 @@ function openEditExpense(id){
   $("expenseAmount").value=Number(expense.amount||0)===0?"":expense.amount;
   $("expenseNote").value=expense.note||"";
   $("expenseYusifMoney").checked=isYusifExpense(expense);
+  $("expensePaymentMethod").value=expensePaymentMethod(expense);
   editingExpenseImageUrls=expenseImages(expense);
   renderExpenseImagePreviews();
   openModal("expenseModal");
@@ -6376,6 +6486,7 @@ $("salesAddBtn").addEventListener("click",()=>{
 });
 
 $("expensesAddBtn").addEventListener("click",openNewExpenseModal);
+$("filterYusifExpenseStat").addEventListener("click",openYusifExpenseModal);
 $("notesAddBtn").addEventListener("click",openNewNoteModal);
 
 $("chooseRegularSale").addEventListener("click",()=>{
@@ -6501,6 +6612,7 @@ $("expenseForm").addEventListener("submit",async event=>{
       amount,
       note:$("expenseNote").value.trim()||null,
       money_holder:$("expenseYusifMoney").checked?"yusif":"normal",
+      payment_method:$("expensePaymentMethod").value||"cash",
       image_url:imageUrls[0]||null,
       image_urls:imageUrls
     };
@@ -7030,7 +7142,7 @@ async function downloadSqlPdf(){
     sqlInsert("categories",categories,["id","user_id","name","created_at","updated_at"]),
     sqlInsert("products",[...products,...allDeleted.filter(row=>"sale_price" in row&&"cost_price" in row)],["id","user_id","category_id","name","sale_price","cost_price","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","is_checked","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
-    sqlInsert("expenses",[...expenses,...allDeleted.filter(row=>"amount" in row&&"title" in row)],["id","user_id","title","amount","note","money_holder","image_url","image_urls","deleted_at","created_at","updated_at"]),
+    sqlInsert("expenses",[...expenses,...allDeleted.filter(row=>"amount" in row&&"title" in row)],["id","user_id","title","amount","note","money_holder","payment_method","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("notes",[...notes,...allDeleted.filter(row=>"body" in row)],["id","user_id","body","image_url","image_urls","deleted_at","created_at","updated_at"])
   ].join("\n");
 
@@ -7149,7 +7261,7 @@ function buildReport(from,to,sections=selectedReportSections()){
         formatDate(expense.created_at),
         expense.title||"Xərc",
         money(expense.amount),
-        [expense.note||"",isYusifExpense(expense)?"Pul Yusifdədir":""].filter(Boolean).join(" · ")
+        [expense.note||"",isYusifExpense(expense)?`Pul Yusifdədir / ${paymentMethodLabel(expensePaymentMethod(expense))}`:""].filter(Boolean).join(" · ")
       ])
     )));
   }

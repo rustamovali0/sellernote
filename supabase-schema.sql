@@ -110,6 +110,7 @@ create table if not exists public.expenses (
   amount numeric(12,2) not null default 0 check (amount >= 0),
   note text,
   money_holder text not null default 'normal' check (money_holder in ('normal','yusif')),
+  payment_method text not null default 'cash' check (payment_method in ('cash','card')),
   image_url text,
   image_urls text[] not null default '{}',
   deleted_at timestamptz,
@@ -199,11 +200,21 @@ alter table public.expenses
   add column if not exists money_holder text not null default 'normal';
 
 alter table public.expenses
+  add column if not exists payment_method text not null default 'cash';
+
+alter table public.expenses
   drop constraint if exists expenses_money_holder_check;
 
 alter table public.expenses
   add constraint expenses_money_holder_check
   check (money_holder in ('normal','yusif'));
+
+alter table public.expenses
+  drop constraint if exists expenses_payment_method_check;
+
+alter table public.expenses
+  add constraint expenses_payment_method_check
+  check (payment_method in ('cash','card'));
 
 alter table public.notes
   add column if not exists deleted_at timestamptz;
