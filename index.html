@@ -4768,10 +4768,17 @@ function renderYusifMoneySettings(){
             <span class="log-tag">Pul Yusifdədir</span>
           </div>
         </div>
-        <div class="value profit">${money(expense.amount)}</div>
+        <div style="display:grid;gap:8px;justify-items:end">
+          <div class="value profit">${money(expense.amount)}</div>
+          <button class="btn secondary" data-edit-yusif-expense="${expense.id}" type="button">Düzəliş</button>
+        </div>
       </div>
     </div>
   `).join(""):'<div class="empty" style="padding:14px">Yusifdə olan pul qeydi yoxdur.</div>';
+
+  document.querySelectorAll("[data-edit-yusif-expense]").forEach(button=>{
+    button.addEventListener("click",()=>openEditExpense(button.dataset.editYusifExpense));
+  });
 }
 
 function currentExpensePreviewEntries(){
