@@ -109,6 +109,7 @@ create table if not exists public.expenses (
   title text not null default 'Xerc',
   amount numeric(12,2) not null default 0 check (amount >= 0),
   note text,
+  money_holder text not null default 'normal' check (money_holder in ('normal','yusif')),
   image_url text,
   image_urls text[] not null default '{}',
   deleted_at timestamptz,
@@ -193,6 +194,16 @@ alter table public.sales
 
 alter table public.expenses
   add column if not exists deleted_at timestamptz;
+
+alter table public.expenses
+  add column if not exists money_holder text not null default 'normal';
+
+alter table public.expenses
+  drop constraint if exists expenses_money_holder_check;
+
+alter table public.expenses
+  add constraint expenses_money_holder_check
+  check (money_holder in ('normal','yusif'));
 
 alter table public.notes
   add column if not exists deleted_at timestamptz;

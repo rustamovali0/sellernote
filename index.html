@@ -2175,6 +2175,7 @@
       <div class="summary-grid">
         <div class="stat"><div id="expensesSummaryLabel" class="label">Bu günün xərci</div><div id="filterExpensesTotal" class="value">0 ₼</div></div>
         <div class="stat"><div class="label">Xərc sayı</div><div id="filterExpensesCount" class="value">0</div></div>
+        <div class="stat"><div class="label">Yusifdə var</div><div id="filterYusifExpenseTotal" class="value profit">0 ₼</div></div>
       </div>
 
       <div id="expensesList" class="expense-list"></div>
@@ -2278,6 +2279,22 @@
           <button id="saveDailyProfitBtn" class="btn full" type="button" style="margin-top:10px">Yadda saxla</button>
           <div id="dailyProfitList" class="log-list" style="margin-top:10px"></div>
         </div>
+        </div>
+      </details>
+
+      <details class="card settings-card">
+        <summary class="settings-toggle">
+          <div>
+            <div class="settings-title">Yusifdə olan pul</div>
+            <div class="meta">Xərc yaradanda “Pul Yusifdədir” seçilən məbləğlər</div>
+          </div>
+        </summary>
+        <div class="settings-body">
+          <div class="stat">
+            <div class="label">Yusifdə var</div>
+            <div id="settingsYusifExpenseTotal" class="value profit">0 ₼</div>
+          </div>
+          <div id="settingsYusifExpenseList" class="log-list" style="margin-top:10px"></div>
         </div>
       </details>
 
@@ -2809,6 +2826,11 @@
           <label class="label">Məbləğ</label>
           <input id="expenseAmount" class="input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0" />
         </div>
+
+        <label class="check-card">
+          <input id="expenseYusifMoney" type="checkbox">
+          Pul Yusifdədir
+        </label>
 
         <textarea id="expenseNote" class="textarea" placeholder="Qeyd (boş qala bilər)"></textarea>
         <button id="saveExpenseBtn" class="btn full" type="submit">Yadda saxla</button>
@@ -4718,6 +4740,40 @@ function expenseImages(expense){
   return expense?.image_url ? [expense.image_url] : [];
 }
 
+function isYusifExpense(expense){
+  return expense?.money_holder==="yusif";
+}
+
+function yusifExpenseTotal(list=expenses){
+  return list
+    .filter(isYusifExpense)
+    .reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+}
+
+function renderYusifMoneySettings(){
+  if(!$("settingsYusifExpenseTotal"))return;
+
+  const list=expenses
+    .filter(isYusifExpense)
+    .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+
+  $("settingsYusifExpenseTotal").textContent=money(yusifExpenseTotal(list));
+  $("settingsYusifExpenseList").innerHTML=list.length?list.slice(0,12).map(expense=>`
+    <div class="log-item">
+      <div class="log-top">
+        <div>
+          <div class="log-title">${escapeHtml(expense.title||"Xərc")}</div>
+          <div class="log-tags">
+            <span class="log-tag">${escapeHtml(formatDate(expense.created_at))}</span>
+            <span class="log-tag">Pul Yusifdədir</span>
+          </div>
+        </div>
+        <div class="value profit">${money(expense.amount)}</div>
+      </div>
+    </div>
+  `).join(""):'<div class="empty" style="padding:14px">Yusifdə olan pul qeydi yoxdur.</div>';
+}
+
 function currentExpensePreviewEntries(){
   return [
     ...editingExpenseImageUrls.map((url,index)=>({kind:"existing",url,index})),
@@ -4835,6 +4891,7 @@ function renderExpenses(){
   updateExpensesSummaryLabel();
   $("filterExpensesTotal").textContent=money(list.reduce((sum,item)=>sum+Number(item.amount||0),0));
   $("filterExpensesCount").textContent=list.length;
+  $("filterYusifExpenseTotal").textContent=money(yusifExpenseTotal(list));
 
   $("expensesList").innerHTML=list.length?list.map(expense=>`
     <div class="card sale">
@@ -4861,6 +4918,7 @@ function renderExpenses(){
           </div>
 
           ${expense.note?`<div class="meta" style="margin-top:7px">${escapeHtml(expense.note)}</div>`:""}
+          ${isYusifExpense(expense)?'<div class="price-row" style="margin-top:8px"><span class="badge profit">Pul Yusifdədir</span></div>':""}
 
           <div class="actions">
             <button class="btn secondary" data-edit-expense="${expense.id}" type="button">Düzəliş</button>
@@ -5163,6 +5221,7 @@ function renderAll(){
   renderCardLimitStrip();
   renderCardSettingsModal();
   renderDailyProfits();
+  renderYusifMoneySettings();
 }
 
 function showPage(page,options={}){
@@ -5522,6 +5581,7 @@ function resetExpenseForm(){
   pendingExpenseImageFiles=[];
   editingExpenseImageUrls=[];
   $("expenseImagePicker").value="";
+  $("expenseYusifMoney").checked=false;
   renderExpenseImagePreviews();
   $("expenseModalTitle").textContent="Xərc əlavə et";
 }
@@ -5541,6 +5601,7 @@ function openEditExpense(id){
   $("expenseTitle").value=expense.title||"";
   $("expenseAmount").value=Number(expense.amount||0)===0?"":expense.amount;
   $("expenseNote").value=expense.note||"";
+  $("expenseYusifMoney").checked=isYusifExpense(expense);
   editingExpenseImageUrls=expenseImages(expense);
   renderExpenseImagePreviews();
   openModal("expenseModal");
@@ -6429,6 +6490,7 @@ $("expenseForm").addEventListener("submit",async event=>{
       title:$("expenseTitle").value.trim()||"Xərc",
       amount,
       note:$("expenseNote").value.trim()||null,
+      money_holder:$("expenseYusifMoney").checked?"yusif":"normal",
       image_url:imageUrls[0]||null,
       image_urls:imageUrls
     };
@@ -6958,7 +7020,7 @@ async function downloadSqlPdf(){
     sqlInsert("categories",categories,["id","user_id","name","created_at","updated_at"]),
     sqlInsert("products",[...products,...allDeleted.filter(row=>"sale_price" in row&&"cost_price" in row)],["id","user_id","category_id","name","sale_price","cost_price","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","is_checked","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
-    sqlInsert("expenses",[...expenses,...allDeleted.filter(row=>"amount" in row&&"title" in row)],["id","user_id","title","amount","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
+    sqlInsert("expenses",[...expenses,...allDeleted.filter(row=>"amount" in row&&"title" in row)],["id","user_id","title","amount","note","money_holder","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("notes",[...notes,...allDeleted.filter(row=>"body" in row)],["id","user_id","body","image_url","image_urls","deleted_at","created_at","updated_at"])
   ].join("\n");
 
@@ -7077,7 +7139,7 @@ function buildReport(from,to,sections=selectedReportSections()){
         formatDate(expense.created_at),
         expense.title||"Xərc",
         money(expense.amount),
-        expense.note||""
+        [expense.note||"",isYusifExpense(expense)?"Pul Yusifdədir":""].filter(Boolean).join(" · ")
       ])
     )));
   }
