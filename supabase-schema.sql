@@ -146,10 +146,13 @@ create table if not exists public.app_settings (
   pocket_overrides jsonb not null default '{}',
   daily_profits jsonb not null default '{}',
   show_dashboard_profit boolean not null default true,
+  show_cost_profit boolean not null default true,
   show_card_limits boolean not null default false,
   card_accounts text[] not null default array['Əlinin kartı','Yusifin kartı'],
   card_details jsonb not null default '{}',
   card_counter_reset_at timestamptz,
+  notebook_images jsonb not null default '[]',
+  balance_wallets jsonb not null default '{}',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -170,6 +173,9 @@ alter table public.app_settings
   add column if not exists show_dashboard_profit boolean not null default true;
 
 alter table public.app_settings
+  add column if not exists show_cost_profit boolean not null default true;
+
+alter table public.app_settings
   add column if not exists show_card_limits boolean not null default false;
 
 alter table public.app_settings
@@ -180,6 +186,12 @@ alter table public.app_settings
 
 alter table public.app_settings
   add column if not exists card_counter_reset_at timestamptz;
+
+alter table public.app_settings
+  add column if not exists notebook_images jsonb not null default '[]';
+
+alter table public.app_settings
+  add column if not exists balance_wallets jsonb not null default '{}';
 
 alter table public.products
   add column if not exists deleted_at timestamptz;

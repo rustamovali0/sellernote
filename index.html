@@ -612,6 +612,14 @@
       gap:8px;
       margin:-2px 0 10px;
     }
+    .sales-actions-toggle{
+      width:100%;
+      min-height:42px;
+      margin:-2px 0 8px;
+    }
+    .sales-quick-actions.hidden{
+      display:none!important;
+    }
     .sales-quick-actions .btn{
       min-width:0;
       min-height:42px;
@@ -2063,7 +2071,8 @@
         </div>
       </div>
 
-      <div class="sales-quick-actions">
+      <button id="toggleSalesActions" class="btn secondary sales-actions-toggle" type="button">Əməliyyatları gizlət</button>
+      <div id="salesQuickActions" class="sales-quick-actions">
         <button id="addSaleFromSales" class="btn secondary" type="button">+ Satış</button>
         <button id="goSellFromProducts" class="btn secondary" type="button">Sat</button>
         <button id="addLooseSale" class="btn secondary" type="button">+ Sərbəst satış</button>
@@ -2152,10 +2161,11 @@
         </div>
       </div>
 
-      <div class="summary-grid">
+      <div class="summary-grid sales-summary-grid">
         <button id="salesRevenueStat" class="stat clickable-stat" type="button"><div id="salesSummaryRevenueLabel" class="label">Bu günün satışı</div><div id="filterRevenue" class="value">0 ₼</div></button>
         <div id="salesProfitStat" class="stat"><div id="salesSummaryProfitLabel" class="label">Bu günün qazancı</div><div id="filterProfit" class="value profit">0 ₼</div></div>
         <button id="salesPocketStat" class="stat clickable-stat" type="button"><div id="salesSummaryPocketLabel" class="label">Bu günün cibi</div><div id="filterPocket" class="value profit">0 ₼</div></button>
+        <div class="stat"><div class="label">Kartda</div><div id="filterCardTotal" class="value profit">0 ₼</div></div>
         <div class="stat"><div id="salesSummaryQtyLabel" class="label">Satılan mallar</div><div id="filterSoldQty" class="value">0</div></div>
       </div>
 
@@ -2209,6 +2219,11 @@
         <button id="clearExpensesToolbar" class="toolbar-clear" type="button" aria-label="Xərc filterlərini təmizlə">
           Təmizlə
         </button>
+      </div>
+
+      <div class="sales-quick-actions">
+        <button id="quickTeaExpenseBtn" class="btn secondary" type="button">Çay 2 ₼</button>
+        <button id="quickLotteryExpenseBtn" class="btn secondary" type="button">Latareya 50 ₼</button>
       </div>
 
       <div id="expensesDateBox" class="card date-box hidden">
@@ -2314,6 +2329,37 @@
       <details class="card settings-card">
         <summary class="settings-toggle">
           <div>
+            <div class="settings-title">Dəftər şəkilləri</div>
+            <div class="meta">Tarixə görə maksimum 5 şəkil</div>
+          </div>
+        </summary>
+        <div class="settings-body">
+          <div class="row2">
+            <input id="notebookImageDate" class="input" type="date">
+            <button id="addNotebookImageBtn" class="btn secondary full" type="button">Şəkil əlavə et</button>
+          </div>
+          <input id="notebookImageInput" class="hidden" type="file" accept="image/*" multiple>
+          <div id="notebookImageList" class="log-list" style="margin-top:10px"></div>
+        </div>
+      </details>
+
+      <details class="card settings-card">
+        <summary class="settings-toggle">
+          <div>
+            <div class="settings-title">Ümumi balansım</div>
+            <div class="meta">Nağd və 5 kartdakı məbləğ</div>
+          </div>
+        </summary>
+        <div class="settings-body">
+          <div id="balanceWalletTotal" class="stat"><div class="label">Ümumi balans</div><div class="value profit">0 ₼</div></div>
+          <div id="balanceWalletFields" class="form" style="margin-top:10px"></div>
+          <button id="saveBalanceWalletsBtn" class="btn full" type="button" style="margin-top:10px">Balansı saxla</button>
+        </div>
+      </details>
+
+      <details class="card settings-card">
+        <summary class="settings-toggle">
+          <div>
             <div class="settings-title">Gündəlik qazanc</div>
             <div class="meta">Hər günün sonunda qazandığın məbləği tarixlə qeyd et</div>
           </div>
@@ -2322,6 +2368,7 @@
         <div id="dailyProfitSummary" class="stat" style="margin-top:10px">
           <div class="label">Ümumi cəm</div>
           <div id="dailyProfitTotal" class="value profit">0 ₼</div>
+          <div id="dailyProfitDetails" class="sub">0 qeyd</div>
         </div>
         <div id="dailyProfitPanel" class="settings-subview">
           <div class="row2" style="margin-top:10px">
@@ -2416,6 +2463,7 @@
           <label class="check-card"><input type="checkbox" value="notes"> Qeyd</label>
         </div>
         <label class="check-card" style="margin-top:10px"><input id="dashboardProfitVisible" type="checkbox"> Ana ekranda qazanc görünsün</label>
+        <label class="check-card" style="margin-top:10px"><input id="costProfitVisible" type="checkbox"> Maya və qazanc hər yerdə görünsün</label>
         <button id="downloadSqlPdfBtn" class="btn secondary full" type="button" style="margin-top:10px">SQL yüklə</button>
         </div>
       </details>
@@ -2615,9 +2663,9 @@
         </div>
         <div class="row2">
           <div><label class="label">Satış qiyməti</label><input id="salePrice" class="input" type="number" min="0" step="0.01" inputmode="decimal" /></div>
-          <div><label class="label">Maya dəyəri</label><input id="costPrice" class="input" type="number" min="0" step="0.01" inputmode="decimal" /></div>
+          <div id="productCostField"><label class="label">Maya dəyəri</label><input id="costPrice" class="input" type="number" min="0" step="0.01" inputmode="decimal" /></div>
         </div>
-        <div class="stat"><div class="label">1 ədəd qazanc</div><div id="profitPreview" class="value profit">0 ₼</div></div>
+        <div id="productProfitPreviewBlock" class="stat"><div class="label">1 ədəd qazanc</div><div id="profitPreview" class="value profit">0 ₼</div></div>
         <textarea id="productNote" class="textarea" placeholder="Qeyd (istəyə bağlı)"></textarea>
         <button id="saveProductBtn" class="btn full" type="submit">Yadda saxla</button>
       </form>
@@ -2666,7 +2714,7 @@
         </div>
         <div class="row2">
           <div class="stat"><div class="label">Satış məbləği</div><div id="saleTotalPreview" class="value not-recorded">Qeyd edilməyib</div></div>
-          <div class="stat"><div class="label">Qazanc</div><div id="saleProfitPreview" class="value profit not-recorded">Qeyd edilməyib</div></div>
+          <div id="saleProfitPreviewBlock" class="stat"><div class="label">Qazanc</div><div id="saleProfitPreview" class="value profit not-recorded">Qeyd edilməyib</div></div>
         </div>
         <button id="saveSaleBtn" class="btn full" type="submit">Satışı təsdiqlə</button>
       </form>
@@ -2737,7 +2785,7 @@
         </div>
 
         <div id="looseSalePreviewGrid" class="row2">
-          <div class="stat">
+          <div id="looseSaleProfitBlock" class="stat">
             <div class="label">Satış məbləği</div>
             <div id="looseSaleTotal" class="value">Qeyd edilməyib</div>
           </div>
@@ -2987,6 +3035,7 @@ const SUPABASE_URL="https://qzrysfkotffuajczxjnv.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_64yI1atj6OICqpr0B2AX1w_8il9qBlH";
 const FIXED_LOGIN_EMAIL="rustamovali664@gmail.com";
 const THEME_KEY="mal_ucotu_theme";
+const SALES_ACTIONS_VISIBLE_KEY="mal_ucotu_sales_actions_visible";
 const DEFAULT_APP_ICON="assets/apple-touch-icon.png";
 const launchSplashStartedAt=Date.now();
 
@@ -3007,7 +3056,7 @@ let expenses=[];
 let notes=[];
 let activityLogs=[];
 let deletedRecords=[];
-let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null};
+let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null};
 let currentSaleProduct=null;
 let displayedLocalDate=null;
 let currentPage="sales";
@@ -3626,9 +3675,9 @@ async function loadAppSettings(){
 
   if(error){
     console.warn("app_settings:",error.message);
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null};
   }else{
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,...(data||{})};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,...(data||{})};
   }
 
   applyBranding();
@@ -3754,6 +3803,10 @@ function selectedReportSections(){
   return sections.length?sections:[...DEFAULT_REPORT_SECTIONS];
 }
 
+function costProfitVisible(){
+  return appSettings?.show_cost_profit!==false;
+}
+
 function renderReportSectionControls(previewSections=null){
   const selected=new Set(selectedReportSections());
   const previewSelected=new Set(
@@ -3777,6 +3830,10 @@ function renderReportSectionControls(previewSections=null){
 
   if($("dashboardProfitVisible")){
     $("dashboardProfitVisible").checked=appSettings?.show_dashboard_profit!==false;
+  }
+
+  if($("costProfitVisible")){
+    $("costProfitVisible").checked=costProfitVisible();
   }
 
   if($("cardLimitsVisible")){
@@ -3811,6 +3868,22 @@ async function saveDashboardProfitVisibility(visible){
   const {error}=await sb.from("app_settings").upsert({
     user_id:currentUser.id,
     show_dashboard_profit:visible,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+
+  if(error)toast(error.message);
+}
+
+async function saveCostProfitVisibility(visible){
+  appSettings={...appSettings,show_cost_profit:visible};
+  renderAll();
+  updateProfitPreview();
+  updateSalePreview();
+  updateLooseSalePreview();
+
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    show_cost_profit:visible,
     updated_at:new Date().toISOString()
   },{onConflict:"user_id"});
 
@@ -3879,8 +3952,13 @@ function renderDailyProfits(){
     .filter(([date,value])=>date && Number.isFinite(Number(value)))
     .sort(([a],[b])=>b.localeCompare(a));
   const total=entries.reduce((sum,[,value])=>sum+Number(value||0),0);
+  const average=entries.length?total/entries.length:0;
+  const latest=entries[0];
 
   $("dailyProfitTotal").textContent=money(total);
+  $("dailyProfitDetails").textContent=entries.length
+    ? `${entries.length} qeyd · Orta ${money(average)} · Son ${latest[0]}: ${money(latest[1])}`
+    : "0 qeyd";
   if(!$("dailyProfitDate").value)$("dailyProfitDate").value=isoLocalDate(new Date());
 
   const selectedAmount=dailyProfits()[$("dailyProfitDate").value];
@@ -3897,6 +3975,53 @@ function renderDailyProfits(){
       </div>
     </div>
   `).join(""):'<div class="empty" style="padding:14px">Hələ qazanc qeydi yoxdur.</div>';
+}
+
+function notebookImages(){
+  return Array.isArray(appSettings?.notebook_images)?appSettings.notebook_images:[];
+}
+
+function balanceWallets(){
+  const defaults={cash:0,cards:[0,0,0,0,0]};
+  const stored=appSettings?.balance_wallets&&typeof appSettings.balance_wallets==="object"?appSettings.balance_wallets:{};
+  return {
+    cash:Number(stored.cash||0),
+    cards:Array.from({length:5},(_,index)=>Number(stored.cards?.[index]||0))
+  };
+}
+
+function renderNotebookImages(){
+  if(!$("notebookImageList"))return;
+  if(!$("notebookImageDate").value)$("notebookImageDate").value=isoLocalDate(new Date());
+  const rows=notebookImages().slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  $("notebookImageList").innerHTML=rows.length?rows.map((item,index)=>`
+    <div class="log-item">
+      <div class="log-top">
+        <div>
+          <div class="log-title">${escapeHtml(item.date||"Tarixsiz")}</div>
+          <div class="log-tags"><span class="log-tag">Dəftər şəkli</span></div>
+        </div>
+        <button class="btn danger" data-remove-notebook-image="${index}" type="button">Sil</button>
+      </div>
+      <img class="sale-thumb clickable-image" style="margin-top:8px;width:72px;height:72px" src="${escapeHtml(item.url)}" data-open-notebook-image="${escapeHtml(item.url)}" alt="Dəftər şəkli">
+    </div>
+  `).join(""):'<div class="empty" style="padding:14px">Dəftər şəkli yoxdur.</div>';
+  document.querySelectorAll("[data-open-notebook-image]").forEach(img=>{
+    img.addEventListener("click",()=>openImageLightbox([img.dataset.openNotebookImage],0));
+  });
+  document.querySelectorAll("[data-remove-notebook-image]").forEach(button=>{
+    button.addEventListener("click",()=>removeNotebookImage(Number(button.dataset.removeNotebookImage)));
+  });
+}
+
+function renderBalanceWallets(){
+  if(!$("balanceWalletFields"))return;
+  const data=balanceWallets();
+  $("balanceWalletTotal").querySelector(".value").textContent=money(data.cash+data.cards.reduce((sum,value)=>sum+value,0));
+  $("balanceWalletFields").innerHTML=`
+    <div><label class="label">Nağd pul</label><input class="input" id="balanceCashInput" type="number" step="0.01" inputmode="decimal" value="${data.cash||""}"></div>
+    ${data.cards.map((value,index)=>`<div><label class="label">Kart ${index+1}</label><input class="input" data-balance-card="${index}" type="number" step="0.01" inputmode="decimal" value="${value||""}"></div>`).join("")}
+  `;
 }
 
 async function saveDailyProfit(){
@@ -3933,6 +4058,58 @@ async function saveDailyProfit(){
   await loadLogs();
   renderLogs();
   toast("Gündəlik qazanc saxlandı");
+}
+
+async function saveNotebookImages(next){
+  appSettings={...appSettings,notebook_images:next};
+  renderNotebookImages();
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    notebook_images:next,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+  if(error)toast(error.message);
+}
+
+async function addNotebookImages(files){
+  const date=$("notebookImageDate").value||isoLocalDate(new Date());
+  const current=notebookImages();
+  const existingForDate=current.filter(item=>item.date===date).length;
+  const incoming=Array.from(files||[]).slice(0,Math.max(0,5-existingForDate));
+  if(!incoming.length){
+    toast("Bu tarix üçün maksimum 5 şəkil olar.");
+    return;
+  }
+  const added=[];
+  for(const file of incoming){
+    const url=await uploadImage(file);
+    if(url)added.push({date,url,created_at:new Date().toISOString()});
+  }
+  await saveNotebookImages([...current,...added]);
+  toast("Dəftər şəkli əlavə edildi");
+}
+
+async function removeNotebookImage(index){
+  const rows=notebookImages().slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const target=rows[index];
+  if(!target)return;
+  await saveNotebookImages(notebookImages().filter(item=>item!==target));
+}
+
+async function saveBalanceWallets(){
+  const cards=Array.from(document.querySelectorAll("[data-balance-card]"))
+    .sort((a,b)=>Number(a.dataset.balanceCard)-Number(b.dataset.balanceCard))
+    .map(input=>Number(input.value||0));
+  const balance={cash:Number($("balanceCashInput").value||0),cards};
+  appSettings={...appSettings,balance_wallets:balance};
+  renderBalanceWallets();
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    balance_wallets:balance,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+  if(error)toast(error.message);
+  else toast("Balans saxlandı");
 }
 
 function renderCardAccountOptions(){
@@ -4181,16 +4358,17 @@ function renderCategoryOptions(){
 function renderStats(){
   const regularSales=sales.filter(sale=>!isOutsideIncomeSale(sale));
   const revenue=regularSales.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const cost=regularSales.reduce((sum,s)=>sum+Number(s.total_cost||0),0);
-  const profit=regularSales.reduce((sum,s)=>sum+Number(s.profit||0),0);
+  const cost=regularSales.reduce((sum,s)=>sum+(s.cost_price_provided===false?0:Number(s.total_cost||0)),0);
+  const profit=regularSales.reduce((sum,s)=>sum+((s.sale_price_provided===false||s.cost_price_provided===false)?0:Number(s.profit||0)),0);
 
   $("statProducts").textContent=products.length;
   $("statRevenue").textContent=money(revenue);
   $("statCost").textContent=money(cost);
   $("statProfit").textContent=money(profit);
+  $("statCost").closest(".stat")?.classList.toggle("hidden-profit",!costProfitVisible());
   $("dashboardProfitStat").classList.toggle(
     "hidden-profit",
-    appSettings?.show_dashboard_profit===false || Math.abs(profit)<0.000001
+    !costProfitVisible() || appSettings?.show_dashboard_profit===false || Math.abs(profit)<0.000001
   );
 
   fitValues();
@@ -4334,6 +4512,7 @@ function renderProducts(){
   const profitFilter=$("productProfitFilter").value;
   const sort=$("productSort").value;
   const selectedDate=$("productSingleDate").value;
+  const showCostProfit=costProfitVisible();
 
   let list=products.filter(product=>{
     const salePrice=Number(product.sale_price||0);
@@ -4348,9 +4527,9 @@ function renderProducts(){
     if(priceFilter==="100to300"&&!(salePrice>=100&&salePrice<=300))return false;
     if(priceFilter==="300plus"&&!(salePrice>=300))return false;
 
-    if(profitFilter==="positive"&&!(profit>0))return false;
-    if(profitFilter==="zero"&&Math.abs(profit)>0.000001)return false;
-    if(profitFilter==="negative"&&!(profit<0))return false;
+    if(showCostProfit && profitFilter==="positive"&&!(profit>0))return false;
+    if(showCostProfit && profitFilter==="zero"&&Math.abs(profit)>0.000001)return false;
+    if(showCostProfit && profitFilter==="negative"&&!(profit<0))return false;
 
     return true;
   });
@@ -4389,8 +4568,8 @@ function renderProducts(){
 
         <div class="price-row">
           <span class="badge">Satış ${money(product.sale_price)}</span>
-          <span class="badge">Maya ${money(product.cost_price)}</span>
-          <span class="badge profit">Qazanc ${money(profit)}</span>
+          ${showCostProfit?`<span class="badge">Maya ${money(product.cost_price)}</span>
+          <span class="badge profit">Qazanc ${money(profit)}</span>`:""}
         </div>
 
         <div class="actions">
@@ -4565,6 +4744,7 @@ function filteredSalesList(){
   const qtyFilter=$("salesQtyFilter").value;
   const sort=$("salesSort").value;
   const selectedDate=$("salesSingleDate").value;
+  const showCostProfit=costProfitVisible();
 
   let list=sales.filter(sale=>{
     const name=String(saleTitle(sale)).toLowerCase();
@@ -4580,9 +4760,9 @@ function filteredSalesList(){
     if(minAmount!==null&&revenue<minAmount)return false;
     if(maxAmount!==null&&revenue>maxAmount)return false;
 
-    if(profitFilter==="positive"&&!(profit>0))return false;
-    if(profitFilter==="zero"&&Math.abs(profit)>0.000001)return false;
-    if(profitFilter==="negative"&&!(profit<0))return false;
+    if(showCostProfit && profitFilter==="positive"&&!(profit>0))return false;
+    if(showCostProfit && profitFilter==="zero"&&Math.abs(profit)>0.000001)return false;
+    if(showCostProfit && profitFilter==="negative"&&!(profit<0))return false;
 
     if(qtyFilter==="1"&&qty!==1)return false;
     if(qtyFilter==="2to5"&&!(qty>=2&&qty<=5))return false;
@@ -4703,6 +4883,8 @@ function openPocketEditModal(){
   const auto=computedPocketValue(list);
   const override=pocketOverrideValue();
   const shown=override===null?auto:override;
+  const revenue=list.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const payment=currentPaymentSummary(list);
 
   $("pocketAutoValue").textContent=money(auto);
   $("pocketCurrentValue").textContent=money(shown);
@@ -4710,7 +4892,15 @@ function openPocketEditModal(){
   $("pocketEditLabel").textContent=`${$("salesSummaryPocketLabel").textContent} məbləği`;
   const outside=outsideIncomeTotals();
   const expenseTotal=expenseTotalForSalesDate();
-  const rows=Object.entries(outside)
+  const rows=[
+    `<div class="log-item"><div class="log-top"><div class="log-title">Satış</div><div class="log-date">${money(revenue)}</div></div></div>`,
+    `<div class="log-item"><div class="log-top"><div class="log-title">Nağd</div><div class="log-date">${money(payment.cash)}</div></div></div>`,
+    `<div class="log-item"><div class="log-top"><div class="log-title">Kart</div><div class="log-date">${money(payment.card)}</div></div></div>`
+  ];
+  Object.entries(payment.accounts).forEach(([name,data])=>{
+    rows.push(`<div class="log-item"><div class="log-top"><div class="log-title">${escapeHtml(name)}</div><div class="log-date">${money(data.amount)}</div></div><div class="log-tags"><span class="log-tag">${data.count} mədaxil</span></div></div>`);
+  });
+  rows.push(...Object.entries(outside)
     .filter(([key,value])=>key!=="total"&&Math.abs(Number(value||0))>0.000001)
     .map(([key,value])=>`
       <div class="log-item">
@@ -4719,7 +4909,7 @@ function openPocketEditModal(){
           <div class="log-date">${money(value)}</div>
         </div>
       </div>
-    `);
+    `));
   if(Math.abs(expenseTotal)>0.000001){
     rows.push(`
       <div class="log-item">
@@ -4769,17 +4959,21 @@ function updatePaymentSummaryModal(){
 
 function renderSales(){
   const list=filteredSalesList();
+  const showCostProfit=costProfitVisible();
 
   $("salesCount").textContent=`${list.length} qeyd`;
   updateSalesSummaryLabels();
   const revenue=list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const profit=list.reduce((sum,s)=>sum+Number(s.profit||0),0);
+  const profit=list.reduce((sum,s)=>sum+((s.sale_price_provided===false||s.cost_price_provided===false)?0:Number(s.profit||0)),0);
   const soldQty=list.reduce((sum,s)=>sum+Number(s.quantity||0),0);
+  const cardTotal=list.filter(s=>s.payment_method==="card").reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
   const pocketOverride=pocketOverrideValue();
   $("filterRevenue").textContent=money(revenue);
   $("filterProfit").textContent=money(profit);
+  $("salesProfitStat").classList.toggle("hidden-profit",!showCostProfit || Math.abs(profit)<0.000001);
   $("filterPocket").textContent=money(displayedPocketValue(list));
   $("filterPocket").classList.toggle("not-recorded",pocketOverride!==null);
+  $("filterCardTotal").textContent=money(cardTotal);
   $("filterSoldQty").textContent=soldQty;
   updatePaymentSummaryModal();
 
@@ -4822,8 +5016,8 @@ function renderSales(){
           <div class="price-row">
             <span class="badge ${sale.sale_price_provided===false?"not-recorded":""}">Satış ${displayUnitSale(sale)}</span>
             <span class="badge">${paymentMethodLabel(sale.payment_method)}</span>
-            <span class="badge ${sale.cost_price_provided===false?"not-recorded":""}">Maya ${displayCost(sale)}</span>
-            <span class="badge profit ${(sale.sale_price_provided===false||sale.cost_price_provided===false)?"not-recorded":""}">Qazanc ${displayProfit(sale)}</span>
+            ${showCostProfit?`<span class="badge ${sale.cost_price_provided===false?"not-recorded":""}">Maya ${displayCost(sale)}</span>
+            <span class="badge profit ${(sale.sale_price_provided===false||sale.cost_price_provided===false)?"not-recorded":""}">Qazanc ${displayProfit(sale)}</span>`:""}
           </div>
 
           ${sale.note?`<div class="meta" style="margin-top:7px">${escapeHtml(sale.note)}</div>`:""}
@@ -5440,6 +5634,25 @@ function renderAll(){
   renderCardSettingsModal();
   renderDailyProfits();
   renderYusifMoneySettings();
+  renderNotebookImages();
+  renderBalanceWallets();
+  applySalesActionsVisibility();
+}
+
+function salesActionsVisible(){
+  return localStorage.getItem(SALES_ACTIONS_VISIBLE_KEY)!=="0";
+}
+
+function applySalesActionsVisibility(){
+  if(!$("salesQuickActions")||!$("toggleSalesActions"))return;
+  const visible=salesActionsVisible();
+  $("salesQuickActions").classList.toggle("hidden",!visible);
+  $("toggleSalesActions").textContent=visible?"Əməliyyatları gizlət":"Əməliyyatları göstər";
+}
+
+function toggleSalesActions(){
+  localStorage.setItem(SALES_ACTIONS_VISIBLE_KEY,salesActionsVisible()?"0":"1");
+  applySalesActionsVisibility();
 }
 
 function updateScrollTopButton(){
@@ -5498,6 +5711,9 @@ function resetProductForm(){
 }
 
 function updateProfitPreview(){
+  $("productCostField")?.classList.toggle("hidden",!costProfitVisible());
+  $("productProfitPreviewBlock")?.classList.toggle("hidden",!costProfitVisible());
+  if(!costProfitVisible())return;
   const saleProvided=$("salePrice").value!=="";
   const costProvided=$("costPrice").value!=="";
 
@@ -5635,7 +5851,9 @@ function setSaleProduct(product){
 
   $("saleProductId").value=product.id;
   $("saleProductName").textContent=product.name;
-  $("saleProductPrices").textContent=`Satış: ${recordedMoney(productSalePrice)} · Maya: ${recordedMoney(productCostPrice)}`;
+  $("saleProductPrices").textContent=costProfitVisible()
+    ? `Satış: ${recordedMoney(productSalePrice)} · Maya: ${recordedMoney(productCostPrice)}`
+    : `Satış: ${recordedMoney(productSalePrice)}`;
   $("salePriceOverride").value="";
   $("salePriceOverride").placeholder=productSalePrice>0?money(productSalePrice):"Qeyd edilməyib";
   $("salePriceFallbackHint").textContent=productSalePrice>0
@@ -5701,6 +5919,7 @@ function getSaleEffectivePrice(){
 }
 
 function updateSalePreview(){
+  $("saleProfitPreviewBlock")?.classList.toggle("hidden",!costProfitVisible());
   if(!currentSaleProduct){
     $("saleTotalPreview").textContent="Qeyd edilməyib";
     $("saleProfitPreview").textContent="Qeyd edilməyib";
@@ -5835,6 +6054,28 @@ function openEditExpense(id){
   editingExpenseImageUrls=expenseImages(expense);
   renderExpenseImagePreviews();
   openModal("expenseModal");
+}
+
+async function addQuickExpense(title,amount){
+  try{
+    const {error}=await sb.from("expenses").insert({
+      user_id:currentUser.id,
+      title,
+      amount,
+      note:null,
+      money_holder:"normal",
+      payment_method:"cash",
+      image_url:null,
+      image_urls:[]
+    });
+    if(error)throw error;
+    await loadAll();
+    showPage("expenses");
+    toast(`${title} xərci əlavə edildi`);
+  }catch(error){
+    console.error(error);
+    toast(error.message||"Xərc əlavə edilmədi.");
+  }
 }
 
 async function deleteExpense(id){
@@ -6596,6 +6837,8 @@ $("salesAddBtn").addEventListener("click",()=>{
 });
 
 $("expensesAddBtn").addEventListener("click",openNewExpenseModal);
+$("quickTeaExpenseBtn").addEventListener("click",()=>addQuickExpense("Çay",2));
+$("quickLotteryExpenseBtn").addEventListener("click",()=>addQuickExpense("Latareya",50));
 $("filterYusifExpenseStat").addEventListener("click",openYusifExpenseModal);
 $("notesAddBtn").addEventListener("click",openNewNoteModal);
 
@@ -6902,7 +7145,7 @@ function updateLooseSaleModeFields(){
   $("openLooseSaleImagePicker").classList.toggle("hidden",isOutside);
   $("looseSaleImageHelp").classList.toggle("hidden",isOutside);
   $("looseSaleCategoryBlock").classList.toggle("hidden",isOutside);
-  $("looseSaleCostBlock").classList.toggle("hidden",isOutside);
+  $("looseSaleCostBlock").classList.toggle("hidden",isOutside || !costProfitVisible());
   $("looseSalePaymentBlock").classList.toggle("hidden",isOutside);
   $("looseSaleQuantityBlock").classList.toggle("hidden",isOutside);
   $("looseSalePreviewGrid").classList.toggle("hidden",isOutside);
@@ -6912,6 +7155,7 @@ function updateLooseSaleModeFields(){
 }
 
 function updateLooseSalePreview(){
+  $("looseSaleProfitBlock")?.classList.toggle("hidden",!costProfitVisible());
   const saleProvided=$("looseSalePrice").value!=="";
   const costProvided=$("looseSaleCost").value!=="";
   const salePrice=Number($("looseSalePrice").value||0);
@@ -7027,6 +7271,7 @@ $("addLooseSale").addEventListener("click",openLooseSale);
 $("addTrustIncome").addEventListener("click",openTrustIncome);
 $("addTailorIncome").addEventListener("click",openTailorIncome);
 $("addCustomIncome").addEventListener("click",openCustomIncome);
+$("toggleSalesActions").addEventListener("click",toggleSalesActions);
 
 ["looseSalePrice","looseSaleCost","looseSaleQuantity"].forEach(id=>{
   $(id).addEventListener("input",updateLooseSalePreview);
@@ -7235,6 +7480,10 @@ $("dashboardProfitVisible").addEventListener("change",()=>{
   saveDashboardProfitVisibility($("dashboardProfitVisible").checked);
 });
 
+$("costProfitVisible").addEventListener("change",()=>{
+  saveCostProfitVisibility($("costProfitVisible").checked);
+});
+
 $("cardLimitsVisible").addEventListener("change",()=>{
   saveCardLimitVisibility($("cardLimitsVisible").checked);
 });
@@ -7263,10 +7512,13 @@ async function downloadSqlPdf(){
     pocket_overrides:pocketOverrides(),
     daily_profits:dailyProfits(),
     show_dashboard_profit:appSettings.show_dashboard_profit!==false,
+    show_cost_profit:costProfitVisible(),
     show_card_limits:appSettings.show_card_limits===true,
     card_accounts:cardAccounts(),
     card_details:cardDetails(),
     card_counter_reset_at:appSettings.card_counter_reset_at,
+    notebook_images:notebookImages(),
+    balance_wallets:balanceWallets(),
     created_at:appSettings.created_at,
     updated_at:appSettings.updated_at
   }:null;
@@ -7274,7 +7526,7 @@ async function downloadSqlPdf(){
     "-- SellerNote backup",
     `-- ${formatDate(new Date().toISOString())}`,
     "",
-    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","report_sections","pocket_overrides","daily_profits","show_dashboard_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","created_at","updated_at"]),
+    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","report_sections","pocket_overrides","daily_profits","show_dashboard_profit","show_cost_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","notebook_images","balance_wallets","created_at","updated_at"]),
     sqlInsert("categories",categories,["id","user_id","name","created_at","updated_at"]),
     sqlInsert("products",[...products,...allDeleted.filter(row=>"sale_price" in row&&"cost_price" in row)],["id","user_id","category_id","name","sale_price","cost_price","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","is_checked","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
@@ -7488,13 +7740,13 @@ function buildReport(from,to,sections=selectedReportSections()){
     return acc;
   },{});
   const revenue=reportSales.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const cost=reportSales.reduce((sum,s)=>sum+Number(s.total_cost||0),0);
-  const profit=reportSales.reduce((sum,s)=>sum+Number(s.profit||0),0);
+  const cost=reportSales.reduce((sum,s)=>sum+(s.cost_price_provided===false?0:Number(s.total_cost||0)),0);
+  const profit=reportSales.reduce((sum,s)=>sum+((s.sale_price_provided===false||s.cost_price_provided===false)?0:Number(s.profit||0)),0);
   const expenseTotal=data.expenses.reduce((sum,e)=>sum+Number(e.amount||0),0);
   const pocket=revenue-expenseTotal+outsideIncome;
   const soldQty=reportSales.reduce((sum,s)=>sum+Number(s.quantity||0),0);
-  const showCost=Math.abs(cost)>0.000001;
-  const showProfit=Math.abs(profit)>0.000001;
+  const showCost=costProfitVisible() && Math.abs(cost)>0.000001;
+  const showProfit=costProfitVisible() && Math.abs(profit)>0.000001;
   const yusifReportExpenses=data.expenses.filter(isYusifExpense);
   const yusifReportTotal=yusifExpenseTotal(yusifReportExpenses);
   const yusifReportPayments=yusifExpensePaymentTotals(yusifReportExpenses);
@@ -7593,8 +7845,8 @@ function buildReport(from,to,sections=selectedReportSections()){
     const productCost=products.reduce((sum,product)=>sum+Number(product.cost_price||0),0);
     const productProfit=products.reduce((sum,product)=>sum+Number(product.sale_price||0)-Number(product.cost_price||0),0);
     const productHeaders=["Məhsul","Kateqoriya","Satış"];
-    if(Math.abs(productCost)>0.000001)productHeaders.push("Maya");
-    if(Math.abs(productProfit)>0.000001)productHeaders.push("Qazanc");
+    if(costProfitVisible() && Math.abs(productCost)>0.000001)productHeaders.push("Maya");
+    if(costProfitVisible() && Math.abs(productProfit)>0.000001)productHeaders.push("Qazanc");
 
     const rows=data.products.map(product=>{
       const row=[
@@ -7602,8 +7854,8 @@ function buildReport(from,to,sections=selectedReportSections()){
         product.categories?.name||"",
         money(product.sale_price)
       ];
-      if(Math.abs(productCost)>0.000001)row.push(money(product.cost_price));
-      if(Math.abs(productProfit)>0.000001)row.push(money(Number(product.sale_price||0)-Number(product.cost_price||0)));
+      if(costProfitVisible() && Math.abs(productCost)>0.000001)row.push(money(product.cost_price));
+      if(costProfitVisible() && Math.abs(productProfit)>0.000001)row.push(money(Number(product.sale_price||0)-Number(product.cost_price||0)));
       return row;
     });
     if(rows.length)blocks.push(reportSection("Məhsul siyahısı",reportTable(
@@ -7986,6 +8238,12 @@ $("resetCardCountersInlineBtn").addEventListener("click",resetCardCounters);
 
 $("dailyProfitDate").addEventListener("change",renderDailyProfits);
 $("saveDailyProfitBtn").addEventListener("click",saveDailyProfit);
+$("addNotebookImageBtn").addEventListener("click",()=>$("notebookImageInput").click());
+$("notebookImageInput").addEventListener("change",async()=>{
+  await addNotebookImages($("notebookImageInput").files);
+  $("notebookImageInput").value="";
+});
+$("saveBalanceWalletsBtn").addEventListener("click",saveBalanceWallets);
 
 $("salesPocketStat").addEventListener("click",openPocketEditModal);
 
@@ -8049,8 +8307,7 @@ window.addEventListener("popstate",event=>{
     return;
   }
 
-  const page=event.state?.page || location.hash.replace("#","") || "sales";
-  showPage(page,{history:false});
+  showPage("sales",{history:false});
 });
 
 
@@ -8058,6 +8315,8 @@ window.addEventListener("popstate",event=>{
 document.querySelectorAll(".nav-btn").forEach(button=>{
   button.addEventListener("click",()=>showPage(button.dataset.page));
 });
+
+document.querySelector(".brand")?.addEventListener("click",()=>showPage("sales"));
 
 $("scrollTopBtn").addEventListener("click",()=>{
   window.scrollTo({top:0,behavior:"smooth"});
