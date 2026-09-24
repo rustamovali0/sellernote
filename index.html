@@ -15,6 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Rustamoff">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -1826,6 +1827,14 @@
       white-space:nowrap;
       align-self:stretch;
     }
+    .main-category-filter{
+      width:100%;
+      min-height:44px;
+      margin:-2px 0 10px;
+      font-weight:800;
+      background:var(--card);
+      box-shadow:var(--shadow);
+    }
     @media(max-width:430px){
       .toolbar.with-clear{gap:6px}
       .toolbar.with-clear > .toolbar-clear{
@@ -1990,7 +1999,6 @@
             <div id="productFilterPanel" class="drop-panel right hidden">
               <div class="form">
                 <input id="searchInput" class="input" type="search" placeholder="Məhsul adına görə axtar..." />
-                <select id="categoryFilter" class="select"><option value="">Bütün kateqoriyalar</option></select>
                 <select id="productPriceFilter" class="select">
                   <option value="">Qiymət: hamısı</option>
                   <option value="under50">50 ₼-dən aşağı</option>
@@ -2020,6 +2028,7 @@
             Təmizlə
           </button>
         </div>
+        <select id="categoryFilter" class="select main-category-filter"><option value="">Bütün kateqoriyalar</option></select>
 
         <div id="productDateBox" class="card date-box hidden">
           <input id="productSingleDate" type="hidden" />
@@ -2060,6 +2069,7 @@
         <button id="addLooseSale" class="btn secondary" type="button">+ Sərbəst satış</button>
         <button id="addTrustIncome" class="btn secondary" type="button">+ Etibar</button>
         <button id="addTailorIncome" class="btn secondary" type="button">+ Dərzi</button>
+        <button id="addCustomIncome" class="btn secondary" type="button">+ Custom</button>
         <button id="openPdfExport" class="btn secondary" type="button">PDF</button>
         <button id="sendReportWhatsapp" class="btn secondary" type="button">Hesabat göndər</button>
       </div>
@@ -2084,7 +2094,6 @@
           <div id="salesFilterPanel" class="drop-panel right hidden">
             <div class="form">
               <input id="salesSearchInput" class="input" type="search" placeholder="Məhsul adına görə axtar..." />
-              <select id="salesCategoryFilter" class="select"><option value="">Bütün kateqoriyalar</option></select>
               <div class="row2">
                 <input id="salesMinAmount" class="input" type="number" min="0" step="0.01" placeholder="Min məbləğ" />
                 <input id="salesMaxAmount" class="input" type="number" min="0" step="0.01" placeholder="Max məbləğ" />
@@ -2121,6 +2130,7 @@
           Təmizlə
         </button>
       </div>
+      <select id="salesCategoryFilter" class="select main-category-filter"><option value="">Bütün kateqoriyalar</option></select>
 
       <div id="salesDateBox" class="card date-box hidden">
         <input id="salesSingleDate" type="hidden" />
@@ -3043,6 +3053,7 @@ const $=id=>document.getElementById(id);
 const TRUST_CATEGORY_NAME="Etibar";
 const TAILOR_CATEGORY_NAME="Dərzi";
 const OUTSIDE_INCOME_NAMES=[TRUST_CATEGORY_NAME,TAILOR_CATEGORY_NAME];
+const CUSTOM_OUTSIDE_INCOME_PREFIX="Custom:";
 const DEFAULT_CARD_ACCOUNTS=["Əlinin kartı","Yusifin kartı"];
 const CARD_PUBLIC_INFO={
   "Əlinin kartı":{bank:"Birbank",masked:"•••• •••• •••• 0323"},
@@ -3657,11 +3668,25 @@ function findOutsideIncomeCategory(name){
   return categories.find(category=>normalizeCategoryName(category.name)===normalizeCategoryName(name))||null;
 }
 
+function isCustomOutsideIncomeName(name){
+  return String(name||"").startsWith(CUSTOM_OUTSIDE_INCOME_PREFIX);
+}
+
+function displayOutsideIncomeName(name){
+  const value=String(name||"").trim();
+  return isCustomOutsideIncomeName(value)
+    ? value.slice(CUSTOM_OUTSIDE_INCOME_PREFIX.length).trim()||"Custom"
+    : value;
+}
+
 function isOutsideIncomeCategoryId(categoryId){
   if(!categoryId)return false;
   return categories.some(category=>
     category.id===categoryId &&
-    OUTSIDE_INCOME_NAMES.some(name=>normalizeCategoryName(category.name)===normalizeCategoryName(name))
+    (
+      OUTSIDE_INCOME_NAMES.some(name=>normalizeCategoryName(category.name)===normalizeCategoryName(name)) ||
+      isCustomOutsideIncomeName(category.name)
+    )
   );
 }
 
@@ -3669,7 +3694,8 @@ function isOutsideIncomeSale(sale){
   const categoryId=sale?.category_id||sale?.products?.category_id||null;
   if(isOutsideIncomeCategoryId(categoryId))return true;
   const title=normalizeCategoryName(saleTitle(sale));
-  return OUTSIDE_INCOME_NAMES.some(name=>title===normalizeCategoryName(name));
+  return OUTSIDE_INCOME_NAMES.some(name=>title===normalizeCategoryName(name)) ||
+    isCustomOutsideIncomeName(saleTitle(sale));
 }
 
 async function ensureShalvarCategory(){
@@ -4579,6 +4605,10 @@ function expensesForSalesDate(){
   return expenses.filter(expense=>dateMatches(expense.created_at,salesDateMode,selectedDate));
 }
 
+function expenseTotalForSalesDate(){
+  return expensesForSalesDate().reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+}
+
 function outsideIncomeForSalesDate(){
   const selectedDate=$("salesSingleDate").value;
   return sales.filter(sale=>
@@ -4589,9 +4619,10 @@ function outsideIncomeForSalesDate(){
 
 function outsideIncomeTotals(){
   return outsideIncomeForSalesDate().reduce((totals,sale)=>{
-    const title=OUTSIDE_INCOME_NAMES.find(name=>normalizeCategoryName(name)===normalizeCategoryName(saleTitle(sale)))
+    const rawTitle=OUTSIDE_INCOME_NAMES.find(name=>normalizeCategoryName(name)===normalizeCategoryName(saleTitle(sale)))
       || categories.find(category=>category.id===(sale.category_id||sale.products?.category_id))?.name
       || saleTitle(sale);
+    const title=displayOutsideIncomeName(rawTitle);
     totals[title]=(totals[title]||0)+Number(sale.total_revenue||0);
     totals.total+=Number(sale.total_revenue||0);
     return totals;
@@ -4624,7 +4655,7 @@ function pocketOverrideValue(){
 
 function computedPocketValue(list=filteredSalesList()){
   const revenue=list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const expenseTotal=expensesForSalesDate().reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+  const expenseTotal=expenseTotalForSalesDate();
   return revenue-expenseTotal+outsideIncomeTotals().total;
 }
 
@@ -4672,7 +4703,8 @@ function openPocketEditModal(){
   $("pocketOverrideInput").value=override===null?shown:override;
   $("pocketEditLabel").textContent=`${$("salesSummaryPocketLabel").textContent} məbləği`;
   const outside=outsideIncomeTotals();
-  $("pocketIncomeBreakdown").innerHTML=Object.entries(outside)
+  const expenseTotal=expenseTotalForSalesDate();
+  const rows=Object.entries(outside)
     .filter(([key,value])=>key!=="total"&&Math.abs(Number(value||0))>0.000001)
     .map(([key,value])=>`
       <div class="log-item">
@@ -4681,7 +4713,18 @@ function openPocketEditModal(){
           <div class="log-date">${money(value)}</div>
         </div>
       </div>
-    `).join("") || '<div class="meta">Kənar gəlir yoxdur.</div>';
+    `);
+  if(Math.abs(expenseTotal)>0.000001){
+    rows.push(`
+      <div class="log-item">
+        <div class="log-top">
+          <div class="log-title">Xərc</div>
+          <div class="log-date">-${money(expenseTotal)}</div>
+        </div>
+      </div>
+    `);
+  }
+  $("pocketIncomeBreakdown").innerHTML=rows.join("") || '<div class="meta">Kənar gəlir və xərc yoxdur.</div>';
   openModal("pocketEditModal");
 }
 
@@ -6910,6 +6953,22 @@ async function openTailorIncome(){
   await openOutsideIncome(TAILOR_CATEGORY_NAME);
 }
 
+function openCustomIncome(){
+  resetLooseSaleForm();
+  currentOutsideIncomeName="";
+  saleEntryMode="trust";
+  $("looseSaleModalTitle").textContent="Custom gəlir";
+  $("saveLooseSaleBtn").textContent="Gəliri yadda saxla";
+  $("looseSaleName").value="";
+  $("looseSaleName").placeholder="Başlıq";
+  $("looseSaleCategory").value="";
+  $("looseSaleCost").value="";
+  $("looseSaleQuantity").value=1;
+  updateLooseSaleModeFields();
+  updateLooseSalePreview();
+  openModal("looseSaleModal");
+}
+
 async function openOutsideIncome(name){
   resetLooseSaleForm();
   currentOutsideIncomeName=name;
@@ -6961,6 +7020,7 @@ function openEditSale(id){
 $("addLooseSale").addEventListener("click",openLooseSale);
 $("addTrustIncome").addEventListener("click",openTrustIncome);
 $("addTailorIncome").addEventListener("click",openTailorIncome);
+$("addCustomIncome").addEventListener("click",openCustomIncome);
 
 ["looseSalePrice","looseSaleCost","looseSaleQuantity"].forEach(id=>{
   $(id).addEventListener("input",updateLooseSalePreview);
@@ -7015,12 +7075,21 @@ $("looseSaleForm").addEventListener("submit",async event=>{
     const costPriceProvided=!isTrust && $("looseSaleCost").value!=="";
 
     const name=$("looseSaleName").value.trim()||(isTrust?currentOutsideIncomeName:"Satış");
+    if(isTrust && !name){
+      toast("Başlıq yazın.");
+      return;
+    }
+    if(isTrust && !salePriceProvided){
+      toast("Məbləği yazın.");
+      return;
+    }
     const quantity=isTrust?1:Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1);
     const salePrice=Number($("looseSalePrice").value||0);
     const costPrice=isTrust?0:Number($("looseSaleCost").value||0);
     const note=$("looseSaleNote").value.trim()||null;
+    const outsideCategoryName=currentOutsideIncomeName || `${CUSTOM_OUTSIDE_INCOME_PREFIX}${name}`;
     const categoryId=isTrust
-      ? ($("looseSaleCategory").value||await ensureOutsideIncomeCategory(currentOutsideIncomeName))
+      ? ($("looseSaleCategory").value||await ensureOutsideIncomeCategory(outsideCategoryName))
       : ($("looseSaleCategory").value||await ensureShalvarCategory());
 
     const salePayload={
@@ -7478,77 +7547,107 @@ function downloadBlob(blob,filename){
 
 async function renderReportElement(from,to,sections){
   const report=buildReport(from,to,sections);
-  report.style.position="fixed";
-  report.style.left="-10000px";
-  report.style.top="0";
+  report.setAttribute("aria-hidden","true");
+  report.style.position="absolute";
+  report.style.left="0";
+  report.style.top=`${window.scrollY}px`;
   report.style.width="760px";
   report.style.maxWidth="760px";
-  report.style.zIndex="-1";
+  report.style.pointerEvents="none";
+  report.style.zIndex="0";
   document.body.appendChild(report);
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   await waitForReportAssets(report);
   return report;
 }
 
-async function exportReportPdf({from,to,sections,share=false}){
-  if(typeof html2pdf!=="function")throw new Error("PDF kitabxanası yüklənməyib.");
+async function reportToCanvas({from,to,sections}){
+  if(typeof html2canvas!=="function")throw new Error("Hesabat şəkil kitabxanası yüklənməyib.");
   const report=await renderReportElement(from,to,sections);
   try{
-    const worker=html2pdf().set({
-      margin:8,
-      filename:`hesabat-${from}-${to}.pdf`,
-      image:{type:"jpeg",quality:0.96},
-      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
-      jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
-      pagebreak:{mode:["css","legacy"]}
-    }).from(report);
-
-    if(share){
-      const blob=await worker.outputPdf("blob");
-      const file=new File([blob],`hesabat-${from}-${to}.pdf`,{type:"application/pdf"});
-      if(navigator.canShare?.({files:[file]})){
-        await navigator.share({title:"Mal uçotu hesabatı",files:[file]});
-      }else{
-        downloadBlob(blob,file.name);
-        toast("Paylaşma dəstəklənmir, PDF endirildi.");
-      }
-    }else{
-      await worker.save();
-    }
+    return await html2canvas(report,{
+      scale:2,
+      useCORS:true,
+      allowTaint:true,
+      backgroundColor:"#ffffff",
+      windowWidth:760,
+      scrollX:0,
+      scrollY:0
+    });
   }finally{
     report.remove();
   }
 }
 
-async function reportToJpgFiles({from,to,sections}){
-  if(typeof html2canvas!=="function")throw new Error("JPG kitabxanası yüklənməyib.");
-  const report=await renderReportElement(from,to,sections);
-  try{
-    const canvas=await html2canvas(report,{scale:2,useCORS:true,backgroundColor:"#ffffff"});
-    const maxHeight=2400;
-    const files=[];
-    let part=1;
+async function exportReportPdf({from,to,sections,share=false}){
+  const JsPdf=window.jspdf?.jsPDF || window.jsPDF;
+  if(!JsPdf)throw new Error("PDF kitabxanası yüklənməyib.");
 
-    for(let y=0;y<canvas.height;y+=maxHeight){
-      const height=Math.min(maxHeight,canvas.height-y);
-      const page=document.createElement("canvas");
-      page.width=canvas.width;
-      page.height=height;
-      const ctx=page.getContext("2d");
-      ctx.fillStyle="#ffffff";
-      ctx.fillRect(0,0,page.width,page.height);
-      ctx.drawImage(canvas,0,y,canvas.width,height,0,0,canvas.width,height);
-      const blob=await canvasToBlob(page,"image/jpeg",.94);
-      if(blob){
-        files.push(new File([blob],`hesabat-${from}-${to}-${part}.jpg`,{type:"image/jpeg"}));
-        part+=1;
-      }
-    }
+  const canvas=await reportToCanvas({from,to,sections});
+  const pdf=new JsPdf({unit:"mm",format:"a4",orientation:"portrait"});
+  const pageWidth=pdf.internal.pageSize.getWidth();
+  const pageHeight=pdf.internal.pageSize.getHeight();
+  const margin=8;
+  const contentWidth=pageWidth-(margin*2);
+  const contentHeight=pageHeight-(margin*2);
+  const pxPerMm=canvas.width/contentWidth;
+  const pageCanvasHeight=Math.max(1,Math.floor(contentHeight*pxPerMm));
+  let pageIndex=0;
 
-    return files;
-  }finally{
-    report.remove();
+  for(let y=0;y<canvas.height;y+=pageCanvasHeight){
+    const sliceHeight=Math.min(pageCanvasHeight,canvas.height-y);
+    const pageCanvas=document.createElement("canvas");
+    pageCanvas.width=canvas.width;
+    pageCanvas.height=sliceHeight;
+    const ctx=pageCanvas.getContext("2d");
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,pageCanvas.width,pageCanvas.height);
+    ctx.drawImage(canvas,0,y,canvas.width,sliceHeight,0,0,canvas.width,sliceHeight);
+    const imageData=pageCanvas.toDataURL("image/jpeg",0.96);
+    const imageHeight=sliceHeight/pxPerMm;
+    if(pageIndex>0)pdf.addPage();
+    pdf.addImage(imageData,"JPEG",margin,margin,contentWidth,imageHeight);
+    pageIndex+=1;
   }
+
+  const filename=`hesabat-${from}-${to}.pdf`;
+  if(share){
+    const blob=pdf.output("blob");
+    const file=new File([blob],filename,{type:"application/pdf"});
+    if(navigator.canShare?.({files:[file]})){
+      await navigator.share({title:"Mal uçotu hesabatı",files:[file]});
+    }else{
+      downloadBlob(blob,file.name);
+      toast("Paylaşma dəstəklənmir, PDF endirildi.");
+    }
+  }else{
+    pdf.save(filename);
+  }
+}
+
+async function reportToJpgFiles({from,to,sections}){
+  const canvas=await reportToCanvas({from,to,sections});
+  const maxHeight=2400;
+  const files=[];
+  let part=1;
+
+  for(let y=0;y<canvas.height;y+=maxHeight){
+    const height=Math.min(maxHeight,canvas.height-y);
+    const page=document.createElement("canvas");
+    page.width=canvas.width;
+    page.height=height;
+    const ctx=page.getContext("2d");
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,page.width,page.height);
+    ctx.drawImage(canvas,0,y,canvas.width,height,0,0,canvas.width,height);
+    const blob=await canvasToBlob(page,"image/jpeg",.94);
+    if(blob){
+      files.push(new File([blob],`hesabat-${from}-${to}-${part}.jpg`,{type:"image/jpeg"}));
+      part+=1;
+    }
+  }
+
+  return files;
 }
 
 async function exportReportJpg(config){
