@@ -85,8 +85,8 @@
     }
     .launch-splash.done{opacity:0;visibility:hidden;pointer-events:none}
     .launch-card{
-      width:min(calc(100vw - 32px),430px);
-      min-height:360px;
+      width:min(calc(100% - 32px),430px);
+      height:360px;
       padding:34px 28px;
       border:1px solid rgba(226,232,240,.95);
       border-radius:32px;
@@ -114,7 +114,7 @@
       letter-spacing:.16em;
       text-transform:uppercase;
     }
-    .launch-title{margin:0;font-size:clamp(40px,10vw,62px);font-weight:950;letter-spacing:0}
+    .launch-title{margin:0;font-size:56px;font-weight:950;letter-spacing:0}
     .launch-sub{margin:8px 0 0;color:#64748b;font-size:15px;font-weight:750}
     .launch-metrics{
       display:grid;
@@ -482,6 +482,18 @@
       padding:16px 14px 28px;
       background:var(--card);color:var(--text);
       border-radius:24px 24px 0 0;border:1px solid var(--line);
+      position:relative;
+      transition:transform .18s ease;
+      will-change:transform;
+    }
+    .modal:not(.card-number-modal)::before{
+      content:"";
+      display:block;
+      width:44px;
+      height:5px;
+      margin:0 auto 12px;
+      border-radius:999px;
+      background:color-mix(in srgb,var(--muted) 34%,transparent);
     }
     .modal-head{
       display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px;
@@ -583,6 +595,9 @@
       .auth-card{padding:18px;border-radius:16px}
       .auth-card h1{font-size:32px}
       .auth-wrap::after{display:none}
+      .launch-card{height:340px;padding:28px 22px;border-radius:28px}
+      .launch-title{font-size:42px}
+      .launch-icon{width:64px;height:64px;margin-bottom:20px}
       .app{padding-left:10px;padding-right:10px}
       .stats{gap:6px}
       .stat{padding:9px 7px}
@@ -594,11 +609,34 @@
       .today{width:126px;min-height:44px;padding-left:8px;padding-right:8px}
       .today-day{font-size:13px}
       .today-time{font-size:11px}
+      .settings-layout{grid-template-columns:94px minmax(0,1fr);gap:7px}
+      .settings-sidebar{max-height:calc(100dvh - 155px);gap:6px}
+      .settings-nav-btn{min-height:44px;padding:8px 7px;border-radius:12px}
+      .settings-nav-btn strong{font-size:10px}
+      .settings-nav-btn span{display:none}
     }
     @media(min-width:620px){
       .stats{grid-template-columns:repeat(4,minmax(0,1fr))}
       .modal-backdrop{align-items:center}
       .modal{border-radius:24px;margin:20px}
+    }
+    @media(max-width:619px){
+      .settings-layout{grid-template-columns:112px minmax(0,1fr);gap:8px}
+      .settings-sidebar{top:8px;max-height:calc(100dvh - 165px)}
+      .settings-nav-btn{padding:8px 8px}
+      .settings-nav-btn strong{font-size:11px}
+      .settings-nav-btn span{font-size:8px}
+      .launch-title{font-size:46px}
+    }
+    @media(max-width:360px){
+      .settings-layout{grid-template-columns:94px minmax(0,1fr);gap:7px}
+      .settings-sidebar{max-height:calc(100dvh - 155px);gap:6px}
+      .settings-nav-btn{min-height:44px;padding:8px 7px;border-radius:12px}
+      .settings-nav-btn strong{font-size:10px}
+      .settings-nav-btn span{display:none}
+      .launch-card{height:340px;padding:28px 22px;border-radius:28px}
+      .launch-title{font-size:42px}
+      .launch-icon{width:64px;height:64px;margin-bottom:20px}
     }
   
     #salesPage .section-tools{
@@ -719,6 +757,84 @@
       display:grid;
       grid-template-columns:repeat(2,minmax(0,1fr));
       gap:10px;
+    }
+    .settings-layout{
+      display:grid;
+      grid-template-columns:150px minmax(0,1fr);
+      gap:12px;
+      align-items:start;
+    }
+    .settings-sidebar{
+      position:sticky;
+      top:10px;
+      display:grid;
+      gap:8px;
+      max-height:calc(100dvh - 150px);
+      overflow:auto;
+      padding-bottom:8px;
+    }
+    .settings-nav-btn{
+      width:100%;
+      min-height:48px;
+      padding:9px 10px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:var(--card);
+      color:var(--text);
+      text-align:left;
+      box-shadow:var(--shadow);
+    }
+    .settings-nav-btn strong{
+      display:block;
+      font-size:12px;
+      line-height:1.15;
+      overflow-wrap:anywhere;
+    }
+    .settings-nav-btn span{
+      display:block;
+      margin-top:3px;
+      color:var(--muted);
+      font-size:9px;
+      line-height:1.2;
+      overflow-wrap:anywhere;
+    }
+    .settings-nav-btn.active{
+      background:var(--primary);
+      color:var(--primaryText);
+      border-color:var(--primary);
+    }
+    .settings-nav-btn.active span{
+      color:color-mix(in srgb,var(--primaryText) 70%,transparent);
+    }
+    .settings-content{min-width:0}
+    #categoriesPage.sidebar-mode .settings-card{
+      display:none;
+      margin-bottom:0;
+    }
+    #categoriesPage.sidebar-mode .settings-card.active{
+      display:block;
+    }
+    #categoriesPage.sidebar-mode .settings-toggle{
+      display:none;
+    }
+    #categoriesPage.sidebar-mode .settings-body{
+      padding-top:0;
+      margin-top:0;
+      border-top:0;
+    }
+    @media(max-width:619px){
+      .settings-layout{grid-template-columns:112px minmax(0,1fr);gap:8px}
+      .settings-sidebar{top:8px;max-height:calc(100dvh - 165px)}
+      .settings-nav-btn{padding:8px 8px}
+      .settings-nav-btn strong{font-size:11px}
+      .settings-nav-btn span{font-size:8px}
+    }
+    @media(max-width:360px){
+      .settings-layout{grid-template-columns:94px minmax(0,1fr);gap:7px}
+      .settings-sidebar{max-height:calc(100dvh - 155px);gap:6px}
+      .settings-nav-btn{min-height:44px;padding:8px 7px;border-radius:12px}
+      .settings-nav-btn strong{font-size:10px}
+      .settings-nav-btn span{display:none}
     }
     .settings-subview.hidden{display:none!important}
     .deleted-list{display:grid;gap:8px}
@@ -2347,6 +2463,10 @@
         <h2>Ayarlar</h2>
       </div>
 
+      <div class="settings-layout">
+        <aside id="settingsSidebar" class="settings-sidebar" aria-label="Ayar bölmələri"></aside>
+        <div class="settings-content">
+
       <details class="card settings-card">
         <summary class="settings-toggle">
           <div>
@@ -2599,6 +2719,8 @@
         <button id="logoutBtn" class="btn danger full" type="button">Hesabdan çıx</button>
         </div>
       </details>
+        </div>
+      </div>
     </section>
 
     <nav class="bottom-nav">
@@ -3150,6 +3272,7 @@ let multiSaleImageTargetId=null;
 let passwordRecoveryMode=location.hash.includes("type=recovery")||location.search.includes("type=recovery");
 let notesSearchQuery="";
 let logVisibleCount=5;
+let settingsActiveKey=localStorage.getItem("sellernote-settings-section")||"";
 
 /* Delete buttons are intentionally not persisted. Refresh => hidden again. */
 let productDeleteMode=false;
@@ -3278,11 +3401,15 @@ function syncModalScrollLock(){
 }
 
 function openModal(id){
+  const modal=$(id)?.querySelector(".modal");
+  if(modal)modal.style.transform="";
   $(id).classList.remove("hidden");
   syncModalScrollLock();
 }
 
 function closeModal(id){
+  const modal=$(id)?.querySelector(".modal");
+  if(modal)modal.style.transform="";
   $(id).classList.add("hidden");
   syncModalScrollLock();
 }
@@ -4110,6 +4237,49 @@ function renderQuickExpenseSettings(){
   });
   document.querySelectorAll("[data-delete-quick-expense]").forEach(button=>{
     button.addEventListener("click",()=>deleteQuickExpenseButton(button.dataset.deleteQuickExpense));
+  });
+}
+
+function renderSettingsSidebar(){
+  const page=$("categoriesPage");
+  const sidebar=$("settingsSidebar");
+  if(!page||!sidebar)return;
+
+  const cards=Array.from(page.querySelectorAll(".settings-content > .settings-card"));
+  if(!cards.length)return;
+
+  cards.forEach((card,index)=>{
+    if(!card.dataset.settingsKey)card.dataset.settingsKey=`settings-${index}`;
+  });
+
+  if(!cards.some(card=>card.dataset.settingsKey===settingsActiveKey)){
+    settingsActiveKey=cards[0].dataset.settingsKey;
+  }
+
+  page.classList.add("sidebar-mode");
+  sidebar.innerHTML=cards.map(card=>{
+    const key=card.dataset.settingsKey;
+    const title=card.querySelector(".settings-title")?.textContent.trim()||"Bölmə";
+    const meta=card.querySelector(".meta")?.textContent.trim()||"";
+    const active=key===settingsActiveKey;
+    return `<button class="settings-nav-btn ${active?"active":""}" type="button" data-settings-nav="${escapeHtml(key)}">
+      <strong>${escapeHtml(title)}</strong>
+      ${meta?`<span>${escapeHtml(meta)}</span>`:""}
+    </button>`;
+  }).join("");
+
+  cards.forEach(card=>{
+    const active=card.dataset.settingsKey===settingsActiveKey;
+    card.classList.toggle("active",active);
+    card.open=active;
+  });
+
+  sidebar.querySelectorAll("[data-settings-nav]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      settingsActiveKey=button.dataset.settingsNav;
+      localStorage.setItem("sellernote-settings-section",settingsActiveKey);
+      renderSettingsSidebar();
+    });
   });
 }
 
@@ -5895,6 +6065,7 @@ function renderAll(){
   renderBalanceWallets();
   renderQuickExpenseButtons();
   renderQuickExpenseSettings();
+  renderSettingsSidebar();
   applySalesActionsVisibility();
   applyCostProfitVisibility();
 }
@@ -6630,6 +6801,63 @@ document.querySelectorAll(".modal-backdrop").forEach(backdrop=>{
     if(event.target===backdrop)closeModal(backdrop.id);
   });
 });
+
+function bindSwipeCloseModal(backdrop){
+  if(backdrop.id==="cardNumberModal")return;
+
+  let startY=0;
+  let startX=0;
+  let latestY=0;
+  let active=false;
+  let dragging=false;
+
+  backdrop.addEventListener("touchstart",event=>{
+    const touch=event.touches?.[0];
+    const modal=backdrop.querySelector(".modal");
+    if(!touch||!modal||backdrop.classList.contains("hidden"))return;
+    startY=touch.clientY;
+    latestY=startY;
+    startX=touch.clientX;
+    active=modal.scrollTop<=0;
+    dragging=false;
+    modal.style.transition="";
+  },{passive:true});
+
+  backdrop.addEventListener("touchmove",event=>{
+    if(!active)return;
+    const touch=event.touches?.[0];
+    const modal=backdrop.querySelector(".modal");
+    if(!touch||!modal)return;
+    latestY=touch.clientY;
+    const dy=latestY-startY;
+    const dx=touch.clientX-startX;
+    if(dy>8 && Math.abs(dy)>Math.abs(dx)*1.15){
+      dragging=true;
+      event.preventDefault();
+      modal.style.transform=`translateY(${Math.min(dy,220)}px)`;
+    }
+  },{passive:false});
+
+  backdrop.addEventListener("touchend",()=>{
+    const modal=backdrop.querySelector(".modal");
+    if(!active||!modal)return;
+    const dy=latestY-startY;
+    modal.style.transition="transform .18s ease";
+    if(dragging&&dy>90){
+      modal.style.transform="translateY(110%)";
+      setTimeout(()=>{
+        modal.style.transform="";
+        closeModal(backdrop.id);
+      },150);
+    }else{
+      modal.style.transform="";
+    }
+    active=false;
+    dragging=false;
+  },{passive:true});
+}
+
+document.querySelectorAll(".modal-backdrop").forEach(bindSwipeCloseModal);
 
 $("cardNumberModal").addEventListener("click",event=>{
   if(!event.target.closest("#cardNumberValue"))closeModal("cardNumberModal");
