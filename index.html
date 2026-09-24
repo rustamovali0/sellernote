@@ -2263,10 +2263,7 @@
         </button>
       </div>
 
-      <div class="sales-quick-actions">
-        <button id="quickTeaExpenseBtn" class="btn secondary" type="button">Çay 2 ₼</button>
-        <button id="quickLotteryExpenseBtn" class="btn secondary" type="button">Latareya 50 ₼</button>
-      </div>
+      <div id="expenseQuickActions" class="sales-quick-actions"></div>
 
       <div id="expensesDateBox" class="card date-box hidden">
         <input id="expensesSingleDate" type="hidden" />
@@ -2442,6 +2439,23 @@
             <div id="settingsYusifExpenseTotal" class="value profit">0 ₼</div>
           </div>
           <div id="settingsYusifExpenseList" class="log-list" style="margin-top:10px"></div>
+        </div>
+      </details>
+
+      <details class="card settings-card">
+        <summary class="settings-toggle">
+          <div>
+            <div class="settings-title">Sürətli xərclər</div>
+            <div class="meta">Xərclər bölməsində görünən hazır düymələr</div>
+          </div>
+        </summary>
+        <div class="settings-body">
+          <div id="quickExpenseSettingsList" class="log-list"></div>
+          <div class="row2" style="margin-top:10px">
+            <input id="newQuickExpenseTitle" class="input" placeholder="Düymə adı" />
+            <input id="newQuickExpenseAmount" class="input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Məbləğ" />
+          </div>
+          <button id="addQuickExpenseButtonBtn" class="btn full" type="button" style="margin-top:10px">Düymə əlavə et</button>
         </div>
       </details>
 
@@ -3153,6 +3167,10 @@ const CARD_PUBLIC_INFO={
   "Əlinin kartı":{bank:"Birbank",masked:"•••• •••• •••• 0323"},
   "Yusifin kartı":{bank:"Birbank",masked:"•••• •••• •••• 4477"}
 };
+const DEFAULT_QUICK_EXPENSE_BUTTONS=[
+  {id:"tea",title:"Çay",amount:2},
+  {id:"lottery",title:"Latareya",amount:50}
+];
 const DEFAULT_REPORT_SECTIONS=["summary","sales","expenses"];
 const REPORT_SECTION_LABELS={
   summary:"Satış + xərc",
@@ -3719,9 +3737,9 @@ async function loadAppSettings(){
 
   if(error){
     console.warn("app_settings:",error.message);
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null};
   }else{
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,...(data||{})};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,...(data||{})};
   }
 
   applyBranding();
@@ -4040,6 +4058,61 @@ function balanceWallets(){
   };
 }
 
+function quickExpenseButtons(){
+  const hasStored=Array.isArray(appSettings?.quick_expense_buttons);
+  const source=hasStored ? appSettings.quick_expense_buttons : DEFAULT_QUICK_EXPENSE_BUTTONS;
+  const clean=source
+    .map((item,index)=>({
+      id:String(item?.id||`quick-${index}-${normalizeCategoryName(item?.title||"xerc")}`),
+      title:String(item?.title||"").trim(),
+      amount:Number(item?.amount||0)
+    }))
+    .filter(item=>item.title && Number.isFinite(item.amount) && item.amount>0);
+  return hasStored?clean:(clean.length?clean:DEFAULT_QUICK_EXPENSE_BUTTONS);
+}
+
+function renderQuickExpenseButtons(){
+  if(!$("expenseQuickActions"))return;
+  const buttons=quickExpenseButtons();
+  $("expenseQuickActions").innerHTML=buttons.map(item=>`
+    <button class="btn secondary" type="button" data-quick-expense="${escapeHtml(item.id)}">
+      ${escapeHtml(item.title)} ${money(item.amount)}
+    </button>
+  `).join("");
+  document.querySelectorAll("[data-quick-expense]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const item=quickExpenseButtons().find(entry=>entry.id===button.dataset.quickExpense);
+      if(item)addQuickExpense(item.title,item.amount);
+    });
+  });
+}
+
+function renderQuickExpenseSettings(){
+  if(!$("quickExpenseSettingsList"))return;
+  const buttons=quickExpenseButtons();
+  $("quickExpenseSettingsList").innerHTML=buttons.length?buttons.map(item=>`
+    <div class="log-item">
+      <div class="form">
+        <div class="row2">
+          <input class="input" data-quick-expense-title="${escapeHtml(item.id)}" value="${escapeHtml(item.title)}" placeholder="Düymə adı">
+          <input class="input" data-quick-expense-amount="${escapeHtml(item.id)}" type="number" min="0" step="0.01" inputmode="decimal" value="${Number(item.amount)||""}" placeholder="Məbləğ">
+        </div>
+        <div class="row2">
+          <button class="btn secondary full" data-save-quick-expense="${escapeHtml(item.id)}" type="button">Yadda saxla</button>
+          <button class="btn danger full" data-delete-quick-expense="${escapeHtml(item.id)}" type="button">Sil</button>
+        </div>
+      </div>
+    </div>
+  `).join(""):'<div class="empty" style="padding:14px">Sürətli xərc düyməsi yoxdur.</div>';
+
+  document.querySelectorAll("[data-save-quick-expense]").forEach(button=>{
+    button.addEventListener("click",()=>saveQuickExpenseButton(button.dataset.saveQuickExpense));
+  });
+  document.querySelectorAll("[data-delete-quick-expense]").forEach(button=>{
+    button.addEventListener("click",()=>deleteQuickExpenseButton(button.dataset.deleteQuickExpense));
+  });
+}
+
 function renderNotebookImages(){
   if(!$("notebookImageList"))return;
   if(!$("notebookImageDate").value)$("notebookImageDate").value=isoLocalDate(new Date());
@@ -4171,6 +4244,71 @@ async function saveBalanceWallets(){
   },{onConflict:"user_id"});
   if(error)toast(error.message);
   else toast("Balans saxlandı");
+}
+
+async function persistQuickExpenseButtons(next,message="Sürətli xərclər saxlandı"){
+  appSettings={...appSettings,quick_expense_buttons:next};
+  renderQuickExpenseButtons();
+  renderQuickExpenseSettings();
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    quick_expense_buttons:next,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+  if(error)toast(error.message);
+  else toast(message);
+}
+
+async function saveQuickExpenseButton(id){
+  const titleInput=Array.from(document.querySelectorAll("[data-quick-expense-title]"))
+    .find(input=>input.dataset.quickExpenseTitle===id);
+  const amountInput=Array.from(document.querySelectorAll("[data-quick-expense-amount]"))
+    .find(input=>input.dataset.quickExpenseAmount===id);
+  const title=titleInput?.value.trim()||"";
+  const amount=Number(amountInput?.value||0);
+  if(!title){
+    toast("Düymə adını yazın.");
+    return;
+  }
+  if(!Number.isFinite(amount)||amount<=0){
+    toast("Məbləği düzgün yazın.");
+    return;
+  }
+  const next=quickExpenseButtons().map(item=>item.id===id?{...item,title,amount}:item);
+  await persistQuickExpenseButtons(next,"Düymə yeniləndi");
+}
+
+async function deleteQuickExpenseButton(id){
+  const current=quickExpenseButtons();
+  const item=current.find(entry=>entry.id===id);
+  if(!item)return;
+  if(!await appConfirm(`${item.title} düyməsini silmək istəyirsiniz?`,{
+    title:"Düyməni sil",
+    confirmText:"Sil",
+    cancelText:"İmtina",
+    tone:"danger"
+  }))return;
+  await persistQuickExpenseButtons(current.filter(entry=>entry.id!==id),"Düymə silindi");
+}
+
+async function addQuickExpenseButtonFromSettings(){
+  const title=$("newQuickExpenseTitle").value.trim();
+  const amount=Number($("newQuickExpenseAmount").value||0);
+  if(!title){
+    toast("Düymə adını yazın.");
+    return;
+  }
+  if(!Number.isFinite(amount)||amount<=0){
+    toast("Məbləği düzgün yazın.");
+    return;
+  }
+  const next=[
+    ...quickExpenseButtons(),
+    {id:`quick-${Date.now()}`,title,amount}
+  ];
+  $("newQuickExpenseTitle").value="";
+  $("newQuickExpenseAmount").value="";
+  await persistQuickExpenseButtons(next,"Yeni düymə əlavə edildi");
 }
 
 function renderCardAccountOptions(){
@@ -5755,6 +5893,8 @@ function renderAll(){
   renderYusifMoneySettings();
   renderNotebookImages();
   renderBalanceWallets();
+  renderQuickExpenseButtons();
+  renderQuickExpenseSettings();
   applySalesActionsVisibility();
   applyCostProfitVisibility();
 }
@@ -6186,6 +6326,13 @@ function openEditExpense(id){
 }
 
 async function addQuickExpense(title,amount){
+  if(!await appConfirm(`${title} ${money(amount)} xərci əlavə edilsin?`,{
+    title:"Xərc əlavə et",
+    confirmText:"Əlavə et",
+    cancelText:"İmtina",
+    tone:"default"
+  }))return;
+
   try{
     const {error}=await sb.from("expenses").insert({
       user_id:currentUser.id,
@@ -6974,8 +7121,6 @@ $("salesAddBtn").addEventListener("click",()=>{
 });
 
 $("expensesAddBtn").addEventListener("click",openNewExpenseModal);
-$("quickTeaExpenseBtn").addEventListener("click",()=>addQuickExpense("Çay",2));
-$("quickLotteryExpenseBtn").addEventListener("click",()=>addQuickExpense("Latareya",50));
 $("filterYusifExpenseStat").addEventListener("click",openYusifExpenseModal);
 $("notesAddBtn").addEventListener("click",openNewNoteModal);
 
@@ -7656,6 +7801,7 @@ async function downloadSqlPdf(){
     card_counter_reset_at:appSettings.card_counter_reset_at,
     notebook_images:notebookImages(),
     balance_wallets:balanceWallets(),
+    quick_expense_buttons:quickExpenseButtons(),
     created_at:appSettings.created_at,
     updated_at:appSettings.updated_at
   }:null;
@@ -7663,7 +7809,7 @@ async function downloadSqlPdf(){
     "-- SellerNote backup",
     `-- ${formatDate(new Date().toISOString())}`,
     "",
-    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","report_sections","pocket_overrides","daily_profits","show_dashboard_profit","show_cost_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","notebook_images","balance_wallets","created_at","updated_at"]),
+    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","report_sections","pocket_overrides","daily_profits","show_dashboard_profit","show_cost_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","notebook_images","balance_wallets","quick_expense_buttons","created_at","updated_at"]),
     sqlInsert("categories",categories,["id","user_id","name","created_at","updated_at"]),
     sqlInsert("products",[...products,...allDeleted.filter(row=>"sale_price" in row&&"cost_price" in row)],["id","user_id","category_id","name","sale_price","cost_price","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","is_checked","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
@@ -8389,6 +8535,7 @@ $("notebookImageInput").addEventListener("change",async()=>{
   $("notebookImageInput").value="";
 });
 $("saveBalanceWalletsBtn").addEventListener("click",saveBalanceWallets);
+$("addQuickExpenseButtonBtn").addEventListener("click",addQuickExpenseButtonFromSettings);
 
 $("salesPocketStat").addEventListener("click",openPocketEditModal);
 
