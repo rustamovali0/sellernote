@@ -2071,6 +2071,7 @@
         <button id="addTailorIncome" class="btn secondary" type="button">+ Dərzi</button>
         <button id="addCustomIncome" class="btn secondary" type="button">+ Custom</button>
         <button id="openPdfExport" class="btn secondary" type="button">PDF</button>
+        <button id="copyReportBtn" class="btn secondary" type="button">Kopyala</button>
         <button id="sendReportWhatsapp" class="btn secondary" type="button">Hesabat göndər</button>
       </div>
 
@@ -7311,6 +7312,39 @@ function dateOnlyInRange(value,from,to){
   return date>=from && date<=to;
 }
 
+function recordsInReportRange(from,to){
+  return [...sales,...expenses].some(item=>dateOnlyInRange(item.created_at,from,to));
+}
+
+function fullReportDateRange(){
+  const dates=[...sales,...expenses]
+    .map(item=>item.created_at?isoLocalDate(new Date(item.created_at)):null)
+    .filter(Boolean)
+    .sort();
+  const today=isoLocalDate(new Date());
+  return dates.length
+    ? {from:dates[0],to:dates[dates.length-1]}
+    : {from:today,to:today};
+}
+
+function defaultReportDateRange(){
+  const today=isoLocalDate(new Date());
+  let range={from:today,to:today};
+
+  if(salesDateMode==="yesterday"){
+    const yesterday=new Date();
+    yesterday.setDate(yesterday.getDate()-1);
+    const value=isoLocalDate(yesterday);
+    range={from:value,to:value};
+  }else if(salesDateMode==="custom" && $("salesSingleDate").value){
+    range={from:$("salesSingleDate").value,to:$("salesSingleDate").value};
+  }else if(salesDateMode==="all"){
+    range=fullReportDateRange();
+  }
+
+  return recordsInReportRange(range.from,range.to) ? range : fullReportDateRange();
+}
+
 function reportData(from,to){
   return {
     sales:sales.filter(sale=>dateOnlyInRange(sale.created_at,from,to)).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)),
@@ -7318,6 +7352,73 @@ function reportData(from,to){
     notes:notes.filter(note=>dateOnlyInRange(note.created_at,from,to)).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)),
     products:[...products].sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"az"))
   };
+}
+
+function copyReportText(from,to){
+  const data=reportData(from,to);
+  const regularSales=data.sales.filter(sale=>!isOutsideIncomeSale(sale));
+  const outsideSales=data.sales.filter(isOutsideIncomeSale);
+  const salesTotal=regularSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const outsideTotal=outsideSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const expenseTotal=data.expenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+
+  const lines=[
+    "Mal uçotu hesabatı",
+    `${from} - ${to}`,
+    ""
+  ];
+
+  lines.push("Satışlar:");
+  if(regularSales.length){
+    regularSales.forEach((sale,index)=>{
+      lines.push(`${index+1}. ${saleTitle(sale)} | ${sale.quantity||1} ədəd | ${displaySalePrice(sale)}`);
+    });
+  }else{
+    lines.push("Satış yoxdur.");
+  }
+
+  if(outsideSales.length){
+    lines.push("");
+    lines.push("Kənar gəlirlər:");
+    outsideSales.forEach((sale,index)=>{
+      lines.push(`${index+1}. ${saleTitle(sale)} | ${money(sale.total_revenue)}`);
+    });
+  }
+
+  lines.push("");
+  lines.push("Xərclər:");
+  if(data.expenses.length){
+    data.expenses.forEach((expense,index)=>{
+      const holder=isYusifExpense(expense)?" | Pul Yusifdədir":"";
+      lines.push(`${index+1}. ${expense.title||"Xərc"} | ${money(expense.amount)}${holder}`);
+    });
+  }else{
+    lines.push("Xərc yoxdur.");
+  }
+
+  lines.push("");
+  lines.push(`Ümumi gəlir: ${money(salesTotal+outsideTotal)}`);
+  lines.push(`Ümumi xərc: ${money(expenseTotal)}`);
+  lines.push(`Cib: ${money(salesTotal+outsideTotal-expenseTotal)}`);
+
+  return lines.join("\n");
+}
+
+async function copyTextToClipboard(text){
+  if(navigator.clipboard?.writeText){
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea=document.createElement("textarea");
+  textarea.value=text;
+  textarea.setAttribute("readonly","");
+  textarea.style.position="fixed";
+  textarea.style.left="-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
 }
 
 function reportTable(headers,rows){
@@ -7378,7 +7479,14 @@ function buildReport(from,to,sections=selectedReportSections()){
   report.className="pdf-report";
 
   const reportSales=data.sales.filter(sale=>!isOutsideIncomeSale(sale));
-  const outsideIncome=data.sales.filter(sale=>isOutsideIncomeSale(sale)).reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const outsideIncomeSales=data.sales.filter(sale=>isOutsideIncomeSale(sale));
+  const outsideIncome=outsideIncomeSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const outsideIncomeBreakdown=outsideIncomeSales.reduce((acc,sale)=>{
+    const rawTitle=categories.find(category=>category.id===(sale.category_id||sale.products?.category_id))?.name || saleTitle(sale);
+    const title=displayOutsideIncomeName(rawTitle);
+    acc[title]=(acc[title]||0)+Number(sale.total_revenue||0);
+    return acc;
+  },{});
   const revenue=reportSales.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
   const cost=reportSales.reduce((sum,s)=>sum+Number(s.total_cost||0),0);
   const profit=reportSales.reduce((sum,s)=>sum+Number(s.profit||0),0);
@@ -7416,6 +7524,16 @@ function buildReport(from,to,sections=selectedReportSections()){
   const includesSalesMoney=reportSections.has("sales")||reportSections.has("summary");
   const includesExpenseMoney=reportSections.has("expenses")||reportSections.has("summary");
   if(includesSalesMoney){
+    Object.entries(outsideIncomeBreakdown)
+      .filter(([,amount])=>Math.abs(Number(amount||0))>0.000001)
+      .sort(([a],[b])=>a.localeCompare(b,"az"))
+      .forEach(([name,amount])=>{
+        paymentRows.push({
+          title:name,
+          subtitle:"Kənar gəlir",
+          value:money(amount)
+        });
+      });
     Object.entries(cardBreakdown)
       .filter(([,stats])=>Math.abs(stats.amount)>0.000001 || stats.count>0)
       .sort(([a],[b])=>a.localeCompare(b,"az"))
@@ -7703,11 +7821,22 @@ async function runReportExport(kind){
 }
 
 $("openPdfExport").addEventListener("click",()=>{
-  const today=isoLocalDate(new Date());
-  $("pdfDateFrom").value=today;
-  $("pdfDateTo").value=today;
+  const range=defaultReportDateRange();
+  $("pdfDateFrom").value=range.from;
+  $("pdfDateTo").value=range.to;
   renderReportSectionControls([...DEFAULT_REPORT_SECTIONS]);
   openModal("pdfExportModal");
+});
+
+$("copyReportBtn").addEventListener("click",async()=>{
+  const range=defaultReportDateRange();
+  try{
+    await copyTextToClipboard(copyReportText(range.from,range.to));
+    toast("Hesabat kopyalandı");
+  }catch(error){
+    console.error(error);
+    toast("Kopyalanmadı.");
+  }
 });
 
 $("pdfExportForm").addEventListener("submit",async event=>{
