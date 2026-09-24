@@ -3753,8 +3753,13 @@ function selectedReportSections(){
   return sections.length?sections:[...DEFAULT_REPORT_SECTIONS];
 }
 
-function renderReportSectionControls(){
+function renderReportSectionControls(previewSections=null){
   const selected=new Set(selectedReportSections());
+  const previewSelected=new Set(
+    Array.isArray(previewSections)
+      ? previewSections.filter(section=>REPORT_SECTION_LABELS[section])
+      : selectedReportSections()
+  );
 
   document.querySelectorAll("#reportSectionsSettings input[type='checkbox']").forEach(input=>{
     input.checked=selected.has(input.value);
@@ -3763,7 +3768,7 @@ function renderReportSectionControls(){
   if($("reportSectionsPreview")){
     $("reportSectionsPreview").innerHTML=Object.entries(REPORT_SECTION_LABELS).map(([value,label])=>`
       <label class="check-card">
-        <input type="checkbox" value="${escapeHtml(value)}" ${selected.has(value)?"checked":""}>
+        <input type="checkbox" value="${escapeHtml(value)}" ${previewSelected.has(value)?"checked":""}>
         ${escapeHtml(label)}
       </label>
     `).join("");
@@ -7450,18 +7455,19 @@ function buildReport(from,to,sections=selectedReportSections()){
       if(showProfit)row.push(displayProfit(sale));
       return row;
     });
-    blocks.push(reportSection("Satışlar",reportTable(headers,rows)));
+    if(rows.length)blocks.push(reportSection("Satışlar",reportTable(headers,rows)));
   }
 
   if(reportSections.has("expenses")){
-    blocks.push(reportSection("Xərclər",reportTable(
+    const rows=data.expenses.map(expense=>[
+      formatDate(expense.created_at),
+      expense.title||"Xərc",
+      money(expense.amount),
+      [expense.note||"",isYusifExpense(expense)?`Pul Yusifdədir / ${paymentMethodLabel(expensePaymentMethod(expense))}`:""].filter(Boolean).join(" · ")
+    ]);
+    if(rows.length)blocks.push(reportSection("Xərclər",reportTable(
       ["Tarix","Ad","Məbləğ","Qeyd"],
-      data.expenses.map(expense=>[
-        formatDate(expense.created_at),
-        expense.title||"Xərc",
-        money(expense.amount),
-        [expense.note||"",isYusifExpense(expense)?`Pul Yusifdədir / ${paymentMethodLabel(expensePaymentMethod(expense))}`:""].filter(Boolean).join(" · ")
-      ])
+      rows
     )));
   }
 
@@ -7472,26 +7478,32 @@ function buildReport(from,to,sections=selectedReportSections()){
     if(Math.abs(productCost)>0.000001)productHeaders.push("Maya");
     if(Math.abs(productProfit)>0.000001)productHeaders.push("Qazanc");
 
-    blocks.push(reportSection("Məhsul siyahısı",reportTable(
+    const rows=data.products.map(product=>{
+      const row=[
+        product.name||"Adsız məhsul",
+        product.categories?.name||"",
+        money(product.sale_price)
+      ];
+      if(Math.abs(productCost)>0.000001)row.push(money(product.cost_price));
+      if(Math.abs(productProfit)>0.000001)row.push(money(Number(product.sale_price||0)-Number(product.cost_price||0)));
+      return row;
+    });
+    if(rows.length)blocks.push(reportSection("Məhsul siyahısı",reportTable(
       productHeaders,
-      data.products.map(product=>{
-        const row=[
-          product.name||"Adsız məhsul",
-          product.categories?.name||"",
-          money(product.sale_price)
-        ];
-        if(Math.abs(productCost)>0.000001)row.push(money(product.cost_price));
-        if(Math.abs(productProfit)>0.000001)row.push(money(Number(product.sale_price||0)-Number(product.cost_price||0)));
-        return row;
-      })
+      rows
     )));
   }
 
   if(reportSections.has("notes")){
-    blocks.push(reportSection("Qeydlər",reportTable(
+    const rows=data.notes.map(note=>[formatDate(note.created_at),note.body||"Qeyd"]);
+    if(rows.length)blocks.push(reportSection("Qeydlər",reportTable(
       ["Tarix","Qeyd"],
-      data.notes.map(note=>[formatDate(note.created_at),note.body||"Qeyd"])
+      rows
     )));
+  }
+
+  if(!blocks.length){
+    blocks.push(reportSection("Hesabat",'<div class="pdf-report-sub">Seçilən tarix aralığında satış və xərc tapılmadı.</div>'));
   }
 
   report.innerHTML=`
@@ -7514,7 +7526,7 @@ function buildReport(from,to,sections=selectedReportSections()){
 
 function selectedReportSectionsFromModal(){
   const checked=Array.from(document.querySelectorAll("#reportSectionsPreview input:checked")).map(input=>input.value);
-  return checked.length?checked:selectedReportSections();
+  return checked.length?checked:[...DEFAULT_REPORT_SECTIONS];
 }
 
 function validateReportDates(){
@@ -7694,7 +7706,7 @@ $("openPdfExport").addEventListener("click",()=>{
   const today=isoLocalDate(new Date());
   $("pdfDateFrom").value=today;
   $("pdfDateTo").value=today;
-  renderReportSectionControls();
+  renderReportSectionControls([...DEFAULT_REPORT_SECTIONS]);
   openModal("pdfExportModal");
 });
 
