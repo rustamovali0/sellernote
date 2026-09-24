@@ -85,7 +85,8 @@
     }
     .launch-splash.done{opacity:0;visibility:hidden;pointer-events:none}
     .launch-card{
-      width:min(78vw,430px);
+      width:min(calc(100vw - 32px),430px);
+      min-height:360px;
       padding:34px 28px;
       border:1px solid rgba(226,232,240,.95);
       border-radius:32px;
@@ -199,8 +200,8 @@
     }
     .today-day,.today-time{
       min-width:0;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      overflow:visible;
+      text-overflow:clip;
       text-transform:capitalize;
     }
     .today-day{font-size:16px;font-weight:950;color:var(--text);letter-spacing:.02em;text-transform:uppercase}
@@ -208,7 +209,7 @@
 
     @media(max-width:430px){
       .topbar{
-        grid-template-columns:minmax(0,122px) minmax(94px,1fr) 41px;
+        grid-template-columns:minmax(0,108px) minmax(138px,1fr) 41px;
         gap:6px;
       }
       .brand{gap:7px}
@@ -222,13 +223,13 @@
       .brand-sub{font-size:10px}
       .today{
         width:auto;
-        min-width:94px;
-        max-width:118px;
-        min-height:40px;
+        min-width:138px;
+        max-width:none;
+        min-height:46px;
         padding:0 2px;
       }
-      .today-day{font-size:14px}
-      .today-time{font-size:11px}
+      .today-day{font-size:13px}
+      .today-time{font-size:11px;white-space:normal;line-height:1.15}
       .nav-btn{
         min-height:44px;
         padding-left:2px;
@@ -724,6 +725,17 @@
       margin-bottom:10px;
     }
     .card-info-box strong{display:block;font-size:16px;margin-bottom:4px}
+    .card-number-display::before{
+      content:attr(data-bank);
+      position:absolute;
+      left:50%;
+      top:-38px;
+      transform:translateX(-50%);
+      font-size:18px;
+      font-weight:900;
+      color:#64748b;
+      white-space:nowrap;
+    }
     #cardNumberModal{
       align-items:stretch;
       padding:0;
@@ -3077,6 +3089,8 @@ let lightboxImages=[];
 let lightboxIndex=0;
 let lightboxTouchStartX=0;
 let lightboxTouchStartY=0;
+let cardNumberIndex=0;
+let cardNumberTouchStartX=0;
 
 let productDateMode="all";
 let salesDateMode="today";
@@ -3109,7 +3123,7 @@ const CARD_PUBLIC_INFO={
   "Əlinin kartı":{bank:"Birbank",masked:"•••• •••• •••• 0323"},
   "Yusifin kartı":{bank:"Birbank",masked:"•••• •••• •••• 4477"}
 };
-const DEFAULT_REPORT_SECTIONS=["sales","expenses"];
+const DEFAULT_REPORT_SECTIONS=["summary","sales","expenses"];
 const REPORT_SECTION_LABELS={
   summary:"Satış + xərc",
   sales:"Satış",
@@ -3984,9 +3998,15 @@ function notebookImages(){
 function balanceWallets(){
   const defaults={cash:0,cards:[0,0,0,0,0]};
   const stored=appSettings?.balance_wallets&&typeof appSettings.balance_wallets==="object"?appSettings.balance_wallets:{};
+  const storedCards=Array.isArray(stored.cards)?stored.cards:[];
   return {
     cash:Number(stored.cash||0),
-    cards:Array.from({length:5},(_,index)=>Number(stored.cards?.[index]||0))
+    cards:Array.from({length:5},(_,index)=>{
+      const card=storedCards[index];
+      return typeof card==="object"
+        ? {name:card.name||`Kart ${index+1}`,amount:Number(card.amount||0)}
+        : {name:`Kart ${index+1}`,amount:Number(card||0)};
+    })
   };
 }
 
@@ -4017,10 +4037,15 @@ function renderNotebookImages(){
 function renderBalanceWallets(){
   if(!$("balanceWalletFields"))return;
   const data=balanceWallets();
-  $("balanceWalletTotal").querySelector(".value").textContent=money(data.cash+data.cards.reduce((sum,value)=>sum+value,0));
+  $("balanceWalletTotal").querySelector(".value").textContent=money(data.cash+data.cards.reduce((sum,card)=>sum+Number(card.amount||0),0));
   $("balanceWalletFields").innerHTML=`
     <div><label class="label">Nağd pul</label><input class="input" id="balanceCashInput" type="number" step="0.01" inputmode="decimal" value="${data.cash||""}"></div>
-    ${data.cards.map((value,index)=>`<div><label class="label">Kart ${index+1}</label><input class="input" data-balance-card="${index}" type="number" step="0.01" inputmode="decimal" value="${value||""}"></div>`).join("")}
+    ${data.cards.map((card,index)=>`
+      <div class="row2">
+        <input class="input" data-balance-card-name="${index}" placeholder="Kart adı" value="${escapeHtml(card.name)}">
+        <input class="input" data-balance-card="${index}" type="number" step="0.01" inputmode="decimal" placeholder="Məbləğ" value="${card.amount||""}">
+      </div>
+    `).join("")}
   `;
 }
 
@@ -4093,13 +4118,19 @@ async function removeNotebookImage(index){
   const rows=notebookImages().slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   const target=rows[index];
   if(!target)return;
+  if(!await appConfirm("Bu dəftər şəklini silmək istəyirsiniz?",{
+    title:"Şəkli sil",
+    confirmText:"Sil",
+    danger:true
+  }))return;
   await saveNotebookImages(notebookImages().filter(item=>item!==target));
 }
 
 async function saveBalanceWallets(){
-  const cards=Array.from(document.querySelectorAll("[data-balance-card]"))
-    .sort((a,b)=>Number(a.dataset.balanceCard)-Number(b.dataset.balanceCard))
-    .map(input=>Number(input.value||0));
+  const cards=Array.from({length:5},(_,index)=>({
+    name:document.querySelector(`[data-balance-card-name="${index}"]`)?.value.trim()||`Kart ${index+1}`,
+    amount:Number(document.querySelector(`[data-balance-card="${index}"]`)?.value||0)
+  }));
   const balance={cash:Number($("balanceCashInput").value||0),cards};
   appSettings={...appSettings,balance_wallets:balance};
   renderBalanceWallets();
@@ -4184,6 +4215,35 @@ async function saveCardAccounts(accounts){
   if(error)toast(error.message);
 }
 
+async function renameCardAccount(oldName,newName,detail){
+  const clean=String(newName||"").trim();
+  if(!clean){
+    toast("Kart adı boş ola bilməz.");
+    return;
+  }
+  const accounts=cardAccounts();
+  if(clean!==oldName && accounts.includes(clean)){
+    toast("Bu adda kart artıq var.");
+    return;
+  }
+  const nextAccounts=accounts.map(name=>name===oldName?clean:name);
+  const details={...cardDetails()};
+  delete details[oldName];
+  details[clean]=detail;
+  appSettings={...appSettings,card_accounts:nextAccounts,card_details:details};
+  renderCardAccountOptions();
+  renderCardLimitStrip();
+  renderCardSettingsModal();
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    card_accounts:nextAccounts,
+    card_details:details,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+  if(error)toast(error.message);
+  else toast("Kart saxlandı");
+}
+
 function renderCardSettingsList(targetId){
   const target=$(targetId);
   if(!target)return;
@@ -4207,6 +4267,7 @@ function renderCardSettingsList(targetId){
         </div>
         <button class="btn danger" data-remove-card-account="${escapeHtml(name)}" type="button">Sil</button>
       </div>
+      <input class="input" style="margin-top:10px" data-card-name="${escapeHtml(name)}" placeholder="Kart adı" value="${escapeHtml(name)}">
       <div class="row2" style="margin-top:10px">
         <input class="input" data-card-bank="${escapeHtml(name)}" placeholder="Bank" value="${escapeHtml(info.bank||"Birbank")}">
         <input class="input" data-card-number="${escapeHtml(name)}" placeholder="Kart kodu / nömrəsi" value="${escapeHtml(info.number||info.masked||"")}">
@@ -4228,10 +4289,12 @@ function renderCardSettingsList(targetId){
   target.querySelectorAll("[data-save-card-detail]").forEach(button=>{
     button.addEventListener("click",()=>{
       const name=button.dataset.saveCardDetail;
-      saveCardDetail(name,{
+      const detail={
         bank:target.querySelector(`[data-card-bank="${CSS.escape(name)}"]`)?.value.trim()||"Birbank",
         number:target.querySelector(`[data-card-number="${CSS.escape(name)}"]`)?.value.trim()||""
-      });
+      };
+      const newName=target.querySelector(`[data-card-name="${CSS.escape(name)}"]`)?.value.trim()||name;
+      newName===name ? saveCardDetail(name,detail) : renameCardAccount(name,newName,detail);
     });
   });
 
@@ -4269,12 +4332,28 @@ function formatCardNumberDisplay(value){
   return raw;
 }
 
-function openCardNumberModal(name){
+function renderCardNumberModal(){
+  const accounts=cardAccounts();
+  const name=accounts[cardNumberIndex]||accounts[0]||"Kart";
   const info=cardPublicInfo(name)||{};
   $("cardNumberTitle").textContent=name||"Kart";
   $("cardNumberBank").textContent=info.bank||"Birbank";
   $("cardNumberValue").textContent=formatCardNumberDisplay(info.number||info.masked||"Kart kodu əlavə edilməyib");
+  $("cardNumberValue").dataset.bank=info.bank||"Birbank";
+}
+
+function openCardNumberModal(name){
+  const accounts=cardAccounts();
+  cardNumberIndex=Math.max(0,accounts.indexOf(name));
+  renderCardNumberModal();
   openModal("cardNumberModal");
+}
+
+function moveCardNumber(direction){
+  const accounts=cardAccounts();
+  if(accounts.length<2)return;
+  cardNumberIndex=(cardNumberIndex+direction+accounts.length)%accounts.length;
+  renderCardNumberModal();
 }
 
 function openCardSettingsModal(name=""){
@@ -4358,8 +4437,8 @@ function renderCategoryOptions(){
 function renderStats(){
   const regularSales=sales.filter(sale=>!isOutsideIncomeSale(sale));
   const revenue=regularSales.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const cost=regularSales.reduce((sum,s)=>sum+(s.cost_price_provided===false?0:Number(s.total_cost||0)),0);
-  const profit=regularSales.reduce((sum,s)=>sum+((s.sale_price_provided===false||s.cost_price_provided===false)?0:Number(s.profit||0)),0);
+  const cost=regularSales.reduce((sum,s)=>sum+(saleHasCost(s)?Number(s.total_cost||0):0),0);
+  const profit=regularSales.reduce((sum,s)=>sum+(saleHasProfit(s)?Number(s.profit||0):0),0);
 
   $("statProducts").textContent=products.length;
   $("statRevenue").textContent=money(revenue);
@@ -4714,12 +4793,22 @@ function displayUnitSale(sale){
   return sale.sale_price_provided===false ? "Qeyd edilməyib" : money(sale.unit_sale_price);
 }
 
+function saleHasCost(sale){
+  return sale?.cost_price_provided!==false &&
+    Number(sale?.unit_cost_price||0)>0 &&
+    Number(sale?.total_cost||0)>0;
+}
+
+function saleHasProfit(sale){
+  return sale?.sale_price_provided!==false && saleHasCost(sale);
+}
+
 function displayCost(sale){
-  return sale.cost_price_provided===false ? "Qeyd edilməyib" : money(sale.total_cost);
+  return !saleHasCost(sale) ? "Qeyd edilməyib" : money(sale.total_cost);
 }
 
 function displayProfit(sale){
-  return (sale.sale_price_provided===false || sale.cost_price_provided===false)
+  return !saleHasProfit(sale)
     ? "Qeyd edilməyib"
     : money(sale.profit);
 }
@@ -4964,7 +5053,7 @@ function renderSales(){
   $("salesCount").textContent=`${list.length} qeyd`;
   updateSalesSummaryLabels();
   const revenue=list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const profit=list.reduce((sum,s)=>sum+((s.sale_price_provided===false||s.cost_price_provided===false)?0:Number(s.profit||0)),0);
+  const profit=list.reduce((sum,s)=>sum+(saleHasProfit(s)?Number(s.profit||0):0),0);
   const soldQty=list.reduce((sum,s)=>sum+Number(s.quantity||0),0);
   const cardTotal=list.filter(s=>s.payment_method==="card").reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
   const pocketOverride=pocketOverrideValue();
@@ -5016,8 +5105,8 @@ function renderSales(){
           <div class="price-row">
             <span class="badge ${sale.sale_price_provided===false?"not-recorded":""}">Satış ${displayUnitSale(sale)}</span>
             <span class="badge">${paymentMethodLabel(sale.payment_method)}</span>
-            ${showCostProfit?`<span class="badge ${sale.cost_price_provided===false?"not-recorded":""}">Maya ${displayCost(sale)}</span>
-            <span class="badge profit ${(sale.sale_price_provided===false||sale.cost_price_provided===false)?"not-recorded":""}">Qazanc ${displayProfit(sale)}</span>`:""}
+            ${showCostProfit?`<span class="badge ${!saleHasCost(sale)?"not-recorded":""}">Maya ${displayCost(sale)}</span>
+            <span class="badge profit ${!saleHasProfit(sale)?"not-recorded":""}">Qazanc ${displayProfit(sale)}</span>`:""}
           </div>
 
           ${sale.note?`<div class="meta" style="margin-top:7px">${escapeHtml(sale.note)}</div>`:""}
@@ -5637,6 +5726,16 @@ function renderAll(){
   renderNotebookImages();
   renderBalanceWallets();
   applySalesActionsVisibility();
+  applyCostProfitVisibility();
+}
+
+function applyCostProfitVisibility(){
+  const visible=costProfitVisible();
+  ["productProfitFilter","salesProfitFilter"].forEach(id=>$(id)?.classList.toggle("hidden",!visible));
+  if(!visible){
+    if($("productProfitFilter"))$("productProfitFilter").value="";
+    if($("salesProfitFilter"))$("salesProfitFilter").value="";
+  }
 }
 
 function salesActionsVisible(){
@@ -6360,6 +6459,14 @@ $("cardNumberModal").addEventListener("click",event=>{
 });
 
 $("cardNumberModal").addEventListener("dblclick",()=>closeModal("cardNumberModal"));
+$("cardNumberModal").addEventListener("touchstart",event=>{
+  cardNumberTouchStartX=event.touches?.[0]?.clientX||0;
+},{passive:true});
+$("cardNumberModal").addEventListener("touchend",event=>{
+  const endX=event.changedTouches?.[0]?.clientX||0;
+  const diff=endX-cardNumberTouchStartX;
+  if(Math.abs(diff)>45)moveCardNumber(diff<0?1:-1);
+},{passive:true});
 
 /* Dropdowns */
 bindDropdown("productDateBtn","productDatePanel");
@@ -6742,7 +6849,7 @@ $("confirmMultiSale").addEventListener("click",async()=>{
       unit_sale_price:effectiveSalePrice,
       unit_cost_price:Number(product.cost_price||0),
       sale_price_provided:true,
-      cost_price_provided:true,
+      cost_price_provided:Number(product.cost_price||0)>0,
     payment_method:"cash",
     card_account:null,
       image_url:images[0]||null,
@@ -7740,10 +7847,12 @@ function buildReport(from,to,sections=selectedReportSections()){
     return acc;
   },{});
   const revenue=reportSales.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const cost=reportSales.reduce((sum,s)=>sum+(s.cost_price_provided===false?0:Number(s.total_cost||0)),0);
-  const profit=reportSales.reduce((sum,s)=>sum+((s.sale_price_provided===false||s.cost_price_provided===false)?0:Number(s.profit||0)),0);
+  const cost=reportSales.reduce((sum,s)=>sum+(saleHasCost(s)?Number(s.total_cost||0):0),0);
+  const profit=reportSales.reduce((sum,s)=>sum+(saleHasProfit(s)?Number(s.profit||0):0),0);
   const expenseTotal=data.expenses.reduce((sum,e)=>sum+Number(e.amount||0),0);
   const pocket=revenue-expenseTotal+outsideIncome;
+  const cashTotal=reportSales.filter(sale=>sale.payment_method!=="card").reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const cardTotal=reportSales.filter(sale=>sale.payment_method==="card").reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const soldQty=reportSales.reduce((sum,s)=>sum+Number(s.quantity||0),0);
   const showCost=costProfitVisible() && Math.abs(cost)>0.000001;
   const showProfit=costProfitVisible() && Math.abs(profit)>0.000001;
@@ -7764,6 +7873,8 @@ function buildReport(from,to,sections=selectedReportSections()){
         <div><div class="pdf-summary-label">Satış</div><div class="pdf-summary-value">${money(revenue)}</div></div>
         <div><div class="pdf-summary-label">Xərc</div><div class="pdf-summary-value">${money(expenseTotal)}</div></div>
         ${Math.abs(outsideIncome)>0.000001?`<div><div class="pdf-summary-label">Kənar gəlir</div><div class="pdf-summary-value">${money(outsideIncome)}</div></div>`:""}
+        <div><div class="pdf-summary-label">Nağd</div><div class="pdf-summary-value">${money(cashTotal)}</div></div>
+        <div><div class="pdf-summary-label">Kart</div><div class="pdf-summary-value">${money(cardTotal)}</div></div>
         <div><div class="pdf-summary-label">Cib</div><div class="pdf-summary-value">${money(pocket)}</div></div>
         <div><div class="pdf-summary-label">Satılan say</div><div class="pdf-summary-value">${soldQty}</div></div>
         ${showCost?`<div><div class="pdf-summary-label">Maya</div><div class="pdf-summary-value">${money(cost)}</div></div>`:""}
@@ -8206,6 +8317,10 @@ function addCardAccountFromInput(inputId){
   const input=$(inputId);
   const name=input?.value.trim()||"";
   if(!name)return;
+  if(cardAccounts().length>=5){
+    toast("Maksimum 5 kart əlavə etmək olar.");
+    return;
+  }
   const next=[...new Set([...cardAccounts(),name])];
   input.value="";
   saveCardAccounts(next);
