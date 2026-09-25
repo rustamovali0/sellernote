@@ -324,6 +324,16 @@
     .drop-panel.right{
       left:auto;right:0;width:min(330px,calc(100vw - 28px));padding:10px;
     }
+    .toolbar .drop-panel.right{
+      position:fixed;
+      left:50%;
+      right:auto;
+      top:50%;
+      transform:translate(-50%,-50%);
+      width:min(360px,calc(100vw - 28px));
+      max-height:calc(100dvh - 120px);
+      overflow:auto;
+    }
     .drop-option{
       width:100%;min-height:42px;padding:9px 10px;border-radius:10px;
       background:transparent;color:var(--text);text-align:left;font-weight:650;
@@ -349,15 +359,20 @@
       padding-right:40px;
       background-color:var(--card2);
       background-image:
-        linear-gradient(45deg,transparent 50%,var(--muted) 50%),
-        linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+        linear-gradient(45deg,transparent 50%,var(--primary) 50%),
+        linear-gradient(135deg,var(--primary) 50%,transparent 50%),
+        linear-gradient(180deg,color-mix(in srgb,var(--card) 82%,transparent),var(--card2));
       background-position:
         calc(100% - 21px) 52%,
-        calc(100% - 15px) 52%;
-      background-size:6px 6px,6px 6px;
+        calc(100% - 15px) 52%,
+        0 0;
+      background-size:6px 6px,6px 6px,100% 100%;
       background-repeat:no-repeat;
       font-weight:750;
+      box-shadow:0 6px 18px rgba(15,23,42,.05);
     }
+    .select:hover{border-color:color-mix(in srgb,var(--text) 22%,var(--line))}
+    .select:disabled{opacity:.62;cursor:not-allowed}
     .select::-ms-expand{display:none}
     .select option{
       background:var(--card);
@@ -756,29 +771,31 @@
     }
     .settings-layout{
       display:grid;
-      grid-template-columns:150px minmax(0,1fr);
-      gap:12px;
+      grid-template-columns:118px minmax(0,1fr);
+      gap:10px;
       align-items:start;
     }
     .settings-sidebar{
       position:sticky;
       top:10px;
       display:grid;
-      gap:8px;
+      gap:6px;
       max-height:calc(100dvh - 150px);
       overflow:auto;
       padding-bottom:8px;
+      scrollbar-width:none;
     }
+    .settings-sidebar::-webkit-scrollbar{display:none}
     .settings-nav-btn{
       width:100%;
-      min-height:48px;
-      padding:9px 10px;
+      min-height:40px;
+      padding:8px 9px;
       border:1px solid var(--line);
-      border-radius:14px;
+      border-radius:12px;
       background:var(--card);
       color:var(--text);
       text-align:left;
-      box-shadow:var(--shadow);
+      box-shadow:none;
     }
     .settings-nav-btn strong{
       display:block;
@@ -787,7 +804,7 @@
       overflow-wrap:anywhere;
     }
     .settings-nav-btn span{
-      display:block;
+      display:none;
       margin-top:3px;
       color:var(--muted);
       font-size:9px;
@@ -802,7 +819,23 @@
     .settings-nav-btn.active span{
       color:color-mix(in srgb,var(--primaryText) 70%,transparent);
     }
-    .settings-content{min-width:0}
+    .settings-content{
+      min-width:0;
+      font-size:13px;
+    }
+    .settings-content .input,
+    .settings-content .select,
+    .settings-content .textarea{
+      font-size:14px;
+    }
+    .settings-content .btn{
+      font-size:13px;
+    }
+    .settings-content .meta,
+    .settings-content .label,
+    .settings-content .log-tag{
+      font-size:10px;
+    }
     #categoriesPage.sidebar-mode .settings-card{
       display:none;
       margin-bottom:0;
@@ -819,14 +852,14 @@
       border-top:0;
     }
     @media(max-width:619px){
-      .settings-layout{grid-template-columns:112px minmax(0,1fr);gap:8px}
+      .settings-layout{grid-template-columns:96px minmax(0,1fr);gap:8px}
       .settings-sidebar{top:8px;max-height:calc(100dvh - 165px)}
       .settings-nav-btn{padding:8px 8px}
       .settings-nav-btn strong{font-size:11px}
-      .settings-nav-btn span{font-size:8px}
+      .settings-nav-btn span{display:none}
     }
     @media(max-width:360px){
-      .settings-layout{grid-template-columns:94px minmax(0,1fr);gap:7px}
+      .settings-layout{grid-template-columns:84px minmax(0,1fr);gap:7px}
       .settings-sidebar{max-height:calc(100dvh - 155px);gap:6px}
       .settings-nav-btn{min-height:44px;padding:8px 7px;border-radius:12px}
       .settings-nav-btn strong{font-size:10px}
@@ -2001,9 +2034,9 @@
         font-size:12px;
       }
       .toolbar.with-clear .drop-panel.right{
-        left:8px;
+        left:50%;
         right:auto;
-        width:min(320px,calc(100vw - 30px));
+        width:min(360px,calc(100vw - 30px));
       }
       .toolbar.with-clear .drop-panel{
         max-width:calc(100vw - 30px);
@@ -2780,7 +2813,10 @@
         <button class="close" data-close="multiSaleModal" type="button">×</button>
       </div>
 
-      <input id="multiSaleSearch" class="input" type="search" placeholder="Məhsul axtar..." autocomplete="off">
+      <div class="global-search-wrap">
+        <input id="multiSaleSearch" class="input global-search" type="search" placeholder="Məhsul axtar..." autocomplete="off">
+        <button id="multiSaleSearchBtn" class="btn" type="button">Axtar</button>
+      </div>
       <input id="multiSaleImagePicker" class="hidden" type="file" accept="image/*" multiple>
 
       <div id="multiSaleProductList" class="multi-sale-list"></div>
@@ -3258,6 +3294,7 @@ let lightboxIndex=0;
 let lightboxTouchStartX=0;
 let lightboxTouchStartY=0;
 let cardNumberIndex=0;
+let cardNumberAccountName="";
 let cardNumberTouchStartX=0;
 
 let productDateMode="all";
@@ -4105,7 +4142,14 @@ function cardPublicInfo(name){
   const details=appSettings?.card_details && typeof appSettings.card_details==="object"
     ? appSettings.card_details
     : {};
-  return details[name]||CARD_PUBLIC_INFO[name]||null;
+  const detail=details[name]||CARD_PUBLIC_INFO[name]||null;
+  if(!detail)return null;
+  const cards=bankCardsForAccount(name);
+  return {
+    ...detail,
+    ...(cards[0]||{}),
+    cards
+  };
 }
 
 function cardDetails(){
@@ -4114,8 +4158,41 @@ function cardDetails(){
     : {};
 }
 
+function bankCardsForAccount(name){
+  const details=appSettings?.card_details && typeof appSettings.card_details==="object"
+    ? appSettings.card_details
+    : {};
+  const detail=details[name]||CARD_PUBLIC_INFO[name]||{};
+  const source=Array.isArray(detail.cards)&&detail.cards.length
+    ? detail.cards
+    : [{bank:detail.bank||"Birbank",number:detail.number||detail.masked||""}];
+
+  return source.slice(0,5).map((card,index)=>({
+    id:card?.id||`card-${index}`,
+    bank:String(card?.bank||"Birbank").trim()||"Birbank",
+    number:String(card?.number||card?.masked||"").trim()
+  }));
+}
+
+function normalizeCardDetail(name,detail={}){
+  const cards=Array.isArray(detail.cards)&&detail.cards.length
+    ? detail.cards
+    : bankCardsForAccount(name);
+  const clean=cards.slice(0,5).map((card,index)=>({
+    id:card?.id||`card-${Date.now()}-${index}`,
+    bank:String(card?.bank||"Birbank").trim()||"Birbank",
+    number:String(card?.number||card?.masked||"").trim()
+  }));
+  return {
+    ...detail,
+    bank:clean[0]?.bank||"Birbank",
+    number:clean[0]?.number||"",
+    cards:clean.length?clean:[{id:`card-${Date.now()}`,bank:"Birbank",number:""}]
+  };
+}
+
 async function saveCardDetail(name,detail){
-  const next={...cardDetails(),[name]:detail};
+  const next={...cardDetails(),[name]:normalizeCardDetail(name,detail)};
   appSettings={...appSettings,card_details:next};
   renderCardLimitStrip();
   renderCardSettingsModal();
@@ -4569,7 +4646,7 @@ async function renameCardAccount(oldName,newName,detail){
   const nextAccounts=accounts.map(name=>name===oldName?clean:name);
   const details={...cardDetails()};
   delete details[oldName];
-  details[clean]=detail;
+  details[clean]=normalizeCardDetail(clean,detail);
   appSettings={...appSettings,card_accounts:nextAccounts,card_details:details};
   renderCardAccountOptions();
   renderCardLimitStrip();
@@ -4595,6 +4672,7 @@ function renderCardSettingsList(targetId){
 
   target.innerHTML=cardAccounts().map(name=>{
     const info=cardPublicInfo(name)||{};
+    const cards=bankCardsForAccount(name);
     return `
     <div class="log-item">
       <div class="log-top">
@@ -4602,20 +4680,33 @@ function renderCardSettingsList(targetId){
           <div class="log-title">${escapeHtml(name)}</div>
           <div class="log-tags">
             <span class="log-tag">${todayStats[name]||0} mədaxil</span>
+            <span class="log-tag">${cards.length} bank kartı</span>
             ${info.bank?`<span class="log-tag">${escapeHtml(info.bank)}</span>`:""}
           </div>
         </div>
         <button class="btn danger" data-remove-card-account="${escapeHtml(name)}" type="button">Sil</button>
       </div>
       <input class="input" style="margin-top:10px" data-card-name="${escapeHtml(name)}" placeholder="Kart adı" value="${escapeHtml(name)}">
-      <div class="row2" style="margin-top:10px">
-        <input class="input" data-card-bank="${escapeHtml(name)}" placeholder="Bank" value="${escapeHtml(info.bank||"Birbank")}">
-        <input class="input" data-card-number="${escapeHtml(name)}" placeholder="Kart kodu / nömrəsi" value="${escapeHtml(info.number||info.masked||"")}">
+      <div class="log-list" style="margin-top:10px">
+        ${cards.map((card,index)=>`
+          <div class="log-item" data-bank-card-row="${escapeHtml(name)}">
+            <div class="row2">
+              <input class="input" data-bank-card-bank placeholder="Bank" value="${escapeHtml(card.bank||"Birbank")}">
+              <input class="input" data-bank-card-number placeholder="Kart kodu / nömrəsi" value="${escapeHtml(card.number||"")}">
+            </div>
+            <button class="btn danger full ${cards.length<=1?"hidden":""}"
+                    data-remove-bank-card-name="${escapeHtml(name)}"
+                    data-remove-bank-card-index="${index}"
+                    type="button"
+                    style="margin-top:8px">Bu bank kartını sil</button>
+          </div>
+        `).join("")}
       </div>
       <div class="row2" style="margin-top:8px">
         <button class="btn secondary full" data-save-card-detail="${escapeHtml(name)}" type="button">Yadda saxla</button>
         <button class="btn full" data-preview-card-number="${escapeHtml(name)}" type="button">Böyük göstər</button>
       </div>
+      <button class="btn secondary full ${cards.length>=5?"hidden":""}" data-add-bank-card="${escapeHtml(name)}" type="button" style="margin-top:8px">+ Bank kartı əlavə et</button>
     </div>
   `}).join("");
 
@@ -4629,12 +4720,41 @@ function renderCardSettingsList(targetId){
   target.querySelectorAll("[data-save-card-detail]").forEach(button=>{
     button.addEventListener("click",()=>{
       const name=button.dataset.saveCardDetail;
+      const cards=Array.from(target.querySelectorAll("[data-bank-card-row]"))
+        .filter(row=>row.dataset.bankCardRow===name)
+        .map((row,index)=>({
+        id:`card-${index}`,
+        bank:row.querySelector("[data-bank-card-bank]")?.value.trim()||"Birbank",
+        number:row.querySelector("[data-bank-card-number]")?.value.trim()||""
+      })).slice(0,5);
       const detail={
-        bank:target.querySelector(`[data-card-bank="${CSS.escape(name)}"]`)?.value.trim()||"Birbank",
-        number:target.querySelector(`[data-card-number="${CSS.escape(name)}"]`)?.value.trim()||""
+        cards,
+        bank:cards[0]?.bank||"Birbank",
+        number:cards[0]?.number||""
       };
       const newName=target.querySelector(`[data-card-name="${CSS.escape(name)}"]`)?.value.trim()||name;
       newName===name ? saveCardDetail(name,detail) : renameCardAccount(name,newName,detail);
+    });
+  });
+
+  target.querySelectorAll("[data-add-bank-card]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const name=button.dataset.addBankCard;
+      const cards=bankCardsForAccount(name);
+      if(cards.length>=5){
+        toast("Bir adama maksimum 5 bank kartı əlavə etmək olar.");
+        return;
+      }
+      saveCardDetail(name,{cards:[...cards,{id:`card-${Date.now()}`,bank:"Birbank",number:""}]});
+    });
+  });
+
+  target.querySelectorAll("[data-remove-bank-card-name]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const name=button.dataset.removeBankCardName;
+      const index=Number(button.dataset.removeBankCardIndex);
+      const cards=bankCardsForAccount(name).filter((_,cardIndex)=>cardIndex!==index);
+      saveCardDetail(name,{cards:cards.length?cards:[{id:`card-${Date.now()}`,bank:"Birbank",number:""}]});
     });
   });
 
@@ -4656,10 +4776,11 @@ function renderSelectedCardInfo(name){
   }
 
   const info=cardPublicInfo(name);
+  const cards=bankCardsForAccount(name);
   $("selectedCardInfo").classList.toggle("hidden",!info);
   $("selectedCardInfo").innerHTML=info?`
     <strong>${escapeHtml(name)}</strong>
-    <div class="meta">${escapeHtml(info.bank||"Birbank")} · ${escapeHtml(info.number||info.masked||"Kart kodu əlavə edilməyib")}</div>
+    <div class="meta">${cards.length} bank kartı · ${escapeHtml(info.bank||"Birbank")} · ${escapeHtml(info.number||info.masked||"Kart kodu əlavə edilməyib")}</div>
   `:"";
 }
 
@@ -4673,26 +4794,26 @@ function formatCardNumberDisplay(value){
 }
 
 function renderCardNumberModal(){
-  const accounts=cardAccounts();
-  const name=accounts[cardNumberIndex]||accounts[0]||"Kart";
-  const info=cardPublicInfo(name)||{};
+  const name=cardNumberAccountName||cardAccounts()[0]||"Kart";
+  const cards=bankCardsForAccount(name);
+  const info=cards[cardNumberIndex]||cards[0]||{};
   $("cardNumberTitle").textContent=name||"Kart";
   $("cardNumberBank").textContent=info.bank||"Birbank";
-  $("cardNumberValue").textContent=formatCardNumberDisplay(info.number||info.masked||"Kart kodu əlavə edilməyib");
+  $("cardNumberValue").textContent=formatCardNumberDisplay(info.number||"Kart kodu əlavə edilməyib");
   $("cardNumberValue").dataset.bank=info.bank||"Birbank";
 }
 
 function openCardNumberModal(name){
-  const accounts=cardAccounts();
-  cardNumberIndex=Math.max(0,accounts.indexOf(name));
+  cardNumberAccountName=name||cardAccounts()[0]||"";
+  cardNumberIndex=0;
   renderCardNumberModal();
   openModal("cardNumberModal");
 }
 
 function moveCardNumber(direction){
-  const accounts=cardAccounts();
-  if(accounts.length<2)return;
-  cardNumberIndex=(cardNumberIndex+direction+accounts.length)%accounts.length;
+  const cards=bankCardsForAccount(cardNumberAccountName);
+  if(cards.length<2)return;
+  cardNumberIndex=(cardNumberIndex+direction+cards.length)%cards.length;
   renderCardNumberModal();
 }
 
@@ -5321,6 +5442,8 @@ function openPocketEditModal(){
   $("pocketEditLabel").textContent=`${$("salesSummaryPocketLabel").textContent} məbləği`;
   const outside=outsideIncomeTotals();
   const expenseTotal=expenseTotalForSalesDate();
+  const yusifSales=yusifSaleTotal(list);
+  const yusifExpenses=yusifExpenseTotal(expensesForSalesDate());
   const rows=[
     `<div class="log-item"><div class="log-top"><div class="log-title">Satış</div><div class="log-date">${money(revenue)}</div></div></div>`,
     `<div class="log-item"><div class="log-top"><div class="log-title">Nağd</div><div class="log-date">${money(payment.cash)}</div></div></div>`,
@@ -5339,6 +5462,26 @@ function openPocketEditModal(){
         </div>
       </div>
     `));
+  if(yusifSales>0){
+    rows.push(`
+      <div class="log-item">
+        <div class="log-top">
+          <div class="log-title">Satışdan Yusifdə</div>
+          <div class="log-date">${money(yusifSales)}</div>
+        </div>
+      </div>
+    `);
+  }
+  if(yusifExpenses>0){
+    rows.push(`
+      <div class="log-item">
+        <div class="log-top">
+          <div class="log-title">Xərcdən Yusifdə</div>
+          <div class="log-date">${money(yusifExpenses)}</div>
+        </div>
+      </div>
+    `);
+  }
   if(Math.abs(expenseTotal)>0.000001){
     rows.push(`
       <div class="log-item">
@@ -7225,6 +7368,13 @@ function openMultiSaleModal(){
 }
 
 $("multiSaleSearch").addEventListener("input",renderMultiSaleProducts);
+$("multiSaleSearchBtn").addEventListener("click",renderMultiSaleProducts);
+$("multiSaleSearch").addEventListener("keydown",event=>{
+  if(event.key==="Enter"){
+    event.preventDefault();
+    renderMultiSaleProducts();
+  }
+});
 
 $("confirmMultiSale").addEventListener("click",async()=>{
   if(!multiSaleDraft.size){
