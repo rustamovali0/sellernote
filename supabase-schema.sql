@@ -59,6 +59,7 @@ create table if not exists public.sales (
   cost_price_provided boolean not null default true,
   payment_method text not null default 'cash' check (payment_method in ('cash','card')),
   card_account text,
+  money_holder text not null default 'normal' check (money_holder in ('normal','yusif')),
   is_checked boolean not null default false,
   total_revenue numeric(12,2) generated always as (
     case when sale_price_provided then quantity * unit_sale_price else 0 end
@@ -97,11 +98,21 @@ alter table public.sales
   add column if not exists payment_method text not null default 'cash';
 
 alter table public.sales
+  add column if not exists money_holder text not null default 'normal';
+
+alter table public.sales
   drop constraint if exists sales_payment_method_check;
 
 alter table public.sales
   add constraint sales_payment_method_check
   check (payment_method in ('cash','card'));
+
+alter table public.sales
+  drop constraint if exists sales_money_holder_check;
+
+alter table public.sales
+  add constraint sales_money_holder_check
+  check (money_holder in ('normal','yusif'));
 
 create table if not exists public.expenses (
   id uuid primary key default gen_random_uuid(),

@@ -73,8 +73,9 @@
       position:fixed;
       inset:0;
       z-index:9999;
-      display:grid;
-      place-items:center;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       overflow:hidden;
       background:
         radial-gradient(circle at 22% 18%,rgba(14,165,233,.18),transparent 30%),
@@ -85,8 +86,10 @@
     }
     .launch-splash.done{opacity:0;visibility:hidden;pointer-events:none}
     .launch-card{
-      width:min(calc(100% - 32px),430px);
-      height:360px;
+      flex:0 0 auto;
+      width:min(430px,calc(100svw - 32px));
+      height:min(360px,calc(100svh - 64px));
+      min-height:340px;
       padding:34px 28px;
       border:1px solid rgba(226,232,240,.95);
       border-radius:32px;
@@ -114,7 +117,7 @@
       letter-spacing:.16em;
       text-transform:uppercase;
     }
-    .launch-title{margin:0;font-size:56px;font-weight:950;letter-spacing:0}
+    .launch-title{margin:0;font-size:46px;font-weight:950;letter-spacing:0}
     .launch-sub{margin:8px 0 0;color:#64748b;font-size:15px;font-weight:750}
     .launch-metrics{
       display:grid;
@@ -595,9 +598,6 @@
       .auth-card{padding:18px;border-radius:16px}
       .auth-card h1{font-size:32px}
       .auth-wrap::after{display:none}
-      .launch-card{height:340px;padding:28px 22px;border-radius:28px}
-      .launch-title{font-size:42px}
-      .launch-icon{width:64px;height:64px;margin-bottom:20px}
       .app{padding-left:10px;padding-right:10px}
       .stats{gap:6px}
       .stat{padding:9px 7px}
@@ -626,7 +626,6 @@
       .settings-nav-btn{padding:8px 8px}
       .settings-nav-btn strong{font-size:11px}
       .settings-nav-btn span{font-size:8px}
-      .launch-title{font-size:46px}
     }
     @media(max-width:360px){
       .settings-layout{grid-template-columns:94px minmax(0,1fr);gap:7px}
@@ -634,9 +633,6 @@
       .settings-nav-btn{min-height:44px;padding:8px 7px;border-radius:12px}
       .settings-nav-btn strong{font-size:10px}
       .settings-nav-btn span{display:none}
-      .launch-card{height:340px;padding:28px 22px;border-radius:28px}
-      .launch-title{font-size:42px}
-      .launch-icon{width:64px;height:64px;margin-bottom:20px}
     }
   
     #salesPage .section-tools{
@@ -2324,6 +2320,7 @@
         <div id="salesProfitStat" class="stat"><div id="salesSummaryProfitLabel" class="label">Bu günün qazancı</div><div id="filterProfit" class="value profit">0 ₼</div></div>
         <button id="salesPocketStat" class="stat clickable-stat" type="button"><div id="salesSummaryPocketLabel" class="label">Bu günün cibi</div><div id="filterPocket" class="value profit">0 ₼</div></button>
         <div class="stat"><div class="label">Kartda</div><div id="filterCardTotal" class="value profit">0 ₼</div></div>
+        <div id="salesYusifStat" class="stat hidden"><div class="label">Yusifdə</div><div id="filterYusifSaleTotal" class="value profit">0 ₼</div></div>
         <div class="stat"><div id="salesSummaryQtyLabel" class="label">Satılan mallar</div><div id="filterSoldQty" class="value">0</div></div>
       </div>
 
@@ -2956,6 +2953,11 @@
           <label class="label">Kart hesabı</label>
           <select id="looseSaleCardAccount" class="select"></select>
         </div>
+
+        <label id="looseSaleYusifMoneyWrap" class="check-card hidden">
+          <input id="looseSaleYusifMoney" type="checkbox">
+          Pul Yusifdədir
+        </label>
 
         <div id="looseSaleQuantityBlock">
           <label class="label">Satılan say</label>
@@ -5367,6 +5369,16 @@ function currentPaymentSummary(list=filteredSalesList()){
   },{cash:0,card:0,accounts:{}});
 }
 
+function isYusifSale(sale){
+  return sale?.money_holder==="yusif";
+}
+
+function yusifSaleTotal(list=filteredSalesList()){
+  return list
+    .filter(isYusifSale)
+    .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+}
+
 function updatePaymentSummaryModal(){
   const totals=currentPaymentSummary();
   $("paymentCashTotal").textContent=money(totals.cash);
@@ -5394,6 +5406,7 @@ function renderSales(){
   const profit=list.reduce((sum,s)=>sum+(saleHasProfit(s)?Number(s.profit||0):0),0);
   const soldQty=list.reduce((sum,s)=>sum+Number(s.quantity||0),0);
   const cardTotal=list.filter(s=>s.payment_method==="card").reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
+  const yusifSalesTotal=yusifSaleTotal(list);
   const pocketOverride=pocketOverrideValue();
   $("filterRevenue").textContent=money(revenue);
   $("filterProfit").textContent=money(profit);
@@ -5401,6 +5414,8 @@ function renderSales(){
   $("filterPocket").textContent=money(displayedPocketValue(list));
   $("filterPocket").classList.toggle("not-recorded",pocketOverride!==null);
   $("filterCardTotal").textContent=money(cardTotal);
+  $("filterYusifSaleTotal").textContent=money(yusifSalesTotal);
+  $("salesYusifStat").classList.toggle("hidden",!(yusifSalesTotal>0));
   $("filterSoldQty").textContent=soldQty;
   updatePaymentSummaryModal();
 
@@ -5443,6 +5458,7 @@ function renderSales(){
           <div class="price-row">
             <span class="badge ${sale.sale_price_provided===false?"not-recorded":""}">Satış ${displayUnitSale(sale)}</span>
             <span class="badge">${paymentMethodLabel(sale.payment_method)}</span>
+            ${isYusifSale(sale)?`<span class="badge profit">Pul Yusifdədir</span>`:""}
             ${showCostProfit?`<span class="badge ${!saleHasCost(sale)?"not-recorded":""}">Maya ${displayCost(sale)}</span>
             <span class="badge profit ${!saleHasProfit(sale)?"not-recorded":""}">Qazanc ${displayProfit(sale)}</span>`:""}
           </div>
@@ -7636,6 +7652,8 @@ function resetLooseSaleForm(){
 
   $("looseSaleImagePicker").value="";
   renderLooseSaleImagePreviews();
+  $("looseSaleYusifMoney").checked=false;
+  $("looseSaleYusifMoneyWrap").classList.add("hidden");
 
   const defaultCategory=findShalvarCategory();
   $("looseSaleCategory").value=defaultCategory?.id||"";
@@ -7660,6 +7678,7 @@ function updateLooseSaleModeFields(){
   $("looseSaleQuantityBlock").classList.toggle("hidden",isOutside);
   $("looseSalePreviewGrid").classList.toggle("hidden",isOutside);
   $("looseSaleNote").classList.toggle("hidden",isOutside);
+  $("looseSaleYusifMoneyWrap").classList.toggle("hidden",!$("looseSaleId").value);
   $("looseSaleName").placeholder=(saleEntryMode==="regular"||isOutside)?"Başlıq":"Satış";
   $("looseSalePrice").placeholder=isOutside?"Gəlir məbləği":"Qeyd edilməyib";
 }
@@ -7763,6 +7782,7 @@ function openEditSale(id){
   $("looseSaleCategory").value=sale.category_id||sale.products?.category_id||findShalvarCategory()?.id||"";
   $("looseSalePaymentMethod").value=sale.payment_method||"cash";
   $("looseSaleCardAccount").value=sale.card_account||cardAccounts()[0];
+  $("looseSaleYusifMoney").checked=isYusifSale(sale);
   if(isTrustCategoryId($("looseSaleCategory").value)){
     saleEntryMode="trust";
     currentOutsideIncomeName=saleTitle(sale);
@@ -7867,6 +7887,10 @@ $("looseSaleForm").addEventListener("submit",async event=>{
       image_urls:isTrust?[]:imageUrls,
       note
     };
+
+    if(id){
+      salePayload.money_holder=$("looseSaleYusifMoney").checked?"yusif":"normal";
+    }
 
     if(id){
       const {error}=await sb.from("sales").update(salePayload).eq("id",id);
@@ -8040,7 +8064,7 @@ async function downloadSqlPdf(){
     sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","report_sections","pocket_overrides","daily_profits","show_dashboard_profit","show_cost_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","notebook_images","balance_wallets","quick_expense_buttons","created_at","updated_at"]),
     sqlInsert("categories",categories,["id","user_id","name","created_at","updated_at"]),
     sqlInsert("products",[...products,...allDeleted.filter(row=>"sale_price" in row&&"cost_price" in row)],["id","user_id","category_id","name","sale_price","cost_price","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
-    sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","is_checked","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
+    sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","money_holder","is_checked","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
     sqlInsert("expenses",[...expenses,...allDeleted.filter(row=>"amount" in row&&"title" in row)],["id","user_id","title","amount","note","money_holder","payment_method","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("notes",[...notes,...allDeleted.filter(row=>"body" in row)],["id","user_id","body","image_url","image_urls","deleted_at","created_at","updated_at"])
   ].join("\n");
