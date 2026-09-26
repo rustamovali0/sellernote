@@ -920,6 +920,8 @@
       align-items:stretch;
       padding:0;
       background:#f8fafc;
+      backdrop-filter:none!important;
+      -webkit-backdrop-filter:none!important;
     }
     .card-number-modal{
       position:relative;
@@ -935,9 +937,7 @@
       color:#0f172a;
     }
     .card-number-modal .modal-head{
-      position:relative;
-      z-index:2;
-      margin:0;
+      display:none;
     }
     .card-number-display{
       position:absolute;
@@ -2682,6 +2682,36 @@
         </div>
         <label class="check-card" style="margin-top:10px"><input id="dashboardProfitVisible" type="checkbox"> Ana ekranda qazanc görünsün</label>
         <label class="check-card" style="margin-top:10px"><input id="costProfitVisible" type="checkbox"> Maya və qazanc hər yerdə görünsün</label>
+        <div class="form" style="margin-top:10px">
+          <label>
+            <span class="label">Kopyalama aralığı</span>
+            <select id="copyReportRangeMode" class="select">
+              <option value="today">Bu gün</option>
+              <option value="yesterday">Dünən</option>
+              <option value="sales">Satış filteri</option>
+              <option value="all">Bütün tarixlər</option>
+              <option value="custom">Öz aralığım</option>
+            </select>
+          </label>
+          <label>
+            <span class="label">Kopyalama tipi</span>
+            <select id="copyReportType" class="select">
+              <option value="summary">Yalnız ümumi</option>
+              <option value="list">Siyahı</option>
+            </select>
+          </label>
+          <div id="copyReportCustomRange" class="row2 hidden">
+            <input id="copyReportDateFrom" class="input" type="date">
+            <input id="copyReportDateTo" class="input" type="date">
+          </div>
+          <label>
+            <span class="label">Kopyalama mətni</span>
+            <textarea id="copyReportTemplate" class="textarea" rows="6"></textarea>
+          </label>
+          <div class="meta">{date}, {revenue}, {expense}, {cash}, {card}</div>
+          <button id="resetCopyReportTemplate" class="btn secondary full" type="button">Kopyalama şablonunu sıfırla</button>
+          <button id="copyReportSettingsBtn" class="btn full" type="button">Hesabatı kopyala</button>
+        </div>
         <button id="downloadSqlPdfBtn" class="btn secondary full" type="button" style="margin-top:10px">SQL yüklə</button>
         </div>
       </details>
@@ -3355,6 +3385,18 @@ const REPORT_SECTION_LABELS={
   products:"Məhsul siyahısı",
   notes:"Qeyd"
 };
+const COPY_REPORT_RANGE_KEY="sellernote-copy-report-range";
+const COPY_REPORT_FROM_KEY="sellernote-copy-report-from";
+const COPY_REPORT_TO_KEY="sellernote-copy-report-to";
+const COPY_REPORT_TYPE_KEY="sellernote-copy-report-type";
+const COPY_REPORT_TEMPLATE_KEY="sellernote-copy-report-template";
+const DEFAULT_COPY_REPORT_TEMPLATE=[
+  "Tarix: {date}",
+  "Ümumi gəlir: {revenue}",
+  "Xərc: {expense}",
+  "Nağd: {cash}",
+  "Kart: {card}"
+].join("\n");
 
 const escapeHtml=s=>String(s??"").replace(/[&<>"']/g,m=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
@@ -4055,6 +4097,20 @@ function selectedReportSections(){
   return sections.length?sections:[...DEFAULT_REPORT_SECTIONS];
 }
 
+function copyReportRangeMode(){
+  const mode=localStorage.getItem(COPY_REPORT_RANGE_KEY)||"today";
+  return ["today","yesterday","sales","all","custom"].includes(mode)?mode:"today";
+}
+
+function copyReportType(){
+  const type=localStorage.getItem(COPY_REPORT_TYPE_KEY)||"summary";
+  return ["summary","list"].includes(type)?type:"summary";
+}
+
+function copyReportTemplate(){
+  return localStorage.getItem(COPY_REPORT_TEMPLATE_KEY)||DEFAULT_COPY_REPORT_TEMPLATE;
+}
+
 function costProfitVisible(){
   return appSettings?.show_cost_profit!==false;
 }
@@ -4090,6 +4146,15 @@ function renderReportSectionControls(previewSections=null){
 
   if($("cardLimitsVisible")){
     $("cardLimitsVisible").checked=appSettings?.show_card_limits===true;
+  }
+
+  if($("copyReportRangeMode")){
+    $("copyReportRangeMode").value=copyReportRangeMode();
+    $("copyReportType").value=copyReportType();
+    $("copyReportDateFrom").value=localStorage.getItem(COPY_REPORT_FROM_KEY)||isoLocalDate(new Date());
+    $("copyReportDateTo").value=localStorage.getItem(COPY_REPORT_TO_KEY)||isoLocalDate(new Date());
+    $("copyReportTemplate").value=copyReportTemplate();
+    $("copyReportCustomRange").classList.toggle("hidden",$("copyReportRangeMode").value!=="custom");
   }
 }
 
@@ -8272,6 +8337,38 @@ $("costProfitVisible").addEventListener("change",()=>{
   saveCostProfitVisibility($("costProfitVisible").checked);
 });
 
+$("copyReportRangeMode").addEventListener("change",()=>{
+  localStorage.setItem(COPY_REPORT_RANGE_KEY,$("copyReportRangeMode").value);
+  renderReportSectionControls();
+  toast("Kopyalama aralığı saxlandı");
+});
+
+$("copyReportType").addEventListener("change",()=>{
+  localStorage.setItem(COPY_REPORT_TYPE_KEY,$("copyReportType").value);
+  toast("Kopyalama tipi saxlandı");
+});
+
+["copyReportDateFrom","copyReportDateTo"].forEach(id=>{
+  $(id).addEventListener("change",()=>{
+    localStorage.setItem(id==="copyReportDateFrom"?COPY_REPORT_FROM_KEY:COPY_REPORT_TO_KEY,$(id).value);
+    toast("Kopyalama tarixi saxlandı");
+  });
+});
+
+$("copyReportTemplate").addEventListener("input",()=>{
+  localStorage.setItem(COPY_REPORT_TEMPLATE_KEY,$("copyReportTemplate").value);
+});
+
+$("copyReportTemplate").addEventListener("change",()=>{
+  toast("Kopyalama mətni saxlandı");
+});
+
+$("resetCopyReportTemplate").addEventListener("click",()=>{
+  localStorage.setItem(COPY_REPORT_TEMPLATE_KEY,DEFAULT_COPY_REPORT_TEMPLATE);
+  $("copyReportTemplate").value=DEFAULT_COPY_REPORT_TEMPLATE;
+  toast("Kopyalama şablonu sıfırlandı");
+});
+
 $("cardLimitsVisible").addEventListener("change",()=>{
   saveCardLimitVisibility($("cardLimitsVisible").checked);
 });
@@ -8386,6 +8483,37 @@ function defaultReportDateRange(){
   return recordsInReportRange(range.from,range.to) ? range : fullReportDateRange();
 }
 
+function yesterdayDateString(){
+  const yesterday=new Date();
+  yesterday.setDate(yesterday.getDate()-1);
+  return isoLocalDate(yesterday);
+}
+
+function copyReportDateRange(){
+  const today=isoLocalDate(new Date());
+  const mode=copyReportRangeMode();
+
+  if(mode==="yesterday"){
+    const value=yesterdayDateString();
+    return {from:value,to:value};
+  }
+
+  if(mode==="sales")return defaultReportDateRange();
+  if(mode==="all")return fullReportDateRange();
+
+  if(mode==="custom"){
+    const from=localStorage.getItem(COPY_REPORT_FROM_KEY)||today;
+    const to=localStorage.getItem(COPY_REPORT_TO_KEY)||from;
+    return from<=to ? {from,to} : {from:to,to:from};
+  }
+
+  return {from:today,to:today};
+}
+
+function reportRangeLabel(from,to){
+  return from===to?from:`${from} - ${to}`;
+}
+
 function reportData(from,to){
   return {
     sales:sales.filter(sale=>dateOnlyInRange(sale.created_at,from,to)).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)),
@@ -8395,57 +8523,80 @@ function reportData(from,to){
   };
 }
 
-function copyReportText(from,to){
-  const data=reportData(from,to);
-  const regularSales=data.sales.filter(sale=>!isOutsideIncomeSale(sale));
-  const outsideSales=data.sales.filter(isOutsideIncomeSale);
-  const salesTotal=regularSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
-  const cashSalesTotal=regularSales
-    .filter(sale=>sale.payment_method!=="card")
-    .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
-  const outsideTotal=outsideSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
-  const expenseTotal=data.expenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+function reportCopyTotals(data){
+  return {
+    revenue:data.sales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0),
+    cash:data.sales
+      .filter(sale=>sale.payment_method!=="card")
+      .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0),
+    card:data.sales
+      .filter(sale=>sale.payment_method==="card")
+      .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0),
+    expense:data.expenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0)
+  };
+}
 
+function summaryCopyReportText(from,to,data){
+  const totals=reportCopyTotals(data);
+  const values={
+    date:reportRangeLabel(from,to),
+    revenue:money(totals.revenue),
+    expense:money(totals.expense),
+    cash:money(totals.cash),
+    card:money(totals.card)
+  };
+
+  return copyReportTemplate()
+    .replaceAll("{date}",values.date)
+    .replaceAll("{revenue}",values.revenue)
+    .replaceAll("{expense}",values.expense)
+    .replaceAll("{cash}",values.cash)
+    .replaceAll("{card}",values.card)
+    .trim();
+}
+
+function listCopyReportText(from,to,data){
+  const totals=reportCopyTotals(data);
   const lines=[
-    "Mal uçotu hesabatı",
-    `${from} - ${to}`,
-    ""
+    `Tarix: ${reportRangeLabel(from,to)}`,
+    "",
+    "Satışlar:"
   ];
 
-  lines.push("Satışlar:");
-  if(regularSales.length){
-    regularSales.forEach((sale,index)=>{
-      lines.push(`${index+1}. ${saleTitle(sale)} | ${sale.quantity||1} ədəd | ${displaySalePrice(sale)}`);
+  if(data.sales.length){
+    data.sales.forEach((sale,index)=>{
+      const method=sale.payment_method==="card"?"Kart":"Nağd";
+      lines.push(`${index+1}. ${saleTitle(sale)} | ${sale.quantity||1} ədəd | ${money(sale.total_revenue)} | ${method}`);
     });
   }else{
     lines.push("Satış yoxdur.");
   }
 
-  if(outsideSales.length){
-    lines.push("");
-    lines.push("Kənar gəlirlər:");
-    outsideSales.forEach((sale,index)=>{
-      lines.push(`${index+1}. ${saleTitle(sale)} | ${money(sale.total_revenue)}`);
-    });
-  }
-
   lines.push("");
   lines.push("Xərclər:");
+
   if(data.expenses.length){
     data.expenses.forEach((expense,index)=>{
-      const holder=isYusifExpense(expense)?" | Pul Yusifdədir":"";
-      lines.push(`${index+1}. ${expense.title||"Xərc"} | ${money(expense.amount)}${holder}`);
+      lines.push(`${index+1}. ${expense.title||"Xərc"} | ${money(expense.amount)}`);
     });
   }else{
     lines.push("Xərc yoxdur.");
   }
 
   lines.push("");
-  lines.push(`Ümumi gəlir: ${money(salesTotal+outsideTotal)}`);
-  lines.push(`Ümumi xərc: ${money(expenseTotal)}`);
-  lines.push(`Cib: ${money(cashSalesTotal+outsideTotal-expenseTotal)}`);
+  lines.push(`Ümumi gəlir: ${money(totals.revenue)}`);
+  lines.push(`Xərc: ${money(totals.expense)}`);
+  lines.push(`Nağd: ${money(totals.cash)}`);
+  lines.push(`Kart: ${money(totals.card)}`);
 
   return lines.join("\n");
+}
+
+function copyReportText(from,to){
+  const data=reportData(from,to);
+  return copyReportType()==="list"
+    ? listCopyReportText(from,to,data)
+    : summaryCopyReportText(from,to,data);
 }
 
 async function copyTextToClipboard(text){
@@ -8876,8 +9027,8 @@ $("openPdfExport").addEventListener("click",()=>{
   openModal("pdfExportModal");
 });
 
-$("copyReportBtn").addEventListener("click",async()=>{
-  const range=defaultReportDateRange();
+async function copyConfiguredReport(){
+  const range=copyReportDateRange();
   try{
     await copyTextToClipboard(copyReportText(range.from,range.to));
     toast("Hesabat kopyalandı");
@@ -8885,7 +9036,10 @@ $("copyReportBtn").addEventListener("click",async()=>{
     console.error(error);
     toast("Kopyalanmadı.");
   }
-});
+}
+
+$("copyReportBtn").addEventListener("click",copyConfiguredReport);
+$("copyReportSettingsBtn").addEventListener("click",copyConfiguredReport);
 
 $("pdfExportForm").addEventListener("submit",async event=>{
   event.preventDefault();
