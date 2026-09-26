@@ -1854,6 +1854,8 @@
 
     .multi-sale-modal{
       max-width:560px;
+      max-height:calc(100dvh - 18px);
+      padding-bottom:calc(18px + env(safe-area-inset-bottom));
     }
     .multi-sale-list{
       display:grid;
@@ -3323,6 +3325,7 @@ let notesSearchQuery="";
 let logVisibleCount=5;
 let settingsActiveKey=localStorage.getItem("sellernote-settings-section")||"";
 let renderFrameId=0;
+let multiSaleSearchQuery="";
 
 /* Delete buttons are intentionally not persisted. Refresh => hidden again. */
 let productDeleteMode=false;
@@ -7266,7 +7269,7 @@ function updateMultiSaleSelectedCount(){
 }
 
 function renderMultiSaleProducts(){
-  const query=$("multiSaleSearch").value.trim().toLowerCase();
+  const query=multiSaleSearchQuery.trim().toLowerCase();
 
   const list=products.filter(product=>{
     if(!query)return true;
@@ -7447,17 +7450,23 @@ function openMultiSaleModal(){
 
   clearMultiSaleDraft();
   $("multiSaleSearch").value="";
+  multiSaleSearchQuery="";
   updateMultiSaleSelectedCount();
   renderMultiSaleProducts();
   openModal("multiSaleModal");
 }
 
-$("multiSaleSearch").addEventListener("input",renderMultiSaleProducts);
-$("multiSaleSearchBtn").addEventListener("click",renderMultiSaleProducts);
+function applyMultiSaleSearch(){
+  multiSaleSearchQuery=$("multiSaleSearch").value;
+  $("multiSaleSearch").blur();
+  renderMultiSaleProducts();
+}
+
+$("multiSaleSearchBtn").addEventListener("click",applyMultiSaleSearch);
 $("multiSaleSearch").addEventListener("keydown",event=>{
   if(event.key==="Enter"){
     event.preventDefault();
-    renderMultiSaleProducts();
+    applyMultiSaleSearch();
   }
 });
 
