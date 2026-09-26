@@ -2352,7 +2352,7 @@
         <button id="salesRevenueStat" class="stat clickable-stat" type="button"><div id="salesSummaryRevenueLabel" class="label">Bu günün satışı</div><div id="filterRevenue" class="value">0 ₼</div></button>
         <div id="salesProfitStat" class="stat"><div id="salesSummaryProfitLabel" class="label">Bu günün qazancı</div><div id="filterProfit" class="value profit">0 ₼</div></div>
         <button id="salesPocketStat" class="stat clickable-stat" type="button"><div id="salesSummaryPocketLabel" class="label">Bu günün cibi</div><div id="filterPocket" class="value profit">0 ₼</div></button>
-        <div class="stat"><div class="label">Kartda</div><div id="filterCardTotal" class="value profit">0 ₼</div></div>
+        <button id="salesCardStat" class="stat clickable-stat" type="button"><div class="label">Kartda</div><div id="filterCardTotal" class="value profit">0 ₼</div></button>
         <div id="salesYusifStat" class="stat hidden"><div class="label">Yusifdə</div><div id="filterYusifSaleTotal" class="value profit">0 ₼</div></div>
         <div class="stat"><div id="salesSummaryQtyLabel" class="label">Satılan mallar</div><div id="filterSoldQty" class="value">0</div></div>
       </div>
@@ -4087,6 +4087,7 @@ async function saveReportSections(sections){
 
   await loadLogs();
   renderLogs();
+  toast("Hesabat ayarları saxlandı");
 }
 
 async function saveDashboardProfitVisibility(visible){
@@ -4100,6 +4101,7 @@ async function saveDashboardProfitVisibility(visible){
   },{onConflict:"user_id"});
 
   if(error)toast(error.message);
+  else toast("Ana ekran qazanc ayarı saxlandı");
 }
 
 async function saveCostProfitVisibility(visible){
@@ -4116,6 +4118,7 @@ async function saveCostProfitVisibility(visible){
   },{onConflict:"user_id"});
 
   if(error)toast(error.message);
+  else toast("Maya və qazanc ayarı saxlandı");
 }
 
 async function saveCardLimitVisibility(visible){
@@ -4129,6 +4132,7 @@ async function saveCardLimitVisibility(visible){
   },{onConflict:"user_id"});
 
   if(error)toast(error.message);
+  else toast("Kart limit ayarı saxlandı");
 }
 
 function cardAccounts(){
@@ -4446,6 +4450,7 @@ async function saveNotebookImages(next){
     updated_at:new Date().toISOString()
   },{onConflict:"user_id"});
   if(error)toast(error.message);
+  else toast("Dəftər şəkli saxlandı");
 }
 
 async function addNotebookImages(files){
@@ -5303,7 +5308,6 @@ function filteredSalesList(){
     const qty=Number(sale.quantity||0);
 
     if(!dateMatches(sale.created_at,salesDateMode,selectedDate))return false;
-    if(isOutsideIncomeSale(sale))return false;
     if(query&&!name.includes(query))return false;
     if(category&&(sale.category_id||sale.products?.category_id)!==category)return false;
 
@@ -5390,7 +5394,9 @@ function pocketOverrideValue(){
 }
 
 function computedPocketValue(list=filteredSalesList()){
-  const revenue=list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
+  const revenue=list
+    .filter(sale=>!isOutsideIncomeSale(sale)&&sale.payment_method!=="card")
+    .reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
   const expenseTotal=expenseTotalForSalesDate();
   return revenue-expenseTotal+outsideIncomeTotals().total;
 }
@@ -5430,11 +5436,13 @@ async function savePocketOverride(value){
 
 function openPocketEditModal(){
   const list=filteredSalesList();
+  const regularList=list.filter(sale=>!isOutsideIncomeSale(sale));
   const auto=computedPocketValue(list);
   const override=pocketOverrideValue();
   const shown=override===null?auto:override;
-  const revenue=list.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
-  const payment=currentPaymentSummary(list);
+  const cashRevenue=regularList
+    .filter(sale=>sale.payment_method!=="card")
+    .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
 
   $("pocketAutoValue").textContent=money(auto);
   $("pocketCurrentValue").textContent=money(shown);
@@ -5445,13 +5453,8 @@ function openPocketEditModal(){
   const yusifSales=yusifSaleTotal(list);
   const yusifExpenses=yusifExpenseTotal(expensesForSalesDate());
   const rows=[
-    `<div class="log-item"><div class="log-top"><div class="log-title">Satış</div><div class="log-date">${money(revenue)}</div></div></div>`,
-    `<div class="log-item"><div class="log-top"><div class="log-title">Nağd</div><div class="log-date">${money(payment.cash)}</div></div></div>`,
-    `<div class="log-item"><div class="log-top"><div class="log-title">Kart</div><div class="log-date">${money(payment.card)}</div></div></div>`
+    `<div class="log-item"><div class="log-top"><div class="log-title">Nağd satış</div><div class="log-date">${money(cashRevenue)}</div></div></div>`
   ];
-  Object.entries(payment.accounts).forEach(([name,data])=>{
-    rows.push(`<div class="log-item"><div class="log-top"><div class="log-title">${escapeHtml(name)}</div><div class="log-date">${money(data.amount)}</div></div><div class="log-tags"><span class="log-tag">${data.count} mədaxil</span></div></div>`);
-  });
   rows.push(...Object.entries(outside)
     .filter(([key,value])=>key!=="total"&&Math.abs(Number(value||0))>0.000001)
     .map(([key,value])=>`
@@ -5496,7 +5499,7 @@ function openPocketEditModal(){
   openModal("pocketEditModal");
 }
 
-function currentPaymentSummary(list=filteredSalesList()){
+function currentPaymentSummary(list=filteredSalesList().filter(sale=>!isOutsideIncomeSale(sale))){
   return list.reduce((totals,sale)=>{
     const amount=Number(sale.total_revenue||0);
     if(sale.payment_method==="card"){
@@ -5541,15 +5544,16 @@ function updatePaymentSummaryModal(){
 
 function renderSales(){
   const list=filteredSalesList();
+  const regularList=list.filter(sale=>!isOutsideIncomeSale(sale));
   const showCostProfit=costProfitVisible();
 
   $("salesCount").textContent=`${list.length} qeyd`;
   updateSalesSummaryLabels();
-  const revenue=list.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const profit=list.reduce((sum,s)=>sum+(saleHasProfit(s)?Number(s.profit||0):0),0);
-  const soldQty=list.reduce((sum,s)=>sum+Number(s.quantity||0),0);
-  const cardTotal=list.filter(s=>s.payment_method==="card").reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const yusifSalesTotal=yusifSaleTotal(list);
+  const revenue=regularList.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
+  const profit=regularList.reduce((sum,s)=>sum+(saleHasProfit(s)?Number(s.profit||0):0),0);
+  const soldQty=regularList.reduce((sum,s)=>sum+Number(s.quantity||0),0);
+  const cardTotal=regularList.filter(s=>s.payment_method==="card").reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
+  const yusifSalesTotal=yusifSaleTotal(regularList);
   const pocketOverride=pocketOverrideValue();
   $("filterRevenue").textContent=money(revenue);
   $("filterProfit").textContent=money(profit);
@@ -5600,9 +5604,9 @@ function renderSales(){
 
           <div class="price-row">
             <span class="badge ${sale.sale_price_provided===false?"not-recorded":""}">Satış ${displayUnitSale(sale)}</span>
-            <span class="badge">${paymentMethodLabel(sale.payment_method)}</span>
+            <span class="badge">${isOutsideIncomeSale(sale)?"Kənar gəlir":paymentMethodLabel(sale.payment_method)}</span>
             ${isYusifSale(sale)?`<span class="badge profit">Pul Yusifdədir</span>`:""}
-            ${showCostProfit?`<span class="badge ${!saleHasCost(sale)?"not-recorded":""}">Maya ${displayCost(sale)}</span>
+            ${showCostProfit&&!isOutsideIncomeSale(sale)?`<span class="badge ${!saleHasCost(sale)?"not-recorded":""}">Maya ${displayCost(sale)}</span>
             <span class="badge profit ${!saleHasProfit(sale)?"not-recorded":""}">Qazanc ${displayProfit(sale)}</span>`:""}
           </div>
 
@@ -7569,7 +7573,6 @@ $("productForm").addEventListener("submit",async event=>{
     const categoryId=$("productCategory").value||await ensureShalvarCategory();
 
     const payload={
-      user_id:currentUser.id,
       category_id:categoryId,
       name:$("productName").value.trim()||"Adsız məhsul",
       sale_price:Number($("salePrice").value||0),
@@ -7584,7 +7587,7 @@ $("productForm").addEventListener("submit",async event=>{
     if(id){
       ({error}=await sb.from("products").update(payload).eq("id",id));
     }else{
-      ({error}=await sb.from("products").insert(payload));
+      ({error}=await sb.from("products").insert({...payload,user_id:currentUser.id}));
     }
 
     if(error)throw error;
@@ -8296,6 +8299,9 @@ function copyReportText(from,to){
   const regularSales=data.sales.filter(sale=>!isOutsideIncomeSale(sale));
   const outsideSales=data.sales.filter(isOutsideIncomeSale);
   const salesTotal=regularSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const cashSalesTotal=regularSales
+    .filter(sale=>sale.payment_method!=="card")
+    .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const outsideTotal=outsideSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const expenseTotal=data.expenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
 
@@ -8336,7 +8342,7 @@ function copyReportText(from,to){
   lines.push("");
   lines.push(`Ümumi gəlir: ${money(salesTotal+outsideTotal)}`);
   lines.push(`Ümumi xərc: ${money(expenseTotal)}`);
-  lines.push(`Cib: ${money(salesTotal+outsideTotal-expenseTotal)}`);
+  lines.push(`Cib: ${money(cashSalesTotal+outsideTotal-expenseTotal)}`);
 
   return lines.join("\n");
 }
@@ -8427,10 +8433,10 @@ function buildReport(from,to,sections=selectedReportSections()){
   const revenue=reportSales.reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
   const cost=reportSales.reduce((sum,s)=>sum+(saleHasCost(s)?Number(s.total_cost||0):0),0);
   const profit=reportSales.reduce((sum,s)=>sum+(saleHasProfit(s)?Number(s.profit||0):0),0);
-  const expenseTotal=data.expenses.reduce((sum,e)=>sum+Number(e.amount||0),0);
-  const pocket=revenue-expenseTotal+outsideIncome;
   const cashTotal=reportSales.filter(sale=>sale.payment_method!=="card").reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const cardTotal=reportSales.filter(sale=>sale.payment_method==="card").reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const expenseTotal=data.expenses.reduce((sum,e)=>sum+Number(e.amount||0),0);
+  const pocket=cashTotal-expenseTotal+outsideIncome;
   const soldQty=reportSales.reduce((sum,s)=>sum+Number(s.quantity||0),0);
   const showCost=costProfitVisible() && Math.abs(cost)>0.000001;
   const showProfit=costProfitVisible() && Math.abs(profit)>0.000001;
@@ -8882,6 +8888,10 @@ $("globalSearch").addEventListener("keydown",event=>{
 });
 
 $("salesRevenueStat").addEventListener("click",()=>{
+  updatePaymentSummaryModal();
+  openModal("paymentSummaryModal");
+});
+$("salesCardStat").addEventListener("click",()=>{
   updatePaymentSummaryModal();
   openModal("paymentSummaryModal");
 });
