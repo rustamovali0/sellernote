@@ -3535,7 +3535,9 @@ function finishLaunchSplash(){
   },remaining);
 }
 
-setTimeout(finishLaunchSplash,1600);
+function finishLaunchSplashAfterPaint(){
+  requestAnimationFrame(()=>requestAnimationFrame(finishLaunchSplash));
+}
 
 let confirmResolve=null;
 
@@ -9424,19 +9426,18 @@ setInterval(setToday,30000);
   $("toggleExpensesDelete").textContent="Sil";
   $("toggleNotesDelete").textContent="Sil";
 
-  showApp();
   setToday();
-  finishLaunchSplash();
   await loadAll();
 
   history.replaceState({page:"sales"},"","#sales");
+  showApp();
   showPage("sales",{history:false});
   }catch(error){
     console.error(error);
     showLoginForm();
     toast("App yüklənəndə xəta oldu.");
   }finally{
-    finishLaunchSplash();
+    finishLaunchSplashAfterPaint();
   }
 })();
 </script>
