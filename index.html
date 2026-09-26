@@ -3358,6 +3358,15 @@ function toast(message){
   window.__toastTimer=setTimeout(()=>$("toast").classList.add("hidden"),2500);
 }
 
+function isMissingSchemaColumn(error,column){
+  const message=String(error?.message||"").toLowerCase();
+  const code=String(error?.code||"").toLowerCase();
+  return code==="pgrst204" || (
+    message.includes(String(column).toLowerCase()) &&
+    (message.includes("schema cache") || message.includes("column"))
+  );
+}
+
 function applyTheme(theme){
   document.documentElement.dataset.theme=theme;
   localStorage.setItem(THEME_KEY,theme);
@@ -8046,13 +8055,24 @@ $("looseSaleForm").addEventListener("submit",async event=>{
     }
 
     if(id){
-      const {error}=await sb.from("sales").update(salePayload).eq("id",id);
+      let {error}=await sb.from("sales").update(salePayload).eq("id",id);
+      let yusifStatusSaved=true;
+
+      if(error && isMissingSchemaColumn(error,"money_holder")){
+        yusifStatusSaved=false;
+        const fallbackPayload={...salePayload};
+        delete fallbackPayload.money_holder;
+        ({error}=await sb.from("sales").update(fallbackPayload).eq("id",id));
+      }
+
       if(error)throw error;
 
       closeModal("looseSaleModal");
       await loadAll();
       showPage("sales");
-      toast("Satış yeniləndi");
+      toast(yusifStatusSaved
+        ? "Satış yeniləndi"
+        : "Satış yeniləndi. Yusif statusu üçün SQL-i işlədin.");
       return;
     }
 
