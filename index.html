@@ -606,9 +606,14 @@
     .link-btn:hover{text-shadow:0 0 14px rgba(77,255,174,.75)}
     .link-btn:disabled{opacity:.5;cursor:not-allowed}
     .toast{
-      position:fixed;left:50%;transform:translateX(-50%);top:16px;z-index:150;
+      position:fixed;
+      left:50%;
+      bottom:calc(92px + env(safe-area-inset-bottom));
+      transform:translateX(-50%);
+      z-index:150;
       max-width:calc(100% - 28px);padding:10px 13px;border-radius:12px;
       background:#111827;color:#fff;font-size:12px;box-shadow:var(--shadowStrong);
+      text-align:center;
     }
 
     @media(max-width:360px){
