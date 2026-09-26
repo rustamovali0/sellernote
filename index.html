@@ -679,26 +679,36 @@
 
   
     .sales-quick-actions{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:8px;
-      margin:-2px 0 10px;
+      display:flex;
+      gap:7px;
+      margin:-2px 0 9px;
+      overflow-x:auto;
+      overscroll-behavior-x:contain;
+      scrollbar-width:none;
+      -webkit-overflow-scrolling:touch;
     }
+    .sales-quick-actions::-webkit-scrollbar{display:none}
     .sales-actions-toggle{
       width:100%;
-      min-height:42px;
-      margin:-2px 0 8px;
+      min-height:36px;
+      margin:-2px 0 7px;
+      border-radius:14px;
+      font-size:12px;
+      box-shadow:none;
     }
     .sales-quick-actions.hidden{
       display:none!important;
     }
     .sales-quick-actions .btn{
-      min-width:0;
-      min-height:42px;
-      padding:8px 7px;
-      font-size:12px;
+      flex:0 0 auto;
+      min-width:auto;
+      min-height:36px;
+      padding:7px 11px;
+      font-size:11px;
       line-height:1.15;
-      white-space:normal;
+      white-space:nowrap;
+      border-radius:999px;
+      box-shadow:none;
     }
 
     .settings-card{
@@ -1068,9 +1078,6 @@
     }
     .global-search-wrap .btn{min-height:44px;padding:0 14px}
     .global-clear.hidden{display:none!important}
-    .sales-quick-actions{
-      grid-template-columns:repeat(3,minmax(0,1fr))!important;
-    }
     .image-source-actions{
       display:grid;
       grid-template-columns:repeat(2,minmax(0,1fr));
@@ -1223,7 +1230,7 @@
     .clickable-stat:hover{border-color:rgba(37,99,235,.35)}
     @media(max-width:360px){
       .sales-quick-actions{gap:5px}
-      .sales-quick-actions .btn{font-size:10px!important;padding:7px 4px!important}
+      .sales-quick-actions .btn{font-size:10px!important;padding:7px 9px!important}
       .branding-grid{gap:7px}
       .asset-reset{font-size:10px}
     }
@@ -3312,6 +3319,7 @@ let passwordRecoveryMode=location.hash.includes("type=recovery")||location.searc
 let notesSearchQuery="";
 let logVisibleCount=5;
 let settingsActiveKey=localStorage.getItem("sellernote-settings-section")||"";
+let renderFrameId=0;
 
 /* Delete buttons are intentionally not persisted. Refresh => hidden again. */
 let productDeleteMode=false;
@@ -3432,7 +3440,8 @@ function refreshForDateChange(){
 
 function fitValues(){
   requestAnimationFrame(()=>{
-    document.querySelectorAll(".stat .value,.sale-total").forEach(el=>{
+    const activePage=$(currentPage+"Page")||document;
+    activePage.querySelectorAll(".stat .value,.sale-total").forEach(el=>{
       el.style.fontSize="";
       if(!el.clientWidth)return;
       let size=parseFloat(getComputedStyle(el).fontSize)||20;
@@ -5702,6 +5711,22 @@ function filteredExpensesList(){
   return list;
 }
 
+function expensesEmptyState(){
+  if(!expenses.length)return '<div class="card empty">Hələ xərc əlavə olunmayıb.</div>';
+
+  const hasHiddenExpenses=expensesDateMode!=="all"
+    || $("expensesSearchInput").value.trim()
+    || $("expensesMinAmount").value!==""
+    || $("expensesMaxAmount").value!=="";
+
+  return `
+    <div class="card empty">
+      <div>Bu seçimə uyğun xərc yoxdur.</div>
+      ${hasHiddenExpenses?'<button class="btn secondary" data-show-all-expenses type="button" style="margin-top:10px">Bütün xərcləri göstər</button>':""}
+    </div>
+  `;
+}
+
 function currentYusifExpenses(){
   return filteredExpensesList().filter(isYusifExpense);
 }
@@ -5904,17 +5929,19 @@ function renderExpenses(){
   $("filterExpensesCount").textContent=list.length;
   $("filterYusifExpenseTotal").textContent=money(yusifExpenseTotal(list));
 
-  $("expensesList").innerHTML=list.length?list.map(expense=>`
+  $("expensesList").innerHTML=list.length?list.map(expense=>{
+    const images=expenseImages(expense);
+    return `
     <div class="card sale">
-      <div class="${expenseImages(expense).length?"sale-with-image":""}">
-        ${expenseImages(expense).length
+      <div class="${images.length?"sale-with-image":""}">
+        ${images.length
           ? `<div style="position:relative;width:58px;height:58px">
                <img class="sale-thumb clickable-image"
-                    src="${escapeHtml(expenseImages(expense)[0])}"
+                    src="${escapeHtml(images[0])}"
                     alt="${escapeHtml(expense.title||"Xərc")}"
                     data-open-expense-images="${expense.id}">
-               ${expenseImages(expense).length>1
-                 ? `<span class="product-image-badge">${expenseImages(expense).length}</span>`
+               ${images.length>1
+                 ? `<span class="product-image-badge">${images.length}</span>`
                  : ""}
              </div>`
           : ""}
@@ -5938,7 +5965,8 @@ function renderExpenses(){
         </div>
       </div>
     </div>
-  `).join(""):'<div class="card empty">Bu seçimə uyğun xərc yoxdur.</div>';
+  `;
+  }).join(""):expensesEmptyState();
 
   document.querySelectorAll("[data-open-expense-images]").forEach(image=>{
     image.addEventListener("click",()=>{
@@ -5953,6 +5981,10 @@ function renderExpenses(){
 
   document.querySelectorAll("[data-delete-expense]").forEach(button=>{
     button.addEventListener("click",()=>deleteExpense(button.dataset.deleteExpense));
+  });
+
+  document.querySelectorAll("[data-show-all-expenses]").forEach(button=>{
+    button.addEventListener("click",showAllExpenses);
   });
 
   fitValues();
@@ -6217,29 +6249,52 @@ function renderDeletedRecords(){
   });
 }
 
-function renderAll(){
+function renderCurrentPage(page=currentPage){
+  if(page==="dashboard")renderProducts();
+  else if(page==="sales")renderSales();
+  else if(page==="expenses")renderExpenses();
+  else if(page==="notes")renderNotes();
+  else if(page==="categories"){
+    renderCategories();
+    renderLogs();
+    renderDeletedRecords();
+    renderReportSectionControls();
+    renderCardSettingsModal();
+    renderDailyProfits();
+    renderYusifMoneySettings();
+    renderNotebookImages();
+    renderBalanceWallets();
+    renderQuickExpenseSettings();
+    renderSettingsSidebar();
+  }
+}
+
+function renderShared(){
   renderCategoryOptions();
-  renderProducts();
-  renderSales();
-  renderExpenses();
-  renderNotes();
-  renderCategories();
-  renderLogs();
-  renderDeletedRecords();
   renderStats();
-  renderReportSectionControls();
   renderCardAccountOptions();
   renderCardLimitStrip();
-  renderCardSettingsModal();
-  renderDailyProfits();
-  renderYusifMoneySettings();
-  renderNotebookImages();
-  renderBalanceWallets();
   renderQuickExpenseButtons();
-  renderQuickExpenseSettings();
-  renderSettingsSidebar();
   applySalesActionsVisibility();
   applyCostProfitVisibility();
+}
+
+function renderAll(){
+  renderShared();
+  renderCurrentPage();
+}
+
+function scheduleRender(page=currentPage){
+  cancelAnimationFrame(renderFrameId);
+  renderFrameId=requestAnimationFrame(()=>{
+    renderShared();
+    renderCurrentPage(page);
+  });
+}
+
+function schedulePageRender(page=currentPage){
+  cancelAnimationFrame(renderFrameId);
+  renderFrameId=requestAnimationFrame(()=>renderCurrentPage(page));
 }
 
 function applyCostProfitVisibility(){
@@ -6259,7 +6314,7 @@ function applySalesActionsVisibility(){
   if(!$("salesQuickActions")||!$("toggleSalesActions"))return;
   const visible=salesActionsVisible();
   $("salesQuickActions").classList.toggle("hidden",!visible);
-  $("toggleSalesActions").textContent=visible?"Əməliyyatları gizlət":"Əməliyyatları göstər";
+  $("toggleSalesActions").textContent=visible?"Əməliyyatlar: açıq":"Əməliyyatlar: bağlı";
 }
 
 function toggleSalesActions(){
@@ -6294,6 +6349,7 @@ function showPage(page,options={}){
   $("notesAddBtn").classList.toggle("hidden",page!=="notes");
   syncGlobalSearch(page);
   closeDropdowns();
+  renderCurrentPage(page);
   fitValues();
   updateScrollTopButton();
 
@@ -7139,7 +7195,10 @@ $("clearSalesToolbar").addEventListener("click",clearSalesFilters);
 
 /* Expense filters */
 ["expensesSearchInput","expensesMinAmount","expensesMaxAmount","expensesSort"].forEach(id=>{
-  $(id).addEventListener(["expensesSearchInput","expensesMinAmount","expensesMaxAmount"].includes(id)?"input":"change",renderExpenses);
+  $(id).addEventListener(
+    ["expensesSearchInput","expensesMinAmount","expensesMaxAmount"].includes(id)?"input":"change",
+    ()=>schedulePageRender("expenses")
+  );
 });
 
 function clearExpensesFilters(){
@@ -7153,6 +7212,16 @@ function clearExpensesFilters(){
 }
 $("resetExpensesFilters").addEventListener("click",clearExpensesFilters);
 $("clearExpensesToolbar").addEventListener("click",clearExpensesFilters);
+
+function showAllExpenses(){
+  $("expensesSearchInput").value="";
+  $("expensesMinAmount").value="";
+  $("expensesMaxAmount").value="";
+  $("expensesSort").value="newest";
+  $("expensesSingleDate").value="";
+  if(document.querySelector(".nav-btn.active")?.dataset.page==="expenses")$("globalSearch").value="";
+  setExpensesDate("all");
+}
 
 function clearNotesFilters(){
   $("notesSingleDate").value="";
