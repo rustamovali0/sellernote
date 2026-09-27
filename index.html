@@ -2550,7 +2550,7 @@
 
       <div class="summary-grid">
         <div class="stat"><div id="expensesSummaryLabel" class="label">Bu günün xərci</div><div id="filterExpensesTotal" class="value">0 ₼</div></div>
-        <div class="stat"><div class="label">Xərc sayı</div><div id="filterExpensesCount" class="value">0</div></div>
+        <div class="stat"><div class="label">Xərc sayı</div><div id="filterExpensesCount" class="value">0</div><div id="workerPayHint" class="sub">İşçi pulu: 0 ₼</div></div>
         <button id="filterYusifExpenseStat" class="stat clickable-stat" type="button"><div class="label">Yusifdə var</div><div id="filterYusifExpenseTotal" class="value profit">0 ₼</div></button>
       </div>
 
@@ -6329,6 +6329,19 @@ function yusifExpenseTotal(list=expenses){
     .reduce((sum,expense)=>sum+Number(expense.amount||0),0);
 }
 
+function todayRegularSalesRevenue(){
+  const today=isoLocalDate(new Date());
+  return sales
+    .filter(sale=>!isOutsideIncomeSale(sale)&&isoLocalDate(new Date(sale.created_at))===today)
+    .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+}
+
+function workerPayForRevenue(revenue){
+  const amount=Number(revenue||0);
+  if(amount<=0)return 0;
+  return Math.min(18,Math.round(amount*0.08));
+}
+
 function expensePaymentMethod(expense){
   return expense?.payment_method==="card"?"card":"cash";
 }
@@ -6578,6 +6591,7 @@ function renderExpenses(){
   updateExpensesSummaryLabel();
   $("filterExpensesTotal").textContent=money(list.reduce((sum,item)=>sum+Number(item.amount||0),0));
   $("filterExpensesCount").textContent=list.length;
+  $("workerPayHint").textContent=`İşçi pulu: ${money(workerPayForRevenue(todayRegularSalesRevenue()))}`;
   $("filterYusifExpenseTotal").textContent=money(yusifExpenseTotal(list));
 
   $("expensesList").innerHTML=list.length?list.map(expense=>{
