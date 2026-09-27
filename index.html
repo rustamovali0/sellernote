@@ -1858,8 +1858,26 @@
 
     .multi-sale-modal{
       max-width:560px;
-      max-height:calc(100dvh - 18px);
+      max-height:calc(100dvh - max(26px,env(safe-area-inset-top)) - 12px);
+      margin-top:max(16px,env(safe-area-inset-top));
+      padding-top:16px;
       padding-bottom:calc(18px + env(safe-area-inset-bottom));
+      filter:none!important;
+      backdrop-filter:none!important;
+      -webkit-backdrop-filter:none!important;
+      background:var(--card);
+    }
+    .multi-sale-modal::before{
+      margin-bottom:14px!important;
+    }
+    .multi-sale-modal .modal-head{
+      position:relative;
+      z-index:2;
+      padding:0;
+      background:var(--card);
+      filter:none!important;
+      backdrop-filter:none!important;
+      -webkit-backdrop-filter:none!important;
     }
     .multi-sale-list{
       display:grid;
@@ -3060,9 +3078,16 @@
 
         <div id="looseSaleCategoryBlock">
           <label class="label">Kateqoriya</label>
-          <select id="looseSaleCategory" class="select">
+          <select id="looseSaleCategory" class="select hidden" aria-hidden="true" tabindex="-1">
             <option value="">Avtomatik: Şalvar</option>
           </select>
+          <div id="looseSaleCategoryCustom" class="custom-category-select">
+            <button id="looseSaleCategoryTrigger" class="custom-category-trigger" type="button" aria-expanded="false">
+              <span id="looseSaleCategoryLabel" class="custom-category-trigger-label">Avtomatik: Şalvar</span>
+              <span class="custom-category-chevron">⌄</span>
+            </button>
+            <div id="looseSaleCategoryMenu" class="custom-category-menu hidden"></div>
+          </div>
         </div>
 
         <div class="row2">
@@ -5063,6 +5088,43 @@ function syncMainCategoryCustoms(){
   syncMainCategoryCustom("salesCategoryFilter");
 }
 
+function looseSaleCategoryRows(){
+  return [
+    {id:"",name:"Avtomatik: Şalvar"},
+    ...categories.map(category=>({id:category.id,name:category.name}))
+  ];
+}
+
+function closeLooseSaleCategoryMenu(){
+  if(!$("looseSaleCategoryMenu"))return;
+  $("looseSaleCategoryMenu").classList.add("hidden");
+  $("looseSaleCategoryTrigger").classList.remove("open");
+  $("looseSaleCategoryTrigger").setAttribute("aria-expanded","false");
+}
+
+function syncLooseSaleCategoryCustom(){
+  const select=$("looseSaleCategory");
+  const label=$("looseSaleCategoryLabel");
+  const menu=$("looseSaleCategoryMenu");
+  if(!select||!label||!menu)return;
+
+  const selectedId=select.value||"";
+  const selected=looseSaleCategoryRows().find(row=>row.id===selectedId)||looseSaleCategoryRows()[0];
+  label.textContent=selected.name;
+
+  menu.innerHTML=looseSaleCategoryRows().map(row=>{
+    const active=row.id===selectedId;
+    return `<button type="button"
+                    class="custom-category-option ${active?"active":""}"
+                    data-loose-sale-category-option="${escapeHtml(row.id)}"
+                    role="option"
+                    aria-selected="${active?"true":"false"}">
+              <span>${escapeHtml(row.name)}</span>
+              <span class="custom-category-check">${active?"✓":""}</span>
+            </button>`;
+  }).join("");
+}
+
 function renderCategoryOptions(){
   const productSelected=$("categoryFilter").value;
   const salesSelected=$("salesCategoryFilter").value;
@@ -5094,6 +5156,7 @@ function renderCategoryOptions(){
       const defaultCategory=findShalvarCategory();
       if(defaultCategory)$("looseSaleCategory").value=defaultCategory.id;
     }
+    syncLooseSaleCategoryCustom();
   }
 
   if($("saleProductSelect")){
@@ -7380,6 +7443,8 @@ $("notesCalendarGrid").addEventListener("click",event=>{
 function clearProductFilters(){
   $("searchInput").value="";
   $("categoryFilter").value="";
+  syncMainCategoryCustom("categoryFilter");
+  closeMainCategoryMenus();
   $("productPriceFilter").value="";
   $("productProfitFilter").value="";
   $("productSort").value="newest";
@@ -7400,6 +7465,8 @@ $("clearProductToolbar").addEventListener("click",clearProductFilters);
 function clearSalesFilters(){
   $("salesSearchInput").value="";
   $("salesCategoryFilter").value="";
+  syncMainCategoryCustom("salesCategoryFilter");
+  closeMainCategoryMenus();
   $("salesMinAmount").value="";
   $("salesMaxAmount").value="";
   $("salesProfitFilter").value="";
@@ -7764,6 +7831,7 @@ $("confirmMultiSale").addEventListener("click",async()=>{
 document.addEventListener("keydown",event=>{
   if(event.key==="Escape")closeProductCategoryMenu();
   if(event.key==="Escape")closeMainCategoryMenus();
+  if(event.key==="Escape")closeLooseSaleCategoryMenu();
 });
 
 /* Product add/edit */
@@ -7801,6 +7869,7 @@ $("productCategoryMenu").addEventListener("click",event=>{
 document.addEventListener("click",event=>{
   if(!event.target.closest("#productCategoryCustom"))closeProductCategoryMenu();
   if(!event.target.closest(".main-category-custom"))closeMainCategoryMenus();
+  if(!event.target.closest("#looseSaleCategoryCustom"))closeLooseSaleCategoryMenu();
 });
 
 function bindMainCategoryCustom(selectId){
@@ -7833,6 +7902,27 @@ function bindMainCategoryCustom(selectId){
 
 bindMainCategoryCustom("categoryFilter");
 bindMainCategoryCustom("salesCategoryFilter");
+
+$("looseSaleCategoryTrigger").addEventListener("click",event=>{
+  event.stopPropagation();
+  const willOpen=$("looseSaleCategoryMenu").classList.contains("hidden");
+  closeLooseSaleCategoryMenu();
+  if(willOpen){
+    syncLooseSaleCategoryCustom();
+    $("looseSaleCategoryMenu").classList.remove("hidden");
+    $("looseSaleCategoryTrigger").classList.add("open");
+    $("looseSaleCategoryTrigger").setAttribute("aria-expanded","true");
+  }
+});
+
+$("looseSaleCategoryMenu").addEventListener("click",event=>{
+  const option=event.target.closest("[data-loose-sale-category-option]");
+  if(!option)return;
+  $("looseSaleCategory").value=option.dataset.looseSaleCategoryOption||"";
+  syncLooseSaleCategoryCustom();
+  closeLooseSaleCategoryMenu();
+  $("looseSaleCategory").dispatchEvent(new Event("change",{bubbles:true}));
+});
 
 $("addProductBtn").addEventListener("click",openNewProductModal);
 
@@ -8145,6 +8235,7 @@ function resetLooseSaleForm(){
 
   const defaultCategory=findShalvarCategory();
   $("looseSaleCategory").value=defaultCategory?.id||"";
+  syncLooseSaleCategoryCustom();
 
   $("looseSaleModalTitle").textContent="Sərbəst satış";
   updateLooseSaleModeFields();
@@ -8229,6 +8320,7 @@ function openCustomIncome(){
   $("looseSaleName").value="";
   $("looseSaleName").placeholder="Başlıq";
   $("looseSaleCategory").value="";
+  syncLooseSaleCategoryCustom();
   $("looseSaleCost").value="";
   $("looseSaleQuantity").value=1;
   updateLooseSaleModeFields();
@@ -8245,6 +8337,7 @@ async function openOutsideIncome(name){
   $("saveLooseSaleBtn").textContent="Gəliri yadda saxla";
   $("looseSaleName").value=name;
   $("looseSaleCategory").value=categoryId;
+  syncLooseSaleCategoryCustom();
   $("looseSaleCost").value="";
   $("looseSaleQuantity").value=1;
   updateLooseSaleModeFields();
@@ -8268,6 +8361,7 @@ function openEditSale(id){
   $("looseSaleCost").value=(sale.cost_price_provided===false||Number(sale.unit_cost_price||0)===0)?"":Number(sale.unit_cost_price||0);
   $("looseSaleNote").value=sale.note||"";
   $("looseSaleCategory").value=sale.category_id||sale.products?.category_id||findShalvarCategory()?.id||"";
+  syncLooseSaleCategoryCustom();
   $("looseSalePaymentMethod").value=sale.payment_method||"cash";
   $("looseSaleCardAccount").value=sale.card_account||cardAccounts()[0];
   $("looseSaleYusifMoney").checked=isYusifSale(sale);
@@ -8295,6 +8389,7 @@ $("toggleSalesActions").addEventListener("click",toggleSalesActions);
   $(id).addEventListener("input",updateLooseSalePreview);
 });
 $("looseSaleCategory").addEventListener("change",()=>{
+  syncLooseSaleCategoryCustom();
   if(isTrustCategoryId($("looseSaleCategory").value)){
     saleEntryMode="trust";
     currentOutsideIncomeName=categories.find(category=>category.id===$("looseSaleCategory").value)?.name||TRUST_CATEGORY_NAME;
