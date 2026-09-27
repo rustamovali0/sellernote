@@ -2390,6 +2390,16 @@
                 <input id="salesMinAmount" class="input" type="number" min="0" step="0.01" placeholder="Min məbləğ" />
                 <input id="salesMaxAmount" class="input" type="number" min="0" step="0.01" placeholder="Max məbləğ" />
               </div>
+              <div class="row2">
+                <label>
+                  <span class="label">Başlanğıc saat</span>
+                  <input id="salesStartTime" class="input" type="time" />
+                </label>
+                <label>
+                  <span class="label">Son saat</span>
+                  <input id="salesEndTime" class="input" type="time" />
+                </label>
+              </div>
               <select id="salesProfitFilter" class="select">
                 <option value="">Qazanc: hamısı</option>
                 <option value="positive">Qazanc var</option>
@@ -5725,11 +5735,35 @@ function paymentMethodLabel(value){
   return value==="card"?"Kart":"Nağd";
 }
 
+function timeInputToMinutes(value){
+  if(!value)return null;
+  const [hours,minutes]=String(value).split(":").map(Number);
+  if(!Number.isFinite(hours)||!Number.isFinite(minutes))return null;
+  return hours*60+minutes;
+}
+
+function saleMatchesTimeRange(sale,startTime,endTime){
+  if(startTime===null&&endTime===null)return true;
+
+  const date=new Date(sale.created_at);
+  const minutes=date.getHours()*60+date.getMinutes();
+
+  if(startTime!==null&&endTime!==null){
+    if(startTime<=endTime)return minutes>=startTime&&minutes<=endTime;
+    return minutes>=startTime||minutes<=endTime;
+  }
+
+  if(startTime!==null)return minutes>=startTime;
+  return minutes<=endTime;
+}
+
 function filteredSalesList(){
   const query=$("salesSearchInput").value.trim().toLowerCase();
   const category=$("salesCategoryFilter").value;
   const minAmount=$("salesMinAmount").value===""?null:Number($("salesMinAmount").value);
   const maxAmount=$("salesMaxAmount").value===""?null:Number($("salesMaxAmount").value);
+  const startTime=timeInputToMinutes($("salesStartTime").value);
+  const endTime=timeInputToMinutes($("salesEndTime").value);
   const profitFilter=$("salesProfitFilter").value;
   const qtyFilter=$("salesQtyFilter").value;
   const sort=$("salesSort").value;
@@ -5743,6 +5777,7 @@ function filteredSalesList(){
     const qty=Number(sale.quantity||0);
 
     if(!dateMatches(sale.created_at,salesDateMode,selectedDate))return false;
+    if(!saleMatchesTimeRange(sale,startTime,endTime))return false;
     if(query&&!name.includes(query))return false;
     if(category&&(sale.category_id||sale.products?.category_id)!==category)return false;
 
@@ -7708,9 +7743,9 @@ $("resetProductFilters").addEventListener("click",clearProductFilters);
 $("clearProductToolbar").addEventListener("click",clearProductFilters);
 
 /* Sales filters */
-["salesSearchInput","salesCategoryFilter","salesMinAmount","salesMaxAmount","salesProfitFilter","salesQtyFilter","salesSort"].forEach(id=>{
+["salesSearchInput","salesCategoryFilter","salesMinAmount","salesMaxAmount","salesStartTime","salesEndTime","salesProfitFilter","salesQtyFilter","salesSort"].forEach(id=>{
   $(id).addEventListener(
-    ["salesSearchInput","salesMinAmount","salesMaxAmount"].includes(id)?"input":"change",
+    ["salesSearchInput","salesMinAmount","salesMaxAmount","salesStartTime","salesEndTime"].includes(id)?"input":"change",
     renderSales
   );
 });
@@ -7722,6 +7757,8 @@ function clearSalesFilters(){
   closeMainCategoryMenus();
   $("salesMinAmount").value="";
   $("salesMaxAmount").value="";
+  $("salesStartTime").value="";
+  $("salesEndTime").value="";
   $("salesProfitFilter").value="";
   $("salesQtyFilter").value="";
   $("salesSort").value="newest";
