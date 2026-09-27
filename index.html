@@ -77,15 +77,13 @@
       align-items:center;
       justify-content:center;
       overflow:hidden;
-      background:
-        radial-gradient(circle at 22% 18%,rgba(14,165,233,.18),transparent 30%),
-        radial-gradient(circle at 82% 78%,rgba(22,163,74,.18),transparent 32%),
-        linear-gradient(145deg,#f8fafc 0%,#eef6ff 46%,#f0fdf4 100%);
+      background:#eef6ff url("assets/splash-1179x2556.png") center/cover no-repeat;
       color:#0f172a;
       transition:opacity .45s ease,visibility .45s ease;
     }
     .launch-splash.done{opacity:0;visibility:hidden;pointer-events:none}
     .launch-card{
+      display:none;
       flex:0 0 auto;
       width:min(430px,calc(100svw - 32px));
       height:min(360px,calc(100svh - 64px));
@@ -324,18 +322,19 @@
     .drop-panel.right{
       left:auto;right:0;width:min(330px,calc(100vw - 28px));padding:10px;
     }
-    .toolbar .drop-panel.right{
-      position:absolute;
-      left:auto;
-      right:0;
-      top:calc(100% + 7px);
-      transform:none;
-      width:min(320px,calc(100vw - 32px));
-      max-height:min(430px,calc(100dvh - 210px));
-      overflow:auto;
-      padding:8px;
-      border-radius:14px;
-      box-shadow:0 12px 30px rgba(15,23,42,.14);
+    .toolbar.with-clear > .inline-filter-panel{
+      position:static;
+      flex:0 0 100%;
+      width:100%;
+      min-width:0;
+      max-height:none;
+      overflow:visible;
+      margin-top:0;
+      padding:0;
+      border:0;
+      border-radius:0;
+      background:transparent;
+      box-shadow:none;
     }
     .drop-option{
       width:100%;min-height:42px;padding:9px 10px;border-radius:10px;
@@ -1966,12 +1965,29 @@
     }
     @media(max-width:520px){
       .sale-type-grid{
-        grid-template-columns:1fr!important;
+        grid-template-columns:repeat(3,minmax(0,1fr))!important;
+        gap:7px;
       }
       .sale-type-option{
-        min-height:88px;
-        flex-direction:row;
+        min-height:98px;
+        padding:9px 6px;
+        flex-direction:column;
         align-items:center;
+        justify-content:center;
+        text-align:center;
+        gap:6px;
+      }
+      .sale-type-option small{
+        display:none;
+      }
+      .sale-type-option strong{
+        font-size:12px;
+        line-height:1.15;
+      }
+      .sale-type-icon{
+        width:38px;
+        height:38px;
+        border-radius:13px;
       }
       .multi-sale-inputs{
         padding-left:0;
@@ -2017,7 +2033,7 @@
     /* Toolbar: Tarix + Filterlər + Təmizlə həmişə eyni sətirdə */
     .toolbar.with-clear{
       display:flex!important;
-      flex-wrap:nowrap!important;
+      flex-wrap:wrap!important;
       align-items:stretch;
       gap:8px;
     }
@@ -2039,6 +2055,29 @@
       background:var(--card);
       box-shadow:var(--shadow);
     }
+    .main-category-filter.native-hidden{
+      position:absolute;
+      width:1px;
+      height:1px;
+      opacity:0;
+      pointer-events:none;
+    }
+    .main-category-custom{
+      margin:-2px 0 10px;
+    }
+    .main-category-custom .custom-category-trigger{
+      min-height:48px;
+      border-radius:16px;
+      background:var(--card);
+      box-shadow:var(--shadow);
+      font-weight:850;
+    }
+    .main-category-custom .custom-category-menu{
+      position:static;
+      margin-top:7px;
+      max-height:250px;
+      box-shadow:0 12px 30px rgba(15,23,42,.12);
+    }
     @media(max-width:430px){
       .toolbar.with-clear{gap:6px}
       .toolbar.with-clear > .toolbar-clear{
@@ -2051,9 +2090,7 @@
         font-size:12px;
       }
       .toolbar.with-clear .drop-panel.right{
-        left:50%;
-        right:auto;
-        width:min(360px,calc(100vw - 30px));
+        width:100%;
       }
       .toolbar.with-clear .drop-panel{
         max-width:calc(100vw - 30px);
@@ -2208,7 +2245,7 @@
             <button id="productFilterBtn" class="drop-btn" type="button" aria-expanded="false">
               <span class="txt">Filterlər</span><span class="chev">⌄</span>
             </button>
-            <div id="productFilterPanel" class="drop-panel right hidden">
+            <div id="productFilterPanel" class="drop-panel right inline-filter-panel hidden">
               <div class="form">
                 <input id="searchInput" class="input" type="search" placeholder="Məhsul adına görə axtar..." />
                 <select id="productPriceFilter" class="select">
@@ -2240,7 +2277,14 @@
             Təmizlə
           </button>
         </div>
-        <select id="categoryFilter" class="select main-category-filter"><option value="">Bütün kateqoriyalar</option></select>
+        <select id="categoryFilter" class="select main-category-filter native-hidden" aria-hidden="true" tabindex="-1"><option value="">Bütün kateqoriyalar</option></select>
+        <div id="categoryFilterCustom" class="custom-category-select main-category-custom" data-main-category-filter="categoryFilter">
+          <button id="categoryFilterTrigger" class="custom-category-trigger" type="button" aria-expanded="false">
+            <span id="categoryFilterLabel" class="custom-category-trigger-label">Bütün kateqoriyalar</span>
+            <span class="custom-category-chevron">⌄</span>
+          </button>
+          <div id="categoryFilterMenu" class="custom-category-menu hidden"></div>
+        </div>
 
         <div id="productDateBox" class="card date-box hidden">
           <input id="productSingleDate" type="hidden" />
@@ -2305,7 +2349,7 @@
           <button id="salesFilterBtn" class="drop-btn" type="button" aria-expanded="false">
             <span class="txt">Filterlər</span><span class="chev">⌄</span>
           </button>
-          <div id="salesFilterPanel" class="drop-panel right hidden">
+          <div id="salesFilterPanel" class="drop-panel right inline-filter-panel hidden">
             <div class="form">
               <input id="salesSearchInput" class="input" type="search" placeholder="Məhsul adına görə axtar..." />
               <div class="row2">
@@ -2344,7 +2388,14 @@
           Təmizlə
         </button>
       </div>
-      <select id="salesCategoryFilter" class="select main-category-filter"><option value="">Bütün kateqoriyalar</option></select>
+      <select id="salesCategoryFilter" class="select main-category-filter native-hidden" aria-hidden="true" tabindex="-1"><option value="">Bütün kateqoriyalar</option></select>
+      <div id="salesCategoryFilterCustom" class="custom-category-select main-category-custom" data-main-category-filter="salesCategoryFilter">
+        <button id="salesCategoryFilterTrigger" class="custom-category-trigger" type="button" aria-expanded="false">
+          <span id="salesCategoryFilterLabel" class="custom-category-trigger-label">Bütün kateqoriyalar</span>
+          <span class="custom-category-chevron">⌄</span>
+        </button>
+        <div id="salesCategoryFilterMenu" class="custom-category-menu hidden"></div>
+      </div>
 
       <div id="salesDateBox" class="card date-box hidden">
         <input id="salesSingleDate" type="hidden" />
@@ -2403,7 +2454,7 @@
           <button id="expensesFilterBtn" class="drop-btn" type="button" aria-expanded="false">
             <span class="txt">Filterlər</span><span class="chev">⌄</span>
           </button>
-          <div id="expensesFilterPanel" class="drop-panel right hidden">
+          <div id="expensesFilterPanel" class="drop-panel right inline-filter-panel hidden">
             <div class="form">
               <input id="expensesSearchInput" class="input" type="search" placeholder="Xərc adına görə axtar..." />
               <div class="row2">
@@ -3582,13 +3633,21 @@ function closeDropdowns(except=null){
     if(panel!==except)panel.classList.add("hidden");
   });
   document.querySelectorAll(".drop-btn").forEach(btn=>{
-    if(!except || btn.nextElementSibling!==except)btn.setAttribute("aria-expanded","false");
+    const panel=btn.dataset.dropdownPanel ? $(btn.dataset.dropdownPanel) : btn.nextElementSibling;
+    if(!except || panel!==except)btn.setAttribute("aria-expanded","false");
   });
 }
 
 function bindDropdown(buttonId,panelId){
   const button=$(buttonId);
   const panel=$(panelId);
+  button.dataset.dropdownPanel=panelId;
+
+  if(panel.classList.contains("inline-filter-panel")){
+    const toolbar=button.closest(".toolbar.with-clear");
+    if(toolbar && panel.parentElement!==toolbar)toolbar.appendChild(panel);
+  }
+
   button.addEventListener("click",event=>{
     event.stopPropagation();
     const open=panel.classList.contains("hidden");
@@ -4956,6 +5015,54 @@ function syncProductCategoryCustom(){
   }).join("");
 }
 
+function mainCategoryRows(){
+  return [
+    {id:"",name:"Bütün kateqoriyalar"},
+    ...categories.map(category=>({id:category.id,name:category.name}))
+  ];
+}
+
+function closeMainCategoryMenus(exceptId=null){
+  ["categoryFilter","salesCategoryFilter"].forEach(selectId=>{
+    if(selectId===exceptId)return;
+    const menu=$(selectId+"Menu");
+    const trigger=$(selectId+"Trigger");
+    if(menu)menu.classList.add("hidden");
+    if(trigger){
+      trigger.classList.remove("open");
+      trigger.setAttribute("aria-expanded","false");
+    }
+  });
+}
+
+function syncMainCategoryCustom(selectId){
+  const select=$(selectId);
+  const label=$(selectId+"Label");
+  const menu=$(selectId+"Menu");
+  if(!select||!label||!menu)return;
+
+  const selectedId=select.value||"";
+  const selected=mainCategoryRows().find(row=>row.id===selectedId)||mainCategoryRows()[0];
+  label.textContent=selected.name;
+
+  menu.innerHTML=mainCategoryRows().map(row=>{
+    const active=row.id===selectedId;
+    return `<button type="button"
+                    class="custom-category-option ${active?"active":""}"
+                    data-main-category-option="${escapeHtml(row.id)}"
+                    role="option"
+                    aria-selected="${active?"true":"false"}">
+              <span>${escapeHtml(row.name)}</span>
+              <span class="custom-category-check">${active?"✓":""}</span>
+            </button>`;
+  }).join("");
+}
+
+function syncMainCategoryCustoms(){
+  syncMainCategoryCustom("categoryFilter");
+  syncMainCategoryCustom("salesCategoryFilter");
+}
+
 function renderCategoryOptions(){
   const productSelected=$("categoryFilter").value;
   const salesSelected=$("salesCategoryFilter").value;
@@ -4967,6 +5074,7 @@ function renderCategoryOptions(){
 
   $("salesCategoryFilter").innerHTML='<option value="">Bütün kateqoriyalar</option>'+options;
   $("salesCategoryFilter").value=salesSelected;
+  syncMainCategoryCustoms();
 
   $("productCategory").innerHTML='<option value="">Kateqoriya seçilməyib</option>'+options;
 
@@ -5245,11 +5353,20 @@ function renderProducts(){
 }
 
 
-function saleImages(sale){
+function storedSaleImages(sale){
   if(Array.isArray(sale?.image_urls) && sale.image_urls.length){
     return sale.image_urls.filter(Boolean).slice(0,5);
   }
-  return sale?.image_url ? [sale.image_url] : [];
+  if(sale?.image_url)return [sale.image_url];
+  return [];
+}
+
+function saleImages(sale){
+  const stored=storedSaleImages(sale);
+  if(stored.length)return stored;
+
+  const product=products.find(item=>item.id===sale?.product_id);
+  return product ? productImages(product) : [];
 }
 
 function currentLooseSalePreviewEntries(){
@@ -6556,6 +6673,30 @@ async function deleteProduct(id){
     tone:"danger"
   }))return;
 
+  const product=products.find(item=>item.id===id)||null;
+  if(product){
+    const productSnapshotImages=productImages(product);
+    const relatedSales=sales.filter(sale=>sale.product_id===id);
+
+    for(const sale of relatedSales){
+      const payload={};
+      if(!sale.product_name || sale.product_name==="Satış")payload.product_name=product.name||"Satış";
+      if(!sale.category_id && product.category_id)payload.category_id=product.category_id;
+      if(!storedSaleImages(sale).length && productSnapshotImages.length){
+        payload.image_url=productSnapshotImages[0];
+        payload.image_urls=productSnapshotImages;
+      }
+
+      if(Object.keys(payload).length){
+        const {error:snapshotError}=await sb.from("sales").update(payload).eq("id",sale.id);
+        if(snapshotError){
+          toast(snapshotError.message);
+          return;
+        }
+      }
+    }
+  }
+
   const {data,error}=await sb.from("products").update({deleted_at:new Date().toISOString()}).eq("id",id).select("id");
   if(error){
     toast(error.message);
@@ -7622,6 +7763,7 @@ $("confirmMultiSale").addEventListener("click",async()=>{
 
 document.addEventListener("keydown",event=>{
   if(event.key==="Escape")closeProductCategoryMenu();
+  if(event.key==="Escape")closeMainCategoryMenus();
 });
 
 /* Product add/edit */
@@ -7658,7 +7800,39 @@ $("productCategoryMenu").addEventListener("click",event=>{
 
 document.addEventListener("click",event=>{
   if(!event.target.closest("#productCategoryCustom"))closeProductCategoryMenu();
+  if(!event.target.closest(".main-category-custom"))closeMainCategoryMenus();
 });
+
+function bindMainCategoryCustom(selectId){
+  const trigger=$(selectId+"Trigger");
+  const menu=$(selectId+"Menu");
+  const select=$(selectId);
+  if(!trigger||!menu||!select)return;
+
+  trigger.addEventListener("click",event=>{
+    event.stopPropagation();
+    const willOpen=menu.classList.contains("hidden");
+    closeMainCategoryMenus();
+    if(willOpen){
+      syncMainCategoryCustom(selectId);
+      menu.classList.remove("hidden");
+      trigger.classList.add("open");
+      trigger.setAttribute("aria-expanded","true");
+    }
+  });
+
+  menu.addEventListener("click",event=>{
+    const option=event.target.closest("[data-main-category-option]");
+    if(!option)return;
+    select.value=option.dataset.mainCategoryOption||"";
+    syncMainCategoryCustom(selectId);
+    closeMainCategoryMenus();
+    select.dispatchEvent(new Event("change",{bubbles:true}));
+  });
+}
+
+bindMainCategoryCustom("categoryFilter");
+bindMainCategoryCustom("salesCategoryFilter");
 
 $("addProductBtn").addEventListener("click",openNewProductModal);
 
@@ -7672,8 +7846,7 @@ $("addSaleFromSales").addEventListener("click",()=>{
 });
 
 $("goSellFromProducts").addEventListener("click",()=>{
-  setProductDate("all");
-  showPage("dashboard");
+  openMultiSaleModal();
 });
 
 $("salesAddBtn").addEventListener("click",()=>{
