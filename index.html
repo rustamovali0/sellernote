@@ -406,11 +406,15 @@
     .product{
       min-width:0;padding:12px;
       display:grid;grid-template-columns:76px minmax(0,1fr);gap:11px;
+    }
+    .product,.sale,.category-item{
       touch-action:pan-y;
       transition:transform .16s ease,box-shadow .16s ease;
     }
-    .product.swiping{transition:none}
-    .product.swipe-delete-ready{box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 30%,transparent)}
+    .product.swiping,.sale.swiping,.category-item.swiping{transition:none}
+    .product.swipe-delete-ready,
+    .sale.swipe-delete-ready,
+    .category-item.swipe-delete-ready{box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 30%,transparent)}
     .product-img{
       width:76px;height:76px;border-radius:14px;object-fit:cover;
       background:var(--card2);border:1px solid var(--line);
@@ -5888,13 +5892,18 @@ function renderProducts(){
   });
 
   document.querySelectorAll("[data-product-swipe]").forEach(card=>{
-    bindProductSwipeDelete(card);
+    bindSwipeDelete(card,()=>deleteProduct(card.dataset.productSwipe));
+    card.addEventListener("click",event=>{
+      if(card.dataset.swipeMoved==="true")return;
+      if(event.target.closest("button,input,select,textarea,a,label,.clickable-image"))return;
+      openSale(card.dataset.productSwipe);
+    });
   });
 
   fitValues();
 }
 
-function bindProductSwipeDelete(card){
+function bindSwipeDelete(card,onDelete){
   let startX=0;
   let startY=0;
   let currentX=0;
@@ -5904,12 +5913,16 @@ function bindProductSwipeDelete(card){
   const reset=()=>{
     card.classList.remove("swiping","swipe-delete-ready");
     card.style.transform="";
+    if(dragging){
+      card.dataset.swipeMoved="true";
+      setTimeout(()=>{delete card.dataset.swipeMoved},220);
+    }
     active=false;
     dragging=false;
   };
 
   card.addEventListener("touchstart",event=>{
-    if(event.target.closest("button,input,select,textarea,a,.clickable-image"))return;
+    if(event.target.closest("button,input,select,textarea,a,label,.clickable-image"))return;
     const touch=event.touches?.[0];
     if(!touch)return;
     startX=touch.clientX;
@@ -5942,7 +5955,7 @@ function bindProductSwipeDelete(card){
     const dx=currentX-startX;
     const shouldDelete=dragging && dx<-72;
     reset();
-    if(shouldDelete)deleteProduct(card.dataset.productSwipe);
+    if(shouldDelete)onDelete?.();
   });
 
   card.addEventListener("touchcancel",reset);
@@ -6386,7 +6399,7 @@ function renderSales(){
   updatePaymentSummaryModal();
 
   $("salesList").innerHTML=list.length?list.map(sale=>`
-    <div class="card sale">
+    <div class="card sale" data-sale-swipe="${escapeHtml(sale.id)}">
       <div class="${saleImages(sale).length?"sale-with-image":""}">
         ${saleImages(sale).length
           ? `<div style="position:relative;width:58px;height:58px">
@@ -6433,6 +6446,7 @@ function renderSales(){
 
           <div class="actions">
             <button class="btn secondary" data-edit-sale="${sale.id}" type="button">Düzəliş</button>
+            <button class="btn secondary" data-duplicate-sale="${sale.id}" type="button">Sat</button>
             ${salesDeleteMode?`<button class="btn danger" data-delete-sale="${sale.id}" type="button">Sil</button>`:""}
           </div>
         </div>
@@ -6455,8 +6469,16 @@ function renderSales(){
     input.addEventListener("change",()=>toggleSaleChecked(input.dataset.saleCheck,input.checked,input));
   });
 
+  document.querySelectorAll("[data-duplicate-sale]").forEach(button=>{
+    button.addEventListener("click",()=>duplicateSale(button.dataset.duplicateSale));
+  });
+
   document.querySelectorAll("[data-delete-sale]").forEach(button=>{
     button.addEventListener("click",()=>deleteSale(button.dataset.deleteSale));
+  });
+
+  document.querySelectorAll("[data-sale-swipe]").forEach(card=>{
+    bindSwipeDelete(card,()=>deleteSale(card.dataset.saleSwipe));
   });
 
   fitValues();
@@ -6749,7 +6771,7 @@ function renderExpenses(){
   $("expensesList").innerHTML=list.length?list.map(expense=>{
     const images=expenseImages(expense);
     return `
-    <div class="card sale">
+    <div class="card sale" data-expense-swipe="${escapeHtml(expense.id)}">
       <div class="${images.length?"sale-with-image":""}">
         ${images.length
           ? `<div style="position:relative;width:58px;height:58px">
@@ -6798,6 +6820,10 @@ function renderExpenses(){
 
   document.querySelectorAll("[data-delete-expense]").forEach(button=>{
     button.addEventListener("click",()=>deleteExpense(button.dataset.deleteExpense));
+  });
+
+  document.querySelectorAll("[data-expense-swipe]").forEach(card=>{
+    bindSwipeDelete(card,()=>deleteExpense(card.dataset.expenseSwipe));
   });
 
   document.querySelectorAll("[data-show-all-expenses]").forEach(button=>{
@@ -6916,7 +6942,7 @@ function renderNotes(){
   $("notesCount").textContent=`${list.length} qeyd`;
 
   $("notesList").innerHTML=list.length?list.map(note=>`
-    <div class="card sale">
+    <div class="card sale" data-note-swipe="${escapeHtml(note.id)}">
       <div class="${noteImages(note).length?"sale-with-image":""}">
         ${noteImages(note).length
           ? `<div style="position:relative;width:58px;height:58px">
@@ -6962,6 +6988,10 @@ function renderNotes(){
     button.addEventListener("click",()=>deleteNote(button.dataset.deleteNote));
   });
 
+  document.querySelectorAll("[data-note-swipe]").forEach(card=>{
+    bindSwipeDelete(card,()=>deleteNote(card.dataset.noteSwipe));
+  });
+
   fitValues();
 }
 
@@ -6970,7 +7000,7 @@ function renderCategories(){
     const count=products.filter(product=>product.category_id===category.id).length;
     const defaultPrice=categoryDefaultPrice(category.id);
 
-    return `<div class="card category-item">
+    return `<div class="card category-item" data-category-swipe="${escapeHtml(category.id)}">
       <div class="category-copy">
         <div class="category-name">${escapeHtml(category.name)}</div>
         <div class="meta">${count} məhsul</div>
@@ -7003,6 +7033,10 @@ function renderCategories(){
 
   document.querySelectorAll("[data-delete-category]").forEach(button=>{
     button.addEventListener("click",()=>deleteCategory(button.dataset.deleteCategory));
+  });
+
+  document.querySelectorAll("[data-category-swipe]").forEach(card=>{
+    bindSwipeDelete(card,()=>deleteCategory(card.dataset.categorySwipe));
   });
 }
 
@@ -7597,6 +7631,14 @@ async function deleteSale(id){
     tone:"danger"
   }))return;
 
+  if(isLocalId(id)){
+    sales=sales.filter(item=>item.id!==id);
+    saveLocalQueue(localQueue().filter(entry=>!(entry.type==="sale_insert" && entry.local_id===id)));
+    renderAll();
+    toast("Satış silindi");
+    return;
+  }
+
   const {data,error}=await sb.from("sales").update({deleted_at:new Date().toISOString()}).eq("id",id).select("id");
   if(error){
     toast(error.message);
@@ -7610,6 +7652,56 @@ async function deleteSale(id){
 
   await loadAll();
   toast("Satış silindi");
+}
+
+function persistedImageUrls(images){
+  return (Array.isArray(images)?images:[images])
+    .filter(Boolean)
+    .filter(url=>!String(url).startsWith("blob:"))
+    .slice(0,5);
+}
+
+function duplicateSale(id){
+  const sale=sales.find(item=>item.id===id);
+  if(!sale){
+    toast("Satış tapılmadı");
+    return;
+  }
+
+  const images=saleImages(sale).filter(Boolean).slice(0,5);
+  const persistedImages=persistedImageUrls(images);
+  const payload={
+    user_id:currentUser.id,
+    product_id:sale.product_id||null,
+    category_id:sale.category_id||sale.products?.category_id||null,
+    product_name:saleTitle(sale),
+    quantity:Number(sale.quantity||1),
+    unit_sale_price:Number(sale.unit_sale_price||0),
+    unit_cost_price:Number(sale.unit_cost_price||0),
+    sale_price_provided:sale.sale_price_provided!==false,
+    cost_price_provided:sale.cost_price_provided!==false && Number(sale.unit_cost_price||0)>0,
+    payment_method:sale.payment_method||"cash",
+    card_account:sale.payment_method==="card"?(sale.card_account||cardAccounts()[0]):null,
+    money_holder:sale.money_holder||"normal",
+    image_url:persistedImages[0]||null,
+    image_urls:persistedImages,
+    note:sale.note||null
+  };
+  const entry={
+    id:crypto.randomUUID(),
+    type:"sale_insert",
+    local_id:LOCAL_ID_PREFIX+crypto.randomUUID(),
+    payload,
+    preview_image_url:images[0]||null,
+    preview_image_urls:images,
+    created_at:new Date().toISOString()
+  };
+
+  enqueueLocalMutation(entry);
+  sales.unshift(makeLocalSaleRow(entry));
+  renderAll();
+  toast("Satış dublikatlandı. Baza ilə sinxron gedir.");
+  syncLocalQueue();
 }
 
 async function toggleSaleChecked(id,checked,input){
@@ -7751,6 +7843,14 @@ async function deleteExpense(id){
     tone:"danger"
   }))return;
 
+  if(isLocalId(id)){
+    expenses=expenses.filter(item=>item.id!==id);
+    saveLocalQueue(localQueue().filter(entry=>!(entry.type==="expense_insert" && entry.local_id===id)));
+    renderAll();
+    toast("Xərc silindi");
+    return;
+  }
+
   const {data,error}=await sb.from("expenses").update({deleted_at:new Date().toISOString()}).eq("id",id).select("id");
   if(error){toast(error.message);return}
 
@@ -7800,6 +7900,14 @@ async function deleteNote(id){
     cancelText:"İmtina",
     tone:"danger"
   }))return;
+
+  if(isLocalId(id)){
+    notes=notes.filter(item=>item.id!==id);
+    saveLocalQueue(localQueue().filter(entry=>!(entry.type==="note_insert" && entry.local_id===id)));
+    renderAll();
+    toast("Qeyd silindi");
+    return;
+  }
 
   const {data,error}=await sb.from("notes").update({deleted_at:new Date().toISOString()}).eq("id",id).select("id");
   if(error){toast(error.message);return}
