@@ -7844,10 +7844,19 @@ function bindSwipeCloseModal(backdrop){
     const touch=event.touches?.[0];
     const modal=backdrop.querySelector(".modal");
     if(!touch||!modal||backdrop.classList.contains("hidden"))return;
+
+    const target=event.target;
+    const modalRect=modal.getBoundingClientRect();
+    const startedFromHeader=!!target.closest(".modal-head");
+    const startedFromHandle=touch.clientY<=modalRect.top+56;
+    const startedFromInteractive=!!target.closest(
+      "button,input,select,textarea,label,.custom-category-menu,.drop-panel,.log-list,.product-list,.sales-list,.expense-list,.category-list"
+    );
+
     startY=touch.clientY;
     latestY=startY;
     startX=touch.clientX;
-    active=modal.scrollTop<=0;
+    active=(startedFromHeader||startedFromHandle) && !startedFromInteractive;
     dragging=false;
     modal.style.transition="";
   },{passive:true});
