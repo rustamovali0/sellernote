@@ -6540,6 +6540,11 @@ function renderSales(){
 
   document.querySelectorAll("[data-sale-swipe]").forEach(card=>{
     bindSwipeDelete(card,()=>deleteSale(card.dataset.saleSwipe));
+    card.addEventListener("click",event=>{
+      if(card.dataset.swipeMoved==="true")return;
+      if(event.target.closest("button,input,select,textarea,a,label,.clickable-image"))return;
+      duplicateSale(card.dataset.saleSwipe,{confirm:true});
+    });
   });
 
   fitValues();
@@ -7727,11 +7732,21 @@ function persistedImageUrls(images){
     .slice(0,5);
 }
 
-function duplicateSale(id){
+async function duplicateSale(id,options={}){
   const sale=sales.find(item=>item.id===id);
   if(!sale){
     toast("Satış tapılmadı");
     return;
+  }
+
+  if(options.confirm){
+    const ok=await appConfirm("Bu satışın eynisi yenidən yaradılsın?",{
+      title:"Satışı təkrarla",
+      confirmText:"Təsdiq et",
+      cancelText:"İmtina",
+      tone:"default"
+    });
+    if(!ok)return;
   }
 
   const images=saleImages(sale).filter(Boolean).slice(0,5);
