@@ -3035,6 +3035,10 @@
           <label class="label">Kart hesabı</label>
           <select id="saleCardAccount" class="select"></select>
         </div>
+        <label class="check-card">
+          <input id="saleYusifMoney" type="checkbox">
+          Pul Yusifdədir
+        </label>
         <div>
           <label class="label">Satılan say</label>
           <input id="saleQuantity" class="input" type="number" min="1" step="1" value="1" />
@@ -6821,6 +6825,7 @@ function openSale(id){
   $("saleProductInfo").classList.remove("hidden");
   $("saleQuantity").value=1;
   $("salePriceOverride").value="";
+  $("saleYusifMoney").checked=false;
   $("salePaymentMethod").value="cash";
   $("saleCardAccount").value=cardAccounts()[0];
   updatePaymentAccountFields();
@@ -6838,6 +6843,7 @@ function openDirectSale(){
   $("saleModalTitle").textContent="Yeni satış";
   $("saleQuantity").value=1;
   $("salePriceOverride").value="";
+  $("saleYusifMoney").checked=false;
   $("salePaymentMethod").value="cash";
   $("saleCardAccount").value=cardAccounts()[0];
   updatePaymentAccountFields();
@@ -8188,7 +8194,7 @@ $("saleForm").addEventListener("submit",async event=>{
   $("saveSaleBtn").disabled=true;
 
   const images=productImages(currentSaleProduct);
-  const {error}=await sb.from("sales").insert({
+  const salePayload={
     user_id:currentUser.id,
     product_id:currentSaleProduct.id,
     category_id:currentSaleProduct.category_id||null,
@@ -8200,9 +8206,20 @@ $("saleForm").addEventListener("submit",async event=>{
     cost_price_provided:costPriceProvided,
     payment_method:$("salePaymentMethod").value||"cash",
     card_account:$("salePaymentMethod").value==="card"?$("saleCardAccount").value:null,
+    money_holder:$("saleYusifMoney").checked?"yusif":"normal",
     image_url:images[0]||null,
     image_urls:images
-  });
+  };
+
+  let {error}=await sb.from("sales").insert(salePayload);
+  let yusifStatusSaved=true;
+
+  if(error && isMissingSchemaColumn(error,"money_holder")){
+    yusifStatusSaved=false;
+    const fallbackPayload={...salePayload};
+    delete fallbackPayload.money_holder;
+    ({error}=await sb.from("sales").insert(fallbackPayload));
+  }
 
   $("saveSaleBtn").disabled=false;
 
@@ -8210,7 +8227,9 @@ $("saleForm").addEventListener("submit",async event=>{
 
   closeModal("saleModal");
   await loadAll();
-  toast("Satış qeydə alındı");
+  toast(yusifStatusSaved
+    ? "Satış qeydə alındı"
+    : "Satış qeydə alındı. Yusif statusu üçün SQL-i işlədin.");
 });
 
 /* Loose sale create/edit */
