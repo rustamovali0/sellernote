@@ -2758,6 +2758,23 @@
       <details class="card settings-card">
         <summary class="settings-toggle">
           <div>
+            <div class="settings-title">Məhsulları sil</div>
+            <div class="meta">Bütün aktiv məhsulları silinənlərə göndər</div>
+          </div>
+        </summary>
+        <div class="settings-body">
+          <div class="stat">
+            <div class="label">Aktiv məhsul</div>
+            <div id="bulkDeleteProductCount" class="value">0</div>
+            <div class="sub">Satış tarixçəsində ad və şəkillər qalacaq</div>
+          </div>
+          <button id="openBulkDeleteProductsBtn" class="btn danger full" type="button" style="margin-top:10px">Məhsulları sil</button>
+        </div>
+      </details>
+
+      <details class="card settings-card">
+        <summary class="settings-toggle">
+          <div>
             <div class="settings-title">PDF / JPG hesabatı</div>
             <div class="meta">Hesabatda hansı bölmələrin görünəcəyini seç</div>
           </div>
@@ -3371,6 +3388,20 @@
     </div>
   </div>
 
+  <div id="deleteProductsPasswordModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Məhsulları sil</h3>
+        <button class="close" data-close="deleteProductsPasswordModal" type="button">×</button>
+      </div>
+      <form id="deleteProductsPasswordForm" class="form">
+        <p class="meta" style="margin:0">Bütün aktiv məhsullar Silinənlər bölməsinə düşəcək. Davam etmək üçün şifrəni yazın.</p>
+        <input id="deleteProductsPasswordInput" class="input" type="password" minlength="6" placeholder="Şifrə" autocomplete="current-password" required>
+        <button id="confirmBulkDeleteProductsBtn" class="btn danger full" type="submit">Təsdiqlə və sil</button>
+        <button class="btn secondary full" data-close="deleteProductsPasswordModal" type="button">İmtina</button>
+      </form>
+    </div>
+  </div>
 
   <div id="appConfirmModal" class="modal-backdrop hidden">
     <div class="modal confirm-modal">
@@ -6575,6 +6606,12 @@ function renderCategories(){
   });
 }
 
+function renderBulkDeleteProductsPanel(){
+  if(!$("bulkDeleteProductCount")||!$("openBulkDeleteProductsBtn"))return;
+  $("bulkDeleteProductCount").textContent=products.length;
+  $("openBulkDeleteProductsBtn").disabled=!products.length;
+}
+
 function logActionText(action){
   return ({insert:"Əlavə edildi",update:"Düzəliş edildi",delete:"Silindi"})[action]||action;
 }
@@ -6669,6 +6706,7 @@ function renderCurrentPage(page=currentPage){
     renderNotebookImages();
     renderBalanceWallets();
     renderQuickExpenseSettings();
+    renderBulkDeleteProductsPanel();
     renderSettingsSidebar();
   }
 }
@@ -6878,6 +6916,33 @@ function openEditProduct(id){
   openModal("productModal");
 }
 
+async function snapshotSalesForProduct(product){
+  if(!product)return true;
+
+  const productSnapshotImages=productImages(product);
+  const relatedSales=sales.filter(sale=>sale.product_id===product.id);
+
+  for(const sale of relatedSales){
+    const payload={};
+    if(!sale.product_name || sale.product_name==="Satış")payload.product_name=product.name||"Satış";
+    if(!sale.category_id && product.category_id)payload.category_id=product.category_id;
+    if(!storedSaleImages(sale).length && productSnapshotImages.length){
+      payload.image_url=productSnapshotImages[0];
+      payload.image_urls=productSnapshotImages;
+    }
+
+    if(Object.keys(payload).length){
+      const {error}=await sb.from("sales").update(payload).eq("id",sale.id);
+      if(error){
+        toast(error.message);
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 async function deleteProduct(id){
   if(!await appConfirm("Məhsulu silmək istəyirsiniz? Satış tarixçəsi qalacaq.",{
     title:"Məhsulu sil",
@@ -6887,28 +6952,7 @@ async function deleteProduct(id){
   }))return;
 
   const product=products.find(item=>item.id===id)||null;
-  if(product){
-    const productSnapshotImages=productImages(product);
-    const relatedSales=sales.filter(sale=>sale.product_id===id);
-
-    for(const sale of relatedSales){
-      const payload={};
-      if(!sale.product_name || sale.product_name==="Satış")payload.product_name=product.name||"Satış";
-      if(!sale.category_id && product.category_id)payload.category_id=product.category_id;
-      if(!storedSaleImages(sale).length && productSnapshotImages.length){
-        payload.image_url=productSnapshotImages[0];
-        payload.image_urls=productSnapshotImages;
-      }
-
-      if(Object.keys(payload).length){
-        const {error:snapshotError}=await sb.from("sales").update(payload).eq("id",sale.id);
-        if(snapshotError){
-          toast(snapshotError.message);
-          return;
-        }
-      }
-    }
-  }
+  if(product && !await snapshotSalesForProduct(product))return;
 
   const {data,error}=await sb.from("products").update({deleted_at:new Date().toISOString()}).eq("id",id).select("id");
   if(error){
@@ -6923,6 +6967,81 @@ async function deleteProduct(id){
 
   await loadAll();
   toast("Məhsul silindi");
+}
+
+async function verifyCurrentPassword(password){
+  const {error}=await sb.auth.signInWithPassword({
+    email:FIXED_LOGIN_EMAIL,
+    password
+  });
+  return !error;
+}
+
+function openBulkDeleteProductsModal(){
+  if(!products.length){
+    toast("Silinəcək aktiv məhsul yoxdur.");
+    return;
+  }
+
+  $("deleteProductsPasswordInput").value="";
+  openModal("deleteProductsPasswordModal");
+  setTimeout(()=>$("deleteProductsPasswordInput").focus(),120);
+}
+
+async function bulkDeleteProductsWithPassword(password){
+  if(!password){
+    toast("Şifrəni yazın.");
+    return;
+  }
+
+  $("confirmBulkDeleteProductsBtn").disabled=true;
+
+  try{
+    const verified=await verifyCurrentPassword(password);
+    if(!verified){
+      toast("Şifrə yanlışdır.");
+      return;
+    }
+
+    const activeProducts=[...products];
+    if(!activeProducts.length){
+      closeModal("deleteProductsPasswordModal");
+      toast("Silinəcək aktiv məhsul yoxdur.");
+      return;
+    }
+
+    if(!await appConfirm(`${activeProducts.length} məhsul silinənlərə göndərilsin?`,{
+      title:"Məhsulları sil",
+      confirmText:"Sil",
+      cancelText:"İmtina",
+      tone:"danger"
+    }))return;
+
+    for(const product of activeProducts){
+      if(!await snapshotSalesForProduct(product))return;
+    }
+
+    const {data,error}=await sb.from("products")
+      .update({deleted_at:new Date().toISOString()})
+      .in("id",activeProducts.map(product=>product.id))
+      .select("id");
+
+    if(error)throw error;
+    if(!data||!data.length){
+      toast("Silinmədi. Supabase SQL-də deleted_at sütununu əlavə edin.");
+      return;
+    }
+
+    closeModal("deleteProductsPasswordModal");
+    await loadAll();
+    showPage("categories",{history:false});
+    toast(`${data.length} məhsul silinənlərə göndərildi`);
+  }catch(error){
+    console.error(error);
+    toast(error.message||"Məhsullar silinmədi.");
+  }finally{
+    $("confirmBulkDeleteProductsBtn").disabled=false;
+  }
 }
 
 function recordedMoney(value){
@@ -8751,6 +8870,13 @@ $("newCategoryBtn").addEventListener("click",()=>{
   categoryCreateContext="settings";
   resetCategoryForm();
   openModal("categoryModal");
+});
+
+$("openBulkDeleteProductsBtn").addEventListener("click",openBulkDeleteProductsModal);
+
+$("deleteProductsPasswordForm").addEventListener("submit",event=>{
+  event.preventDefault();
+  bulkDeleteProductsWithPassword($("deleteProductsPasswordInput").value);
 });
 
 $("categoryForm").addEventListener("submit",async event=>{
