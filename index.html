@@ -9312,12 +9312,52 @@ function openLooseSale(){
   openSaleEntry("loose");
 }
 
+async function addFixedOutsideIncome(name,amount){
+  try{
+    const categoryId=await ensureOutsideIncomeCategory(name);
+    const payload={
+      user_id:currentUser.id,
+      product_id:null,
+      product_name:name,
+      category_id:categoryId,
+      quantity:1,
+      unit_sale_price:Number(amount||0),
+      unit_cost_price:0,
+      sale_price_provided:true,
+      cost_price_provided:false,
+      payment_method:"cash",
+      card_account:null,
+      money_holder:"normal",
+      image_url:null,
+      image_urls:[],
+      note:null
+    };
+    const entry={
+      id:crypto.randomUUID(),
+      type:"sale_insert",
+      local_id:LOCAL_ID_PREFIX+crypto.randomUUID(),
+      payload,
+      created_at:new Date().toISOString()
+    };
+
+    enqueueLocalMutation(entry);
+    sales.unshift(makeLocalSaleRow(entry));
+    showPage("sales");
+    renderAll();
+    toast(`${name} ${money(amount)} əlavə edildi. Baza ilə sinxron gedir.`);
+    syncLocalQueue();
+  }catch(error){
+    console.error(error);
+    toast(error.message||`${name} əlavə edilmədi`);
+  }
+}
+
 async function openTrustIncome(){
-  await openOutsideIncome(TRUST_CATEGORY_NAME);
+  await addFixedOutsideIncome(TRUST_CATEGORY_NAME,20);
 }
 
 async function openTailorIncome(){
-  await openOutsideIncome(TAILOR_CATEGORY_NAME);
+  await addFixedOutsideIncome(TAILOR_CATEGORY_NAME,2);
 }
 
 function openCustomIncome(){
