@@ -406,7 +406,11 @@
     .product{
       min-width:0;padding:12px;
       display:grid;grid-template-columns:76px minmax(0,1fr);gap:11px;
+      touch-action:pan-y;
+      transition:transform .16s ease,box-shadow .16s ease;
     }
+    .product.swiping{transition:none}
+    .product.swipe-delete-ready{box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 30%,transparent)}
     .product-img{
       width:76px;height:76px;border-radius:14px;object-fit:cover;
       background:var(--card2);border:1px solid var(--line);
@@ -4222,6 +4226,8 @@ function makeLocalSaleRow(entry){
     ...payload,
     id:entry.local_id,
     user_id:currentUser?.id||payload.user_id||null,
+    image_url:entry.preview_image_url||payload.image_url||null,
+    image_urls:entry.preview_image_urls||payload.image_urls||[],
     created_at:createdAt,
     updated_at:createdAt,
     deleted_at:null,
@@ -4237,6 +4243,38 @@ function makeLocalSaleRow(entry){
   };
 }
 
+function makeLocalExpenseRow(entry){
+  const payload=entry.payload||{};
+  const createdAt=entry.created_at||new Date().toISOString();
+  return {
+    ...payload,
+    id:entry.local_id,
+    user_id:currentUser?.id||payload.user_id||null,
+    image_url:entry.preview_image_url||payload.image_url||null,
+    image_urls:entry.preview_image_urls||payload.image_urls||[],
+    created_at:createdAt,
+    updated_at:createdAt,
+    deleted_at:null,
+    _localPending:true
+  };
+}
+
+function makeLocalNoteRow(entry){
+  const payload=entry.payload||{};
+  const createdAt=entry.created_at||new Date().toISOString();
+  return {
+    ...payload,
+    id:entry.local_id,
+    user_id:currentUser?.id||payload.user_id||null,
+    image_url:entry.preview_image_url||payload.image_url||null,
+    image_urls:entry.preview_image_urls||payload.image_urls||[],
+    created_at:createdAt,
+    updated_at:createdAt,
+    deleted_at:null,
+    _localPending:true
+  };
+}
+
 function applyLocalQueue(){
   for(const entry of localQueue()){
     if(entry.type==="product_insert" && !products.some(item=>item.id===entry.local_id)){
@@ -4244,6 +4282,12 @@ function applyLocalQueue(){
     }
     if(entry.type==="sale_insert" && !sales.some(item=>item.id===entry.local_id)){
       sales.unshift(makeLocalSaleRow(entry));
+    }
+    if(entry.type==="expense_insert" && !expenses.some(item=>item.id===entry.local_id)){
+      expenses.unshift(makeLocalExpenseRow(entry));
+    }
+    if(entry.type==="note_insert" && !notes.some(item=>item.id===entry.local_id)){
+      notes.unshift(makeLocalNoteRow(entry));
     }
   }
 }
@@ -4269,6 +4313,8 @@ function replaceLocalSale(localId,row){
 function removeLocalRow(localId,type){
   if(type==="product_insert")products=products.filter(item=>item.id!==localId);
   if(type==="sale_insert")sales=sales.filter(item=>item.id!==localId);
+  if(type==="expense_insert")expenses=expenses.filter(item=>item.id!==localId);
+  if(type==="note_insert")notes=notes.filter(item=>item.id!==localId);
 }
 
 async function syncQueuedProduct(entry){
@@ -4309,6 +4355,34 @@ async function syncQueuedSale(entry){
   return true;
 }
 
+async function syncQueuedExpense(entry){
+  if(!localQueue().some(item=>item.id===entry.id))return;
+  const payload={...entry.payload,user_id:currentUser.id};
+  const {data,error}=await sb.from("expenses")
+    .insert(payload)
+    .select("*")
+    .single();
+  if(error)throw error;
+  const index=expenses.findIndex(item=>item.id===entry.local_id);
+  if(index>=0)expenses[index]=data;
+  else expenses.unshift(data);
+  removeLocalMutation(entry.id);
+}
+
+async function syncQueuedNote(entry){
+  if(!localQueue().some(item=>item.id===entry.id))return;
+  const payload={...entry.payload,user_id:currentUser.id};
+  const {data,error}=await sb.from("notes")
+    .insert(payload)
+    .select("*")
+    .single();
+  if(error)throw error;
+  const index=notes.findIndex(item=>item.id===entry.local_id);
+  if(index>=0)notes[index]=data;
+  else notes.unshift(data);
+  removeLocalMutation(entry.id);
+}
+
 async function syncLocalQueue(){
   if(!currentUser||localSyncRunning)return;
   if(!localQueue().length)return;
@@ -4329,13 +4403,27 @@ async function syncLocalQueue(){
         console.warn("local sync:",error);
       }
     }
+    for(const entry of localQueue().filter(item=>item.type==="expense_insert")){
+      try{
+        await syncQueuedExpense(entry);
+      }catch(error){
+        console.warn("local sync:",error);
+      }
+    }
+    for(const entry of localQueue().filter(item=>item.type==="note_insert")){
+      try{
+        await syncQueuedNote(entry);
+      }catch(error){
+        console.warn("local sync:",error);
+      }
+    }
     renderAll();
   }finally{
     localSyncRunning=false;
   }
 }
 
-async function uploadProductImagesForPayload(payload,files,existingUrls=[]){
+async function uploadImagesForPayload(payload,files,existingUrls=[]){
   const uploadedUrls=[];
   for(const file of files||[]){
     const url=await uploadImage(file);
@@ -4347,6 +4435,10 @@ async function uploadProductImagesForPayload(payload,files,existingUrls=[]){
     image_url:imageUrls[0]||null,
     image_urls:imageUrls
   };
+}
+
+async function uploadProductImagesForPayload(payload,files,existingUrls=[]){
+  return uploadImagesForPayload(payload,files,existingUrls);
 }
 
 
@@ -5744,7 +5836,7 @@ function renderProducts(){
   $("productList").innerHTML=list.length?list.map(product=>{
     const profit=Number(product.sale_price)-Number(product.cost_price);
 
-    return `<div class="card product">
+    return `<div class="card product" data-product-swipe="${escapeHtml(product.id)}">
       ${productImages(product).length
         ? `<div class="product-image-wrap">
              <img class="product-img clickable-image"
@@ -5795,7 +5887,65 @@ function renderProducts(){
     button.addEventListener("click",()=>deleteProduct(button.dataset.delete));
   });
 
+  document.querySelectorAll("[data-product-swipe]").forEach(card=>{
+    bindProductSwipeDelete(card);
+  });
+
   fitValues();
+}
+
+function bindProductSwipeDelete(card){
+  let startX=0;
+  let startY=0;
+  let currentX=0;
+  let active=false;
+  let dragging=false;
+
+  const reset=()=>{
+    card.classList.remove("swiping","swipe-delete-ready");
+    card.style.transform="";
+    active=false;
+    dragging=false;
+  };
+
+  card.addEventListener("touchstart",event=>{
+    if(event.target.closest("button,input,select,textarea,a,.clickable-image"))return;
+    const touch=event.touches?.[0];
+    if(!touch)return;
+    startX=touch.clientX;
+    currentX=startX;
+    startY=touch.clientY;
+    active=true;
+    dragging=false;
+    card.classList.add("swiping");
+  },{passive:true});
+
+  card.addEventListener("touchmove",event=>{
+    if(!active)return;
+    const touch=event.touches?.[0];
+    if(!touch)return;
+    const dx=touch.clientX-startX;
+    const dy=touch.clientY-startY;
+
+    if(dx<0 && Math.abs(dx)>Math.abs(dy)*1.15){
+      dragging=true;
+      currentX=touch.clientX;
+      event.preventDefault();
+      const offset=Math.max(dx,-118);
+      card.style.transform=`translateX(${offset}px)`;
+      card.classList.toggle("swipe-delete-ready",dx<-72);
+    }
+  },{passive:false});
+
+  card.addEventListener("touchend",()=>{
+    if(!active)return;
+    const dx=currentX-startX;
+    const shouldDelete=dragging && dx<-72;
+    reset();
+    if(shouldDelete)deleteProduct(card.dataset.productSwipe);
+  });
+
+  card.addEventListener("touchcancel",reset);
 }
 
 
@@ -7202,6 +7352,29 @@ async function deleteProduct(id){
   }))return;
 
   const product=products.find(item=>item.id===id)||null;
+
+  if(isLocalId(id)){
+    products=products.filter(item=>item.id!==id);
+    const queue=localQueue().map(entry=>{
+      if(entry.type==="sale_insert" && entry.payload?.product_id===id){
+        return {
+          ...entry,
+          payload:{
+            ...entry.payload,
+            product_id:null,
+            product_name:entry.payload.product_name||product?.name||"Satış",
+            category_id:entry.payload.category_id||product?.category_id||null
+          }
+        };
+      }
+      return entry;
+    }).filter(entry=>!(entry.type==="product_insert" && entry.local_id===id));
+    saveLocalQueue(queue);
+    renderAll();
+    toast("Məhsul silindi");
+    return;
+  }
+
   if(product && !await snapshotSalesForProduct(product))return;
 
   const {data,error}=await sb.from("products").update({deleted_at:new Date().toISOString()}).eq("id",id).select("id");
@@ -7215,7 +7388,8 @@ async function deleteProduct(id){
     return;
   }
 
-  await loadAll();
+  products=products.filter(item=>item.id!==id);
+  renderAll();
   toast("Məhsul silindi");
 }
 
@@ -7537,7 +7711,7 @@ async function addQuickExpense(title,amount){
   }))return;
 
   try{
-    const {error}=await sb.from("expenses").insert({
+    const payload={
       user_id:currentUser.id,
       title,
       amount,
@@ -7546,11 +7720,23 @@ async function addQuickExpense(title,amount){
       payment_method:"cash",
       image_url:null,
       image_urls:[]
-    });
-    if(error)throw error;
-    await loadAll();
+    };
+    const entry={
+      id:crypto.randomUUID(),
+      type:"expense_insert",
+      local_id:LOCAL_ID_PREFIX+crypto.randomUUID(),
+      payload,
+      preview_image_url:null,
+      preview_image_urls:[],
+      created_at:new Date().toISOString()
+    };
+
+    enqueueLocalMutation(entry);
+    expenses.unshift(makeLocalExpenseRow(entry));
     showPage("expenses");
-    toast(`${title} xərci əlavə edildi`);
+    renderAll();
+    toast(`${title} xərci əlavə edildi. Baza ilə sinxron gedir.`);
+    syncLocalQueue();
   }catch(error){
     console.error(error);
     toast(error.message||"Xərc əlavə edilmədi.");
@@ -8632,14 +8818,6 @@ $("expenseForm").addEventListener("submit",async event=>{
 
   try{
     const id=$("expenseId").value;
-    const uploadedUrls=[];
-
-    for(const file of pendingExpenseImageFiles){
-      const url=await uploadImage(file);
-      if(url)uploadedUrls.push(url);
-    }
-
-    const imageUrls=[...editingExpenseImageUrls,...uploadedUrls].filter(Boolean).slice(0,5);
     const payload={
       user_id:currentUser.id,
       title:$("expenseTitle").value.trim()||"Xərc",
@@ -8647,20 +8825,57 @@ $("expenseForm").addEventListener("submit",async event=>{
       note:$("expenseNote").value.trim()||null,
       money_holder:$("expenseYusifMoney").checked?"yusif":"normal",
       payment_method:$("expensePaymentMethod").value||"cash",
-      image_url:imageUrls[0]||null,
-      image_urls:imageUrls
+      image_url:null,
+      image_urls:[]
     };
 
-    const result=id
-      ? await sb.from("expenses").update(payload).eq("id",id)
-      : await sb.from("expenses").insert(payload);
+    if(id){
+      const finalPayload=await uploadImagesForPayload(payload,pendingExpenseImageFiles,editingExpenseImageUrls);
+      const result=await sb.from("expenses").update(finalPayload).eq("id",id);
+      if(result.error)throw result.error;
 
-    if(result.error)throw result.error;
+      closeModal("expenseModal");
+      await loadAll();
+      showPage("expenses");
+      toast("Xərc yeniləndi");
+      return;
+    }
+
+    const localId=LOCAL_ID_PREFIX+crypto.randomUUID();
+    const entryId=crypto.randomUUID();
+    const createdAt=new Date().toISOString();
+    const previewUrls=[...editingExpenseImageUrls,...pendingExpensePreviewUrls].filter(Boolean).slice(0,5);
+    const files=[...pendingExpenseImageFiles];
+    const existingUrls=[...editingExpenseImageUrls];
+    const entry={
+      id:entryId,
+      type:"expense_insert",
+      local_id:localId,
+      payload,
+      preview_image_url:previewUrls[0]||null,
+      preview_image_urls:previewUrls,
+      created_at:createdAt
+    };
+
+    enqueueLocalMutation(entry);
+    expenses.unshift(makeLocalExpenseRow(entry));
 
     closeModal("expenseModal");
-    await loadAll();
     showPage("expenses");
-    toast(id?"Xərc yeniləndi":"Xərc əlavə edildi");
+    renderAll();
+    toast("Xərc əlavə edildi. Baza ilə sinxron gedir.");
+
+    (async()=>{
+      try{
+        const finalPayload=await uploadImagesForPayload(payload,files,existingUrls);
+        updateLocalMutation(entryId,{payload:finalPayload});
+        await syncQueuedExpense({...entry,payload:finalPayload});
+        renderAll();
+      }catch(error){
+        console.warn(error);
+        toast("Xərc lokaldadır. İnternet gələndə bazaya gedəcək.");
+      }
+    })();
   }catch(error){
     console.error(error);
     toast(error.message||"Xərc yadda saxlanılmadı");
@@ -8697,31 +8912,60 @@ $("noteForm").addEventListener("submit",async event=>{
 
   try{
     const id=$("noteId").value;
-    const uploadedUrls=[];
-
-    for(const file of pendingNoteImageFiles){
-      const url=await uploadImage(file);
-      if(url)uploadedUrls.push(url);
-    }
-
-    const imageUrls=[...editingNoteImageUrls,...uploadedUrls].filter(Boolean).slice(0,5);
     const payload={
       user_id:currentUser.id,
       body,
-      image_url:imageUrls[0]||null,
-      image_urls:imageUrls
+      image_url:null,
+      image_urls:[]
     };
 
-    const result=id
-      ? await sb.from("notes").update(payload).eq("id",id)
-      : await sb.from("notes").insert(payload);
+    if(id){
+      const finalPayload=await uploadImagesForPayload(payload,pendingNoteImageFiles,editingNoteImageUrls);
+      const result=await sb.from("notes").update(finalPayload).eq("id",id);
+      if(result.error)throw result.error;
 
-    if(result.error)throw result.error;
+      closeModal("noteModal");
+      await loadAll();
+      showPage("notes");
+      toast("Qeyd yeniləndi");
+      return;
+    }
+
+    const localId=LOCAL_ID_PREFIX+crypto.randomUUID();
+    const entryId=crypto.randomUUID();
+    const createdAt=new Date().toISOString();
+    const previewUrls=[...editingNoteImageUrls,...pendingNotePreviewUrls].filter(Boolean).slice(0,5);
+    const files=[...pendingNoteImageFiles];
+    const existingUrls=[...editingNoteImageUrls];
+    const entry={
+      id:entryId,
+      type:"note_insert",
+      local_id:localId,
+      payload,
+      preview_image_url:previewUrls[0]||null,
+      preview_image_urls:previewUrls,
+      created_at:createdAt
+    };
+
+    enqueueLocalMutation(entry);
+    notes.unshift(makeLocalNoteRow(entry));
 
     closeModal("noteModal");
-    await loadAll();
     showPage("notes");
-    toast(id?"Qeyd yeniləndi":"Qeyd əlavə edildi");
+    renderAll();
+    toast("Qeyd əlavə edildi. Baza ilə sinxron gedir.");
+
+    (async()=>{
+      try{
+        const finalPayload=await uploadImagesForPayload(payload,files,existingUrls);
+        updateLocalMutation(entryId,{payload:finalPayload});
+        await syncQueuedNote({...entry,payload:finalPayload});
+        renderAll();
+      }catch(error){
+        console.warn(error);
+        toast("Qeyd lokaldadır. İnternet gələndə bazaya gedəcək.");
+      }
+    })();
   }catch(error){
     console.error(error);
     toast(error.message||"Qeyd yadda saxlanılmadı");
@@ -9018,20 +9262,8 @@ $("looseSaleForm").addEventListener("submit",async event=>{
   event.preventDefault();
   $("saveLooseSaleBtn").disabled=true;
 
-  let createdProductId=null;
-
   try{
     const id=$("looseSaleId").value;
-
-    const uploadedUrls=[];
-    for(const file of pendingSaleImageFiles){
-      const url=await uploadImage(file);
-      if(url)uploadedUrls.push(url);
-    }
-
-    const imageUrls=[...editingSaleImageUrls,...uploadedUrls].filter(Boolean).slice(0,5);
-    const imageUrl=imageUrls[0]||null;
-
     const isTrust=saleEntryMode==="trust" || isTrustCategoryId($("looseSaleCategory").value);
     const costPriceProvided=!isTrust && $("looseSaleCost").value!=="";
 
@@ -9057,8 +9289,12 @@ $("looseSaleForm").addEventListener("submit",async event=>{
     const quantity=isTrust?1:Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1);
     const salePrice=saleState.value;
     const costPrice=isTrust?0:Number($("looseSaleCost").value||0);
+    const previewUrls=isTrust?[]:[...editingSaleImageUrls,...pendingSalePreviewUrls].filter(Boolean).slice(0,5);
+    const files=isTrust?[]:[...pendingSaleImageFiles];
+    const existingUrls=isTrust?[]:[...editingSaleImageUrls];
 
     const salePayload={
+      user_id:currentUser.id,
       product_name:name,
       category_id:categoryId,
       quantity,
@@ -9068,22 +9304,26 @@ $("looseSaleForm").addEventListener("submit",async event=>{
       cost_price_provided:costPriceProvided,
       payment_method:$("looseSalePaymentMethod").value||"cash",
       card_account:$("looseSalePaymentMethod").value==="card"?$("looseSaleCardAccount").value:null,
-      image_url:isTrust?null:imageUrl,
-      image_urls:isTrust?[]:imageUrls,
+      image_url:null,
+      image_urls:[],
       note
     };
 
     if(id){
       salePayload.money_holder=$("looseSaleYusifMoney").checked?"yusif":"normal";
-    }
-
-    if(id){
-      let {error}=await sb.from("sales").update(salePayload).eq("id",id);
+      const finalPayload=await uploadImagesForPayload(
+        {...salePayload,image_url:null,image_urls:[]},
+        files,
+        existingUrls
+      );
+      finalPayload.image_url=isTrust?null:finalPayload.image_url;
+      finalPayload.image_urls=isTrust?[]:finalPayload.image_urls;
+      let {error}=await sb.from("sales").update(finalPayload).eq("id",id);
       let yusifStatusSaved=true;
 
       if(error && isMissingSchemaColumn(error,"money_holder")){
         yusifStatusSaved=false;
-        const fallbackPayload={...salePayload};
+        const fallbackPayload={...finalPayload};
         delete fallbackPayload.money_holder;
         ({error}=await sb.from("sales").update(fallbackPayload).eq("id",id));
       }
@@ -9100,6 +9340,10 @@ $("looseSaleForm").addEventListener("submit",async event=>{
     }
 
     if(saleEntryMode==="regular"){
+      const localProductId=LOCAL_ID_PREFIX+crypto.randomUUID();
+      const productEntryId=crypto.randomUUID();
+      const saleEntryId=crypto.randomUUID();
+      const createdAt=new Date().toISOString();
       const productPayload={
         user_id:currentUser.id,
         category_id:categoryId,
@@ -9107,51 +9351,90 @@ $("looseSaleForm").addEventListener("submit",async event=>{
         sale_price:Math.max(0,salePrice),
         cost_price:Math.max(0,costPrice),
         note,
-        image_url:imageUrl,
-        image_urls:imageUrls
+        image_url:null,
+        image_urls:[]
+      };
+      const productEntry={
+        id:productEntryId,
+        type:"product_insert",
+        local_id:localProductId,
+        payload:productPayload,
+        preview_image_url:previewUrls[0]||null,
+        preview_image_urls:previewUrls,
+        created_at:createdAt
+      };
+      const saleEntry={
+        id:saleEntryId,
+        type:"sale_insert",
+        local_id:LOCAL_ID_PREFIX+crypto.randomUUID(),
+        payload:{...salePayload,product_id:localProductId},
+        preview_image_url:previewUrls[0]||null,
+        preview_image_urls:previewUrls,
+        created_at:createdAt
       };
 
-      const {data:productData,error:productError}=await sb
-        .from("products")
-        .insert(productPayload)
-        .select("id")
-        .single();
-
-      if(productError)throw productError;
-
-      createdProductId=productData.id;
-
-      const {error:saleError}=await sb.from("sales").insert({
-        user_id:currentUser.id,
-        product_id:createdProductId,
-        ...salePayload
-      });
-
-      if(saleError){
-        await sb.from("products").delete().eq("id",createdProductId);
-        createdProductId=null;
-        throw saleError;
-      }
+      enqueueLocalMutation(productEntry);
+      enqueueLocalMutation(saleEntry);
+      products.unshift(makeLocalProductRow(productEntry));
+      sales.unshift(makeLocalSaleRow(saleEntry));
 
       closeModal("looseSaleModal");
-      await loadAll();
       showPage("sales");
-      toast("Satış və məhsul əlavə edildi");
+      renderAll();
+      toast("Satış və məhsul əlavə edildi. Baza ilə sinxron gedir.");
+
+      (async()=>{
+        try{
+          const finalProductPayload=await uploadImagesForPayload(productPayload,files,existingUrls);
+          updateLocalMutation(productEntryId,{payload:finalProductPayload});
+          updateLocalMutation(saleEntryId,{
+            payload:{
+              ...saleEntry.payload,
+              image_url:finalProductPayload.image_url,
+              image_urls:finalProductPayload.image_urls
+            }
+          });
+          await syncQueuedProduct({...productEntry,payload:finalProductPayload});
+          await syncLocalQueue();
+          renderAll();
+        }catch(error){
+          console.warn(error);
+          toast("Satış lokaldadır. İnternet gələndə bazaya gedəcək.");
+        }
+      })();
       return;
     }
 
-    const {error}=await sb.from("sales").insert({
-      user_id:currentUser.id,
-      product_id:null,
-      ...salePayload
-    });
-
-    if(error)throw error;
+    const saleEntry={
+      id:crypto.randomUUID(),
+      type:"sale_insert",
+      local_id:LOCAL_ID_PREFIX+crypto.randomUUID(),
+      payload:{...salePayload,product_id:null},
+      preview_image_url:previewUrls[0]||null,
+      preview_image_urls:previewUrls,
+      created_at:new Date().toISOString()
+    };
+    enqueueLocalMutation(saleEntry);
+    sales.unshift(makeLocalSaleRow(saleEntry));
 
     closeModal("looseSaleModal");
-    await loadAll();
     showPage("sales");
-    toast("Sərbəst satış yadda saxlanıldı");
+    renderAll();
+    toast("Satış yadda saxlanıldı. Baza ilə sinxron gedir.");
+
+    (async()=>{
+      try{
+        const finalPayload=isTrust
+          ? {...salePayload,product_id:null,image_url:null,image_urls:[]}
+          : await uploadImagesForPayload({...salePayload,product_id:null,image_url:null,image_urls:[]},files,existingUrls);
+        updateLocalMutation(saleEntry.id,{payload:finalPayload});
+        await syncQueuedSale({...saleEntry,payload:finalPayload});
+        renderAll();
+      }catch(error){
+        console.warn(error);
+        toast("Satış lokaldadır. İnternet gələndə bazaya gedəcək.");
+      }
+    })();
   }catch(error){
     console.error(error);
     toast(error.message||"Yadda saxlanılmadı");
