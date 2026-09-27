@@ -6339,7 +6339,9 @@ function todayRegularSalesRevenue(){
 function workerPayForRevenue(revenue){
   const amount=Number(revenue||0);
   if(amount<=0)return 0;
-  return Math.min(18,Math.round(amount*0.08));
+  if(amount<=210)return Math.round(amount*0.08);
+  if(amount<=268)return 18;
+  return Math.round(amount*(18/268));
 }
 
 function expensePaymentMethod(expense){
