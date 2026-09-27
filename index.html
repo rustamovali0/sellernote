@@ -435,6 +435,34 @@
     .actions .btn{min-height:37px;padding:7px 10px;font-size:12px}
 
     .sale{padding:13px}
+    .sale.outside-income{
+      border-color:color-mix(in srgb,#16a34a 24%,var(--line));
+      background:linear-gradient(135deg,color-mix(in srgb,#16a34a 10%,var(--card)) 0%,var(--card) 62%);
+    }
+    .sale.outside-income.tailor-income{
+      border-color:color-mix(in srgb,#0ea5e9 24%,var(--line));
+      background:linear-gradient(135deg,color-mix(in srgb,#0ea5e9 10%,var(--card)) 0%,var(--card) 62%);
+    }
+    .sale.outside-income.custom-income{
+      border-color:color-mix(in srgb,#f59e0b 26%,var(--line));
+      background:linear-gradient(135deg,color-mix(in srgb,#f59e0b 11%,var(--card)) 0%,var(--card) 62%);
+    }
+    .outside-income-pill{
+      display:inline-flex;align-items:center;gap:5px;
+      width:max-content;max-width:100%;
+      margin-bottom:6px;padding:5px 8px;border-radius:999px;
+      background:color-mix(in srgb,#16a34a 13%,var(--card2));
+      border:1px solid color-mix(in srgb,#16a34a 20%,var(--line));
+      color:var(--text);font-size:10px;font-weight:850;
+    }
+    .tailor-income .outside-income-pill{
+      background:color-mix(in srgb,#0ea5e9 13%,var(--card2));
+      border-color:color-mix(in srgb,#0ea5e9 20%,var(--line));
+    }
+    .custom-income .outside-income-pill{
+      background:color-mix(in srgb,#f59e0b 14%,var(--card2));
+      border-color:color-mix(in srgb,#f59e0b 22%,var(--line));
+    }
     .sale-top{display:flex;align-items:flex-start;justify-content:space-between;gap:9px}
     .sale-top>div:first-child{min-width:0}
     .sale-total{
@@ -6123,6 +6151,23 @@ function saleTitle(sale){
   return sale?.product_name||sale?.products?.name||"Satış";
 }
 
+function outsideIncomeRawName(sale){
+  return categories.find(category=>category.id===(sale?.category_id||sale?.products?.category_id))?.name
+    || saleTitle(sale);
+}
+
+function outsideIncomeLabel(sale){
+  const raw=outsideIncomeRawName(sale);
+  return displayOutsideIncomeName(raw);
+}
+
+function outsideIncomeClass(sale){
+  const name=normalizeCategoryName(outsideIncomeRawName(sale));
+  if(name===normalizeCategoryName(TAILOR_CATEGORY_NAME))return "tailor-income";
+  if(isCustomOutsideIncomeName(outsideIncomeRawName(sale)))return "custom-income";
+  return "trust-income";
+}
+
 function paymentMethodLabel(value){
   return value==="card"?"Kart":"Nağd";
 }
@@ -6459,47 +6504,54 @@ function renderSales(){
   $("filterSoldQty").textContent=soldQty;
   updatePaymentSummaryModal();
 
-  $("salesList").innerHTML=list.length?list.map(sale=>`
-    <div class="card sale" data-sale-swipe="${escapeHtml(sale.id)}">
-      <div class="${saleImages(sale).length?"sale-with-image":""}">
-        ${saleImages(sale).length
+  $("salesList").innerHTML=list.length?list.map(sale=>{
+    const outside=isOutsideIncomeSale(sale);
+    const images=saleImages(sale);
+    const cardClass=outside?` outside-income ${outsideIncomeClass(sale)}`:"";
+    const title=outside?outsideIncomeLabel(sale):saleTitle(sale);
+    const meta=outside
+      ? formatDate(sale.created_at)
+      : `${formatDate(sale.created_at)} · ${sale.quantity||1} ədəd${saleCategoryName(sale)?" · "+escapeHtml(saleCategoryName(sale)):""}`;
+
+    return `
+    <div class="card sale${cardClass}" data-sale-swipe="${escapeHtml(sale.id)}">
+      <div class="${images.length?"sale-with-image":""}">
+        ${images.length
           ? `<div style="position:relative;width:58px;height:58px">
                <img class="sale-thumb clickable-image"
-                    src="${escapeHtml(saleImages(sale)[0])}"
-                    alt="${escapeHtml(saleTitle(sale))}"
+                    src="${escapeHtml(images[0])}"
+                    alt="${escapeHtml(title)}"
                     data-open-sale-images="${sale.id}">
-               ${saleImages(sale).length>1
-                 ? `<span class="product-image-badge">${saleImages(sale).length}</span>`
+               ${images.length>1
+                 ? `<span class="product-image-badge">${images.length}</span>`
                  : ""}
              </div>`
           : ""}
 
         <div>
+          ${outside?`<div class="outside-income-pill">Kənar gəlir · ${escapeHtml(title)}</div>`:""}
           <div class="sale-top">
             <div>
-              <div class="sale-name">${escapeHtml(saleTitle(sale))}</div>
-              <div class="meta">
-                ${formatDate(sale.created_at)} · ${sale.quantity||1} ədəd
-                ${saleCategoryName(sale)
-                  ?" · "+escapeHtml(saleCategoryName(sale))
-                  :""}
-              </div>
+              <div class="sale-name">${escapeHtml(title)}</div>
+              <div class="meta">${meta}</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
               <div class="sale-total ${sale.sale_price_provided===false?"not-recorded":""}">${displaySalePrice(sale)}</div>
-              <input class="sale-check-input"
+              ${outside?"":`<input class="sale-check-input"
                      type="checkbox"
                      data-sale-check="${sale.id}"
                      ${sale.is_checked?"checked":""}
-                     aria-label="Satış statusu">
+                     aria-label="Satış statusu">`}
             </div>
           </div>
 
           <div class="price-row">
-            <span class="badge ${sale.sale_price_provided===false?"not-recorded":""}">Satış ${displayUnitSale(sale)}</span>
-            <span class="badge">${isOutsideIncomeSale(sale)?"Kənar gəlir":paymentMethodLabel(sale.payment_method)}</span>
+            ${outside
+              ? `<span class="badge profit">Gəlir ${displaySalePrice(sale)}</span>`
+              : `<span class="badge ${sale.sale_price_provided===false?"not-recorded":""}">Satış ${displayUnitSale(sale)}</span>
+                 <span class="badge">${paymentMethodLabel(sale.payment_method)}</span>`}
             ${isYusifSale(sale)?`<span class="badge profit">Pul Yusifdədir</span>`:""}
-            ${showCostProfit&&!isOutsideIncomeSale(sale)?`<span class="badge ${!saleHasCost(sale)?"not-recorded":""}">Maya ${displayCost(sale)}</span>
+            ${showCostProfit&&!outside?`<span class="badge ${!saleHasCost(sale)?"not-recorded":""}">Maya ${displayCost(sale)}</span>
             <span class="badge profit ${!saleHasProfit(sale)?"not-recorded":""}">Qazanc ${displayProfit(sale)}</span>`:""}
           </div>
 
@@ -6513,7 +6565,8 @@ function renderSales(){
         </div>
       </div>
     </div>
-  `).join(""):'<div class="card empty">Bu seçimə uyğun satış yoxdur.</div>';
+  `;
+  }).join(""):'<div class="card empty">Bu seçimə uyğun satış yoxdur.</div>';
 
   document.querySelectorAll("[data-open-sale-images]").forEach(image=>{
     image.addEventListener("click",()=>{
