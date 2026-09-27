@@ -5780,8 +5780,11 @@ function expensesForSalesDate(){
   return expenses.filter(expense=>dateMatches(expense.created_at,salesDateMode,selectedDate));
 }
 
-function expenseTotalForSalesDate(){
-  return expensesForSalesDate().reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+function expenseTotalForSalesDate(options={}){
+  const includeYusif=options.includeYusif!==false;
+  return expensesForSalesDate()
+    .filter(expense=>includeYusif || !isYusifExpense(expense))
+    .reduce((sum,expense)=>sum+Number(expense.amount||0),0);
 }
 
 function outsideIncomeForSalesDate(){
@@ -5830,9 +5833,9 @@ function pocketOverrideValue(){
 
 function computedPocketValue(list=filteredSalesList()){
   const revenue=list
-    .filter(sale=>!isOutsideIncomeSale(sale)&&sale.payment_method!=="card")
+    .filter(sale=>!isOutsideIncomeSale(sale)&&sale.payment_method!=="card"&&!isYusifSale(sale))
     .reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
-  const expenseTotal=expenseTotalForSalesDate();
+  const expenseTotal=expenseTotalForSalesDate({includeYusif:false});
   return revenue-expenseTotal+outsideIncomeTotals().total;
 }
 
@@ -5876,7 +5879,7 @@ function openPocketEditModal(){
   const override=pocketOverrideValue();
   const shown=override===null?auto:override;
   const cashRevenue=regularList
-    .filter(sale=>sale.payment_method!=="card")
+    .filter(sale=>sale.payment_method!=="card"&&!isYusifSale(sale))
     .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
 
   $("pocketAutoValue").textContent=money(auto);
@@ -5884,9 +5887,7 @@ function openPocketEditModal(){
   $("pocketOverrideInput").value=override===null?shown:override;
   $("pocketEditLabel").textContent=`${$("salesSummaryPocketLabel").textContent} məbləği`;
   const outside=outsideIncomeTotals();
-  const expenseTotal=expenseTotalForSalesDate();
-  const yusifSales=yusifSaleTotal(list);
-  const yusifExpenses=yusifExpenseTotal(expensesForSalesDate());
+  const expenseTotal=expenseTotalForSalesDate({includeYusif:false});
   const rows=[
     `<div class="log-item"><div class="log-top"><div class="log-title">Nağd satış</div><div class="log-date">${money(cashRevenue)}</div></div></div>`
   ];
@@ -5900,26 +5901,6 @@ function openPocketEditModal(){
         </div>
       </div>
     `));
-  if(yusifSales>0){
-    rows.push(`
-      <div class="log-item">
-        <div class="log-top">
-          <div class="log-title">Satışdan Yusifdə</div>
-          <div class="log-date">${money(yusifSales)}</div>
-        </div>
-      </div>
-    `);
-  }
-  if(yusifExpenses>0){
-    rows.push(`
-      <div class="log-item">
-        <div class="log-top">
-          <div class="log-title">Xərcdən Yusifdə</div>
-          <div class="log-date">${money(yusifExpenses)}</div>
-        </div>
-      </div>
-    `);
-  }
   if(Math.abs(expenseTotal)>0.000001){
     rows.push(`
       <div class="log-item">
@@ -9277,7 +9258,13 @@ function buildReport(from,to,sections=selectedReportSections()){
   const cashTotal=reportSales.filter(sale=>sale.payment_method!=="card").reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const cardTotal=reportSales.filter(sale=>sale.payment_method==="card").reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const expenseTotal=data.expenses.reduce((sum,e)=>sum+Number(e.amount||0),0);
-  const pocket=cashTotal-expenseTotal+outsideIncome;
+  const pocketCashTotal=reportSales
+    .filter(sale=>sale.payment_method!=="card"&&!isYusifSale(sale))
+    .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const pocketExpenseTotal=data.expenses
+    .filter(expense=>!isYusifExpense(expense))
+    .reduce((sum,e)=>sum+Number(e.amount||0),0);
+  const pocket=pocketCashTotal-pocketExpenseTotal+outsideIncome;
   const soldQty=reportSales.reduce((sum,s)=>sum+Number(s.quantity||0),0);
   const showCost=costProfitVisible() && Math.abs(cost)>0.000001;
   const showProfit=costProfitVisible() && Math.abs(profit)>0.000001;
