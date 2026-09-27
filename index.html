@@ -2479,7 +2479,7 @@
         <div id="salesProfitStat" class="stat"><div id="salesSummaryProfitLabel" class="label">Bu günün qazancı</div><div id="filterProfit" class="value profit">0 ₼</div></div>
         <button id="salesPocketStat" class="stat clickable-stat" type="button"><div id="salesSummaryPocketLabel" class="label">Bu günün cibi</div><div id="filterPocket" class="value profit">0 ₼</div></button>
         <button id="salesCardStat" class="stat clickable-stat" type="button"><div class="label">Kartda</div><div id="filterCardTotal" class="value profit">0 ₼</div></button>
-        <div id="salesYusifStat" class="stat hidden"><div class="label">Yusifdə</div><div id="filterYusifSaleTotal" class="value profit">0 ₼</div></div>
+        <button id="salesYusifStat" class="stat clickable-stat hidden" type="button"><div class="label">Yusifdə</div><div id="filterYusifSaleTotal" class="value profit">0 ₼</div></button>
         <div class="stat"><div id="salesSummaryQtyLabel" class="label">Satılan mallar</div><div id="filterSoldQty" class="value">0</div></div>
       </div>
 
@@ -3263,6 +3263,21 @@
       </div>
       <div id="yusifExpenseBreakdown" class="log-list" style="margin-top:10px"></div>
       <div class="meta">Bu məbləğlər cari xərc filterinə görə hesablanır.</div>
+    </div>
+  </div>
+
+  <div id="yusifSaleModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Yusifdə olan satışlar</h3>
+        <button class="close" data-close="yusifSaleModal" type="button">×</button>
+      </div>
+      <div class="summary-grid">
+        <div class="stat"><div class="label">Cəmi</div><div id="yusifSaleModalTotal" class="value profit">0 ₼</div></div>
+        <div class="stat"><div class="label">Say</div><div id="yusifSaleModalCount" class="value">0</div></div>
+      </div>
+      <div id="yusifSaleBreakdown" class="log-list" style="margin-top:10px"></div>
+      <div class="meta">Saatlar cari satış tarix və filter seçiminə görə göstərilir.</div>
     </div>
   </div>
 
@@ -6357,6 +6372,52 @@ function yusifSaleTotal(list=filteredSalesList()){
     .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
 }
 
+function currentYusifSales(){
+  return filteredSalesList()
+    .filter(sale=>!isOutsideIncomeSale(sale))
+    .filter(isYusifSale)
+    .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+}
+
+function saleTimeLabel(value){
+  if(!value)return "";
+  return new Intl.DateTimeFormat("az-AZ",{
+    day:"2-digit",
+    month:"2-digit",
+    hour:"2-digit",
+    minute:"2-digit",
+    hour12:false
+  }).format(new Date(value));
+}
+
+function updateYusifSaleModal(){
+  const list=currentYusifSales();
+  const total=yusifSaleTotal(list);
+
+  $("yusifSaleModalTotal").textContent=money(total);
+  $("yusifSaleModalCount").textContent=list.length;
+  $("yusifSaleBreakdown").innerHTML=list.length?list.map(sale=>`
+    <div class="log-item">
+      <div class="log-top">
+        <div>
+          <div class="log-title">${escapeHtml(saleTitle(sale))}</div>
+          <div class="log-tags">
+            <span class="log-tag">${escapeHtml(saleTimeLabel(sale.created_at))}</span>
+            <span class="log-tag">${sale.quantity||1} ədəd</span>
+            <span class="log-tag">Pul Yusifdədir</span>
+          </div>
+        </div>
+        <div class="log-date">${money(sale.total_revenue)}</div>
+      </div>
+    </div>
+  `).join(""):'<div class="empty" style="padding:14px">Bu filterdə Yusifdə olan satış yoxdur.</div>';
+}
+
+function openYusifSaleModal(){
+  updateYusifSaleModal();
+  openModal("yusifSaleModal");
+}
+
 function updatePaymentSummaryModal(){
   const totals=currentPaymentSummary();
   $("paymentCashTotal").textContent=money(totals.cash);
@@ -6824,6 +6885,11 @@ function renderExpenses(){
 
   document.querySelectorAll("[data-expense-swipe]").forEach(card=>{
     bindSwipeDelete(card,()=>deleteExpense(card.dataset.expenseSwipe));
+    card.addEventListener("click",event=>{
+      if(card.dataset.swipeMoved==="true")return;
+      if(event.target.closest("button,input,select,textarea,a,label,.clickable-image"))return;
+      openEditExpense(card.dataset.expenseSwipe);
+    });
   });
 
   document.querySelectorAll("[data-show-all-expenses]").forEach(button=>{
@@ -8792,6 +8858,7 @@ $("salesAddBtn").addEventListener("click",()=>{
 });
 
 $("expensesAddBtn").addEventListener("click",openNewExpenseModal);
+$("salesYusifStat").addEventListener("click",openYusifSaleModal);
 $("filterYusifExpenseStat").addEventListener("click",openYusifExpenseModal);
 $("notesAddBtn").addEventListener("click",openNewNoteModal);
 
