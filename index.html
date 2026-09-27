@@ -435,6 +435,22 @@
       padding:13px;display:flex;align-items:center;justify-content:space-between;gap:10px;
     }
     .category-item>div{min-width:0}
+    .category-copy{display:grid;gap:7px;flex:1}
+    .category-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+    .category-price-field{
+      display:grid;
+      gap:5px;
+      max-width:170px;
+      color:var(--muted);
+      font-size:10px;
+      font-weight:750;
+    }
+    .category-price-field .input{
+      min-height:38px;
+      font-size:13px;
+      border-radius:12px;
+      padding:0 10px;
+    }
     .empty{padding:22px;text-align:center;color:var(--muted);font-size:13px}
     .summary-grid{
       display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
@@ -3399,7 +3415,7 @@ let expenses=[];
 let notes=[];
 let activityLogs=[];
 let deletedRecords=[];
-let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null};
+let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,category_price_defaults:null};
 let currentSaleProduct=null;
 let displayedLocalDate=null;
 let currentPage="sales";
@@ -4064,9 +4080,9 @@ async function loadAppSettings(){
 
   if(error){
     console.warn("app_settings:",error.message);
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null};
   }else{
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,...(data||{})};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,...(data||{})};
   }
 
   applyBranding();
@@ -4208,6 +4224,112 @@ function copyReportTemplate(){
 
 function costProfitVisible(){
   return appSettings?.show_cost_profit!==false;
+}
+
+function categoryPriceDefaults(){
+  return appSettings?.category_price_defaults && typeof appSettings.category_price_defaults==="object"
+    ? appSettings.category_price_defaults
+    : {};
+}
+
+function categoryDefaultPrice(categoryId){
+  const value=Number(categoryPriceDefaults()[categoryId]||0);
+  return Number.isFinite(value) && value>0 ? value : 0;
+}
+
+function effectiveProductSalePrice(product){
+  if(!product)return 0;
+  const productPrice=Number(product.sale_price||0);
+  return productPrice>0 ? productPrice : categoryDefaultPrice(product.category_id);
+}
+
+function moneyInputValue(id){
+  const input=$(id);
+  if(!input)return {value:0,provided:false};
+  if(input.value!==""){
+    return {value:Number(input.value||0),provided:true};
+  }
+  const fallback=Number(input.dataset.fallbackPrice||0);
+  return {
+    value:Number.isFinite(fallback)?fallback:0,
+    provided:Number.isFinite(fallback)&&fallback>0
+  };
+}
+
+function setMoneyInputFallback(input,value,emptyText="Qeyd edilməyib"){
+  if(!input)return;
+  const number=Number(value||0);
+  if(Number.isFinite(number) && number>0){
+    input.placeholder=money(number);
+    input.dataset.fallbackPrice=String(number);
+  }else{
+    input.placeholder=emptyText;
+    input.dataset.fallbackPrice="";
+  }
+}
+
+function updateProductSalePricePlaceholder(forceCategoryDefault=false){
+  const input=$("salePrice");
+  if(!input)return;
+  const existingFallback=Number(input.dataset.fallbackPrice||0);
+  const categoryFallback=categoryDefaultPrice($("productCategory")?.value||"");
+  const fallback=forceCategoryDefault ? categoryFallback : (existingFallback>0?existingFallback:categoryFallback);
+  setMoneyInputFallback(input,fallback,"Qeyd edilməyib");
+}
+
+function updateLooseSalePricePlaceholder(){
+  const input=$("looseSalePrice");
+  if(!input)return;
+  const isOutside=saleEntryMode==="trust" || isTrustCategoryId($("looseSaleCategory")?.value);
+  if(isOutside){
+    const editFallback=$("looseSaleId")?.value ? Number(input.dataset.fallbackPrice||0) : 0;
+    setMoneyInputFallback(input,editFallback,"Gəlir məbləği");
+    return;
+  }
+
+  const editingFallback=Number(input.dataset.fallbackPrice||0);
+  const categoryFallback=categoryDefaultPrice($("looseSaleCategory")?.value||"");
+  setMoneyInputFallback(input,editingFallback>0?editingFallback:categoryFallback,"Qeyd edilməyib");
+}
+
+async function saveCategoryPriceDefault(categoryId,value){
+  if(!currentUser||!categoryId)return;
+
+  const raw=String(value||"").trim();
+  const next={...categoryPriceDefaults()};
+  if(raw===""){
+    delete next[categoryId];
+  }else{
+    const number=Number(raw);
+    if(!Number.isFinite(number) || number<0){
+      toast("Təxmini qiymət düzgün deyil.");
+      renderCategories();
+      return;
+    }
+    next[categoryId]=number;
+  }
+
+  appSettings={...appSettings,category_price_defaults:next};
+  renderCategories();
+  updateProductSalePricePlaceholder(true);
+  updateLooseSalePricePlaceholder();
+
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    category_price_defaults:next,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+
+  if(error){
+    if(isMissingSchemaColumn(error,"category_price_defaults")){
+      toast("Təxmini qiymət saxlanmadı. SQL-i Supabase-də işlədin.");
+      return;
+    }
+    toast(error.message);
+    return;
+  }
+
+  toast(raw===""?"Təxmini qiymət silindi":"Təxmini qiymət saxlandı");
 }
 
 function renderReportSectionControls(previewSections=null){
@@ -5149,6 +5271,7 @@ function renderCategoryOptions(){
     if(defaultCategory)$("productCategory").value=defaultCategory.id;
   }
   syncProductCategoryCustom();
+  updateProductSalePricePlaceholder(true);
 
   if($("looseSaleCategory")){
     const selected=$("looseSaleCategory").value;
@@ -5161,6 +5284,7 @@ function renderCategoryOptions(){
       if(defaultCategory)$("looseSaleCategory").value=defaultCategory.id;
     }
     syncLooseSaleCategoryCustom();
+    updateLooseSalePricePlaceholder();
   }
 
   if($("saleProductSelect")){
@@ -6413,16 +6537,34 @@ function renderNotes(){
 function renderCategories(){
   $("categoryList").innerHTML=categories.length?categories.map(category=>{
     const count=products.filter(product=>product.category_id===category.id).length;
+    const defaultPrice=categoryDefaultPrice(category.id);
 
     return `<div class="card category-item">
-      <div>
+      <div class="category-copy">
         <div class="category-name">${escapeHtml(category.name)}</div>
         <div class="meta">${count} məhsul</div>
+        <label class="category-price-field">
+          <span>Təxmini qiymət</span>
+          <input class="input"
+                 type="number"
+                 min="0"
+                 step="0.01"
+                 inputmode="decimal"
+                 data-category-price-default="${escapeHtml(category.id)}"
+                 value="${defaultPrice>0?defaultPrice:""}"
+                 placeholder="Məs: 15">
+        </label>
       </div>
-      <button class="btn secondary" data-edit-category="${category.id}" type="button">Düzəliş</button>
-      <button class="btn danger" data-delete-category="${category.id}" type="button">Sil</button>
+      <div class="category-actions">
+        <button class="btn secondary" data-edit-category="${category.id}" type="button">Düzəliş</button>
+        <button class="btn danger" data-delete-category="${category.id}" type="button">Sil</button>
+      </div>
     </div>`;
   }).join(""):'<div class="card empty">Kateqoriya yoxdur.</div>';
+
+  document.querySelectorAll("[data-category-price-default]").forEach(input=>{
+    input.addEventListener("change",()=>saveCategoryPriceDefault(input.dataset.categoryPriceDefault,input.value));
+  });
 
   document.querySelectorAll("[data-edit-category]").forEach(button=>{
     button.addEventListener("click",()=>openEditCategory(button.dataset.editCategory));
@@ -6626,6 +6768,8 @@ function showPage(page,options={}){
 function resetProductForm(){
   $("productForm").reset();
   $("productId").value="";
+  $("salePrice").dataset.fallbackPrice="";
+  $("salePrice").placeholder="Qeyd edilməyib";
 
   pendingProductPreviewUrls.forEach(url=>URL.revokeObjectURL(url));
   pendingProductPreviewUrls=[];
@@ -6644,11 +6788,12 @@ function updateProfitPreview(){
   $("productCostField")?.classList.toggle("hidden",!costProfitVisible());
   $("productProfitPreviewBlock")?.classList.toggle("hidden",!costProfitVisible());
   if(!costProfitVisible())return;
-  const saleProvided=$("salePrice").value!=="";
+  const saleState=moneyInputValue("salePrice");
+  const saleProvided=saleState.provided;
   const costProvided=$("costPrice").value!=="";
 
   $("profitPreview").textContent=(saleProvided&&costProvided)
-    ? money(Number($("salePrice").value||0)-Number($("costPrice").value||0))
+    ? money(saleState.value-Number($("costPrice").value||0))
     : "Qeyd edilməyib";
   $("profitPreview").classList.toggle("not-recorded",!(saleProvided&&costProvided));
   fitValues();
@@ -6721,7 +6866,8 @@ function openEditProduct(id){
   $("productName").value=product.name;
   $("productCategory").value=product.category_id||"";
   syncProductCategoryCustom();
-  $("salePrice").value=Number(product.sale_price||0)===0?"":product.sale_price;
+  $("salePrice").value="";
+  setMoneyInputFallback($("salePrice"),effectiveProductSalePrice(product),"Qeyd edilməyib");
   $("costPrice").value=Number(product.cost_price||0)===0?"":product.cost_price;
   $("productNote").value=product.note||"";
 
@@ -6800,7 +6946,8 @@ function setSaleProduct(product){
     return;
   }
 
-  const productSalePrice=Number(product.sale_price||0);
+  const productSalePrice=effectiveProductSalePrice(product);
+  const rawProductSalePrice=Number(product.sale_price||0);
   const productCostPrice=Number(product.cost_price||0);
 
   $("saleProductId").value=product.id;
@@ -6811,7 +6958,7 @@ function setSaleProduct(product){
   $("salePriceOverride").value="";
   $("salePriceOverride").placeholder=productSalePrice>0?money(productSalePrice):"Qeyd edilməyib";
   $("salePriceFallbackHint").textContent=productSalePrice>0
-    ? `Boş saxlasanız ${money(productSalePrice)} istifadə olunacaq.`
+    ? `Boş saxlasanız ${money(productSalePrice)} istifadə olunacaq.${rawProductSalePrice>0?"":" Kateqoriya təxmini qiymətidir."}`
     : "Məhsulda satış qiyməti qeyd edilməyib.";
   updateSalePreview();
 }
@@ -6862,7 +7009,7 @@ function getSaleEffectivePrice(){
   if(!currentSaleProduct)return {price:0,provided:false,overrideProvided:false};
 
   const overrideProvided=$("salePriceOverride").value!=="";
-  const productPrice=Number(currentSaleProduct.sale_price||0);
+  const productPrice=effectiveProductSalePrice(currentSaleProduct);
   const price=overrideProvided
     ? Number($("salePriceOverride").value||0)
     : productPrice;
@@ -7570,7 +7717,7 @@ function renderMultiSaleProducts(){
     const draft=multiSaleDraft.get(product.id);
     const selected=!!draft;
     const images=productImages(product);
-    const defaultPrice=Number(product.sale_price||0);
+    const defaultPrice=effectiveProductSalePrice(product);
 
     return `
       <div class="multi-sale-item">
@@ -7773,7 +7920,7 @@ $("confirmMultiSale").addEventListener("click",async()=>{
       draft.salePrice==="" ||
       !Number.isFinite(Number(draft.salePrice))
     )
-      ? Number(product.sale_price||0)
+      ? effectiveProductSalePrice(product)
       : Number(draft.salePrice);
 
     const quantity=Math.max(1,parseInt(draft.quantity||1,10)||1);
@@ -7848,6 +7995,7 @@ function openNewProductModal(){
   const defaultCategory=findShalvarCategory();
   if(defaultCategory)$("productCategory").value=defaultCategory.id;
   syncProductCategoryCustom();
+  updateProductSalePricePlaceholder(true);
 
   openModal("productModal");
 }
@@ -7869,6 +8017,10 @@ $("productCategoryMenu").addEventListener("click",event=>{
   if(!option)return;
   $("productCategory").value=option.dataset.productCategoryOption||"";
   syncProductCategoryCustom();
+  if(!$("productId").value || !$("salePrice").dataset.fallbackPrice){
+    updateProductSalePricePlaceholder(true);
+  }
+  updateProfitPreview();
   closeProductCategoryMenu();
 });
 
@@ -8002,11 +8154,12 @@ $("productForm").addEventListener("submit",async event=>{
     const imageUrl=imageUrls[0]||null;
 
     const categoryId=$("productCategory").value||await ensureShalvarCategory();
+    const saleState=moneyInputValue("salePrice");
 
     const payload={
       category_id:categoryId,
       name:$("productName").value.trim()||"Adsız məhsul",
-      sale_price:Number($("salePrice").value||0),
+      sale_price:saleState.provided?saleState.value:0,
       cost_price:Number($("costPrice").value||0),
       note:$("productNote").value.trim()||null,
       image_url:imageUrl,
@@ -8240,6 +8393,8 @@ function resetLooseSaleForm(){
   $("looseSaleName").value="";
   $("looseSalePaymentMethod").value="cash";
   $("looseSaleCardAccount").value=cardAccounts()[0];
+  $("looseSalePrice").dataset.fallbackPrice="";
+  $("looseSalePrice").placeholder="Qeyd edilməyib";
   updatePaymentAccountFields();
 
   pendingSalePreviewUrls.forEach(url=>URL.revokeObjectURL(url));
@@ -8278,14 +8433,15 @@ function updateLooseSaleModeFields(){
   $("looseSaleNote").classList.toggle("hidden",isOutside);
   $("looseSaleYusifMoneyWrap").classList.toggle("hidden",!$("looseSaleId").value);
   $("looseSaleName").placeholder=(saleEntryMode==="regular"||isOutside)?"Başlıq":"Satış";
-  $("looseSalePrice").placeholder=isOutside?"Gəlir məbləği":"Qeyd edilməyib";
+  updateLooseSalePricePlaceholder();
 }
 
 function updateLooseSalePreview(){
   $("looseSaleProfitBlock")?.classList.toggle("hidden",!costProfitVisible());
-  const saleProvided=$("looseSalePrice").value!=="";
+  const saleState=moneyInputValue("looseSalePrice");
+  const saleProvided=saleState.provided;
   const costProvided=$("looseSaleCost").value!=="";
-  const salePrice=Number($("looseSalePrice").value||0);
+  const salePrice=saleState.value;
   const costPrice=Number($("looseSaleCost").value||0);
   const quantity=Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1);
 
@@ -8376,7 +8532,12 @@ function openEditSale(id){
   $("looseSaleId").value=sale.id;
   $("looseSaleName").value=saleTitle(sale);
   $("looseSaleQuantity").value=sale.quantity||1;
-  $("looseSalePrice").value=(sale.sale_price_provided===false||Number(sale.unit_sale_price||0)===0)?"":Number(sale.unit_sale_price||0);
+  $("looseSalePrice").value="";
+  setMoneyInputFallback(
+    $("looseSalePrice"),
+    sale.sale_price_provided===false ? 0 : Number(sale.unit_sale_price||0),
+    "Qeyd edilməyib"
+  );
   $("looseSaleCost").value=(sale.cost_price_provided===false||Number(sale.unit_cost_price||0)===0)?"":Number(sale.unit_cost_price||0);
   $("looseSaleNote").value=sale.note||"";
   $("looseSaleCategory").value=sale.category_id||sale.products?.category_id||findShalvarCategory()?.id||"";
@@ -8417,6 +8578,9 @@ $("looseSaleCategory").addEventListener("change",()=>{
   }else if(saleEntryMode==="trust"){
     saleEntryMode="loose";
   }
+  if(!$("looseSaleId").value){
+    $("looseSalePrice").dataset.fallbackPrice="";
+  }
   updateLooseSaleModeFields();
   updateLooseSalePreview();
 });
@@ -8454,7 +8618,6 @@ $("looseSaleForm").addEventListener("submit",async event=>{
     const imageUrl=imageUrls[0]||null;
 
     const isTrust=saleEntryMode==="trust" || isTrustCategoryId($("looseSaleCategory").value);
-    const salePriceProvided=$("looseSalePrice").value!=="";
     const costPriceProvided=!isTrust && $("looseSaleCost").value!=="";
 
     const name=$("looseSaleName").value.trim()||(isTrust?currentOutsideIncomeName:"Satış");
@@ -8462,18 +8625,23 @@ $("looseSaleForm").addEventListener("submit",async event=>{
       toast("Başlıq yazın.");
       return;
     }
-    if(isTrust && !salePriceProvided){
-      toast("Məbləği yazın.");
-      return;
-    }
-    const quantity=isTrust?1:Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1);
-    const salePrice=Number($("looseSalePrice").value||0);
-    const costPrice=isTrust?0:Number($("looseSaleCost").value||0);
     const note=$("looseSaleNote").value.trim()||null;
     const outsideCategoryName=currentOutsideIncomeName || `${CUSTOM_OUTSIDE_INCOME_PREFIX}${name}`;
     const categoryId=isTrust
       ? ($("looseSaleCategory").value||await ensureOutsideIncomeCategory(outsideCategoryName))
       : ($("looseSaleCategory").value||await ensureShalvarCategory());
+    if(!isTrust && !$("looseSalePrice").dataset.fallbackPrice){
+      setMoneyInputFallback($("looseSalePrice"),categoryDefaultPrice(categoryId),"Qeyd edilməyib");
+    }
+    const saleState=moneyInputValue("looseSalePrice");
+    const salePriceProvided=saleState.provided;
+    if(isTrust && !salePriceProvided){
+      toast("Məbləği yazın.");
+      return;
+    }
+    const quantity=isTrust?1:Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1);
+    const salePrice=saleState.value;
+    const costPrice=isTrust?0:Number($("looseSaleCost").value||0);
 
     const salePayload={
       product_name:name,
@@ -8699,6 +8867,7 @@ async function downloadSqlPdf(){
     notebook_images:notebookImages(),
     balance_wallets:balanceWallets(),
     quick_expense_buttons:quickExpenseButtons(),
+    category_price_defaults:categoryPriceDefaults(),
     created_at:appSettings.created_at,
     updated_at:appSettings.updated_at
   }:null;
@@ -8706,7 +8875,7 @@ async function downloadSqlPdf(){
     "-- SellerNote backup",
     `-- ${formatDate(new Date().toISOString())}`,
     "",
-    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","report_sections","pocket_overrides","daily_profits","show_dashboard_profit","show_cost_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","notebook_images","balance_wallets","quick_expense_buttons","created_at","updated_at"]),
+    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","report_sections","pocket_overrides","daily_profits","show_dashboard_profit","show_cost_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","notebook_images","balance_wallets","quick_expense_buttons","category_price_defaults","created_at","updated_at"]),
     sqlInsert("categories",categories,["id","user_id","name","created_at","updated_at"]),
     sqlInsert("products",[...products,...allDeleted.filter(row=>"sale_price" in row&&"cost_price" in row)],["id","user_id","category_id","name","sale_price","cost_price","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","money_holder","is_checked","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
