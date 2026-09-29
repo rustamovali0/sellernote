@@ -99,8 +99,8 @@
     .launch-card{
       position:relative;
       flex:0 0 auto;
-      width:min(430px,calc(100svw - 34px));
-      min-height:min(520px,calc(100svh - 58px));
+      width:min(430px,calc(100vw - 34px));
+      height:520px;
       padding:28px 26px 22px;
       border:1px solid rgba(226,232,240,.95);
       border-radius:30px;
@@ -271,8 +271,8 @@
     }
     @media(max-width:380px){
       .launch-card{
-        width:calc(100svw - 28px);
-        min-height:min(500px,calc(100svh - 52px));
+        width:calc(100vw - 28px);
+        height:500px;
         padding:24px 22px 20px;
         border-radius:26px;
       }
@@ -2451,25 +2451,25 @@
         </div>
       </div>
       <div class="launch-metrics" aria-hidden="true">
-        <div class="launch-metric"><span>Bugünkü satış</span><strong>₼</strong></div>
-        <div class="launch-metric"><span>Hesabat</span><strong>PDF</strong></div>
+        <div class="launch-metric"><span>Bugünkü satış</span><strong id="launchRevenueMetric">0 ₼</strong></div>
+        <div class="launch-metric"><span>Bugünkü xərc</span><strong id="launchExpenseMetric">0 ₼</strong></div>
       </div>
       <div class="launch-receipt" aria-hidden="true">
         <div class="launch-row">
-          <span>Yeni satış<small>məhsul siyahısı hazırlanır</small></span>
-          <b>+24 ₼</b>
+          <span>Gəlir<small id="launchSalesCount">satışlar yüklənir</small></span>
+          <b id="launchRevenueRow">0 ₼</b>
         </div>
         <div class="launch-row">
-          <span>Xərc qeydi<small>gündəlik balans yoxlanır</small></span>
-          <b>-2 ₼</b>
+          <span>Xərc<small id="launchExpenseCount">xərclər yoxlanır</small></span>
+          <b id="launchExpenseRow">0 ₼</b>
         </div>
         <div class="launch-row">
-          <span>Hesabat<small>PDF və JPG paneli</small></span>
-          <b>hazır</b>
+          <span>Cib<small>gəlir - xərc</small></span>
+          <b id="launchPocketRow">0 ₼</b>
         </div>
       </div>
       <div class="launch-status" aria-hidden="true">
-        <span>Məlumatlar sinxronlaşır</span>
+        <span id="launchStatusText">Məlumatlar sinxronlaşır</span>
         <span class="launch-dots"><span></span><span></span><span></span></span>
       </div>
       <div class="launch-bar" aria-hidden="true"></div>
@@ -4501,9 +4501,32 @@ async function loadAppSettings(){
   renderReportSectionControls();
 }
 
+function updateLaunchSplashData(){
+  if(!$("launchSplash"))return;
+  const today=isoLocalDate(new Date());
+  const todaySales=sales.filter(sale=>
+    !isOutsideIncomeSale(sale) &&
+    isoLocalDate(new Date(sale.created_at))===today
+  );
+  const todayExpenses=expenses.filter(expense=>isoLocalDate(new Date(expense.created_at))===today);
+  const revenue=todaySales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const expense=todayExpenses.reduce((sum,item)=>sum+Number(item.amount||0),0);
+  const pocket=revenue-expense;
+
+  $("launchRevenueMetric").textContent=money(revenue);
+  $("launchExpenseMetric").textContent=money(expense);
+  $("launchRevenueRow").textContent=`+${money(revenue)}`;
+  $("launchExpenseRow").textContent=`-${money(expense)}`;
+  $("launchPocketRow").textContent=money(pocket);
+  $("launchSalesCount").textContent=`${todaySales.length} satış qeydi`;
+  $("launchExpenseCount").textContent=`${todayExpenses.length} xərc qeydi`;
+  $("launchStatusText").textContent="Bugünkü data hazırdır";
+}
+
 async function loadAll(){
   await Promise.all([loadCategories(),loadProducts(),loadSales(),loadExpenses(),loadNotes(),loadDeletedRecords(),loadLogs(),loadAppSettings()]);
   applyLocalQueue();
+  updateLaunchSplashData();
   renderAll();
   updateSyncStatus();
   syncLocalQueue();
