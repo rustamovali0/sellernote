@@ -165,6 +165,8 @@ create table if not exists public.app_settings (
   notebook_images jsonb not null default '[]',
   balance_wallets jsonb not null default '{}',
   quick_expense_buttons jsonb not null default '[{"id":"tea","title":"Çay","amount":2},{"id":"lottery","title":"Latareya","amount":50}]',
+  copy_templates jsonb not null default '{}',
+  personal_notes jsonb not null default '[]',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -207,6 +209,12 @@ alter table public.app_settings
 
 alter table public.app_settings
   add column if not exists quick_expense_buttons jsonb not null default '[{"id":"tea","title":"Çay","amount":2},{"id":"lottery","title":"Latareya","amount":50}]';
+
+alter table public.app_settings
+  add column if not exists copy_templates jsonb not null default '{}';
+
+alter table public.app_settings
+  add column if not exists personal_notes jsonb not null default '[]';
 
 alter table public.products
   add column if not exists deleted_at timestamptz;

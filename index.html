@@ -1047,6 +1047,32 @@
       display:grid;
       gap:8px;
     }
+    .personal-note-card{
+      display:grid;
+      gap:8px;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:var(--card2);
+    }
+    .personal-note-main{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:0;
+      background:transparent;
+      color:var(--text);
+      text-align:left;
+      font-weight:900;
+    }
+    .personal-note-body{
+      white-space:pre-wrap;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
     .settings-menu{
       display:grid;
       grid-template-columns:repeat(2,minmax(0,1fr));
@@ -3021,6 +3047,24 @@
       <details class="card settings-card">
         <summary class="settings-toggle">
           <div>
+            <div class="settings-title">Şəxsi qeydlər</div>
+            <div class="meta">Sadə qeyd siyahısı</div>
+          </div>
+        </summary>
+        <div class="settings-body">
+          <input id="personalNoteId" type="hidden">
+          <textarea id="personalNoteText" class="textarea" rows="4" placeholder="Qeyd yaz..."></textarea>
+          <div class="row2" style="margin-top:10px">
+            <button id="savePersonalNoteBtn" class="btn full" type="button">Yadda saxla</button>
+            <button id="cancelPersonalNoteEditBtn" class="btn secondary full hidden" type="button">İmtina</button>
+          </div>
+          <div id="personalNotesList" class="log-list" style="margin-top:10px"></div>
+        </div>
+      </details>
+
+      <details class="card settings-card">
+        <summary class="settings-toggle">
+          <div>
             <div class="settings-title">Yusifdə olan pul</div>
             <div class="meta">Xərc yaradanda “Pul Yusifdədir” seçilən məbləğlər</div>
           </div>
@@ -3174,11 +3218,19 @@
             <input id="copyReportDateTo" class="input" type="date">
           </div>
           <label>
-            <span class="label">Kopyalama mətni</span>
-            <textarea id="copyReportTemplate" class="textarea" rows="6"></textarea>
+            <span class="label">Yalnız ümumi şablonu</span>
+            <textarea id="copyReportSummaryTemplate" class="textarea" rows="5"></textarea>
           </label>
-          <div class="meta">{date}, {revenue}, {expense}, {cash}, {card}</div>
-          <button id="resetCopyReportTemplate" class="btn secondary full" type="button">Kopyalama şablonunu sıfırla</button>
+          <label>
+            <span class="label">Kopyala şablonu</span>
+            <textarea id="copyReportListTemplate" class="textarea" rows="9"></textarea>
+          </label>
+          <label>
+            <span class="label">Qısa kopyala şablonu</span>
+            <textarea id="copyReportQuickTemplate" class="textarea" rows="9"></textarea>
+          </label>
+          <div class="meta">{date}, {range_revenue_label}, {main_revenue}, {products}, {outside}, {expenses}, {expense_total}, {summary}, {yusif}, {pocket}, {revenue}, {cash}, {card}</div>
+          <button id="resetCopyReportTemplate" class="btn secondary full" type="button">Bütün şablonları sıfırla</button>
           <button id="copyReportSettingsBtn" class="btn full" type="button">Hesabatı kopyala</button>
         </div>
         <button id="downloadSqlPdfBtn" class="btn secondary full" type="button" style="margin-top:10px">SQL yüklə</button>
@@ -3823,7 +3875,7 @@ let expenses=[];
 let notes=[];
 let activityLogs=[];
 let deletedRecords=[];
-let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,category_price_defaults:null};
+let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,category_price_defaults:null,copy_templates:null,personal_notes:null};
 let currentSaleProduct=null;
 let displayedLocalDate=null;
 let currentPage="sales";
@@ -3901,6 +3953,12 @@ const COPY_REPORT_FROM_KEY="sellernote-copy-report-from";
 const COPY_REPORT_TO_KEY="sellernote-copy-report-to";
 const COPY_REPORT_TYPE_KEY="sellernote-copy-report-type";
 const COPY_REPORT_TEMPLATE_KEY="sellernote-copy-report-template";
+const COPY_TEMPLATE_STORAGE_KEYS={
+  summary:"sellernote-copy-template-summary",
+  list:"sellernote-copy-template-list",
+  quick:"sellernote-copy-template-quick"
+};
+const PERSONAL_NOTES_STORAGE_KEY="sellernote-personal-notes";
 const LOCAL_SYNC_QUEUE_KEY="sellernote-local-sync-queue-v1";
 const LOCAL_ID_PREFIX="local-";
 const DEFAULT_COPY_REPORT_TEMPLATE=[
@@ -3908,8 +3966,46 @@ const DEFAULT_COPY_REPORT_TEMPLATE=[
   "Ümumi gəlir: {revenue}",
   "Xərc: {expense}",
   "Nağd: {cash}",
-  "Kart: {card}"
+  "Kart: {card}",
+  "{yusif}"
 ].join("\n");
+const DEFAULT_COPY_TEMPLATES={
+  summary:DEFAULT_COPY_REPORT_TEMPLATE,
+  list:[
+    "Tarix: {date}",
+    "{range_revenue_label}: {main_revenue}",
+    "",
+    "Məhsul siyahısı:",
+    "{products}",
+    "{outside}",
+    "",
+    "Xərclər:",
+    "{expenses}",
+    "",
+    "Ümumi xərc: {expense_total}",
+    "",
+    "Yekun:",
+    "{summary}",
+    "{yusif}",
+    "",
+    "Məndə var: {pocket}"
+  ].join("\n"),
+  quick:[
+    "Tarix: {date}",
+    "{range_revenue_label}: {main_revenue}",
+    "",
+    "Xərclər:",
+    "{expenses}",
+    "",
+    "Ümumi xərc: {expense_total}",
+    "",
+    "Yekun:",
+    "{summary}",
+    "{yusif}",
+    "",
+    "Məndə var: {pocket}"
+  ].join("\n")
+};
 
 const escapeHtml=s=>String(s??"").replace(/[&<>"']/g,m=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
@@ -4526,9 +4622,9 @@ async function loadAppSettings(){
 
   if(error){
     console.warn("app_settings:",error.message);
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null};
   }else{
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,...(data||{})};
+    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null,...(data||{})};
   }
 
   applyBranding();
@@ -4994,8 +5090,35 @@ function copyReportType(){
   return ["summary","list"].includes(type)?type:"summary";
 }
 
-function copyReportTemplate(){
-  return localStorage.getItem(COPY_REPORT_TEMPLATE_KEY)||DEFAULT_COPY_REPORT_TEMPLATE;
+function localCopyTemplates(){
+  const templates={};
+  Object.entries(COPY_TEMPLATE_STORAGE_KEYS).forEach(([key,storageKey])=>{
+    const value=localStorage.getItem(storageKey);
+    if(value)templates[key]=value;
+  });
+  const legacy=localStorage.getItem(COPY_REPORT_TEMPLATE_KEY);
+  if(legacy && !templates.summary)templates.summary=legacy;
+  return templates;
+}
+
+function copyReportTemplates(){
+  const saved=appSettings?.copy_templates && typeof appSettings.copy_templates==="object"
+    ? appSettings.copy_templates
+    : null;
+  return {
+    ...DEFAULT_COPY_TEMPLATES,
+    ...(saved||localCopyTemplates())
+  };
+}
+
+function copyReportTemplate(type="summary"){
+  return copyReportTemplates()[type]||DEFAULT_COPY_TEMPLATES[type]||DEFAULT_COPY_REPORT_TEMPLATE;
+}
+
+function fillCopyTemplate(template,values){
+  return String(template||"").replace(/\{([a-z_]+)\}/g,(match,key)=>
+    Object.prototype.hasOwnProperty.call(values,key) ? String(values[key]??"") : match
+  ).replace(/\n{3,}/g,"\n\n").trim();
 }
 
 function costProfitVisible(){
@@ -5142,11 +5265,14 @@ function renderReportSectionControls(previewSections=null){
   }
 
   if($("copyReportRangeMode")){
+    const templates=copyReportTemplates();
     $("copyReportRangeMode").value=copyReportRangeMode();
     $("copyReportType").value=copyReportType();
     $("copyReportDateFrom").value=localStorage.getItem(COPY_REPORT_FROM_KEY)||isoLocalDate(new Date());
     $("copyReportDateTo").value=localStorage.getItem(COPY_REPORT_TO_KEY)||isoLocalDate(new Date());
-    $("copyReportTemplate").value=copyReportTemplate();
+    $("copyReportSummaryTemplate").value=templates.summary;
+    $("copyReportListTemplate").value=templates.list;
+    $("copyReportQuickTemplate").value=templates.quick;
     $("copyReportCustomRange").classList.toggle("hidden",$("copyReportRangeMode").value!=="custom");
   }
 }
@@ -5170,6 +5296,32 @@ async function saveReportSections(sections){
   await loadLogs();
   renderLogs();
   toast("Hesabat ayarları saxlandı");
+}
+
+async function saveCopyTemplates(nextTemplates,options={}){
+  const clean={
+    summary:String(nextTemplates.summary||DEFAULT_COPY_TEMPLATES.summary),
+    list:String(nextTemplates.list||DEFAULT_COPY_TEMPLATES.list),
+    quick:String(nextTemplates.quick||DEFAULT_COPY_TEMPLATES.quick)
+  };
+  appSettings={...appSettings,copy_templates:clean};
+  Object.entries(COPY_TEMPLATE_STORAGE_KEYS).forEach(([key,storageKey])=>{
+    localStorage.setItem(storageKey,clean[key]);
+  });
+
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    copy_templates:clean,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+
+  if(error){
+    console.warn("copy_templates:",error.message);
+    if(!options.silent)toast("Şablon lokal saxlandı. Supabase üçün SQL-i əlavə et.");
+    return;
+  }
+
+  if(!options.silent)toast("Kopyalama şablonları saxlandı");
 }
 
 async function saveDashboardProfitVisibility(visible){
@@ -5297,6 +5449,88 @@ function dailyProfits(){
   return appSettings?.daily_profits && typeof appSettings.daily_profits==="object"
     ? appSettings.daily_profits
     : {};
+}
+
+function personalNotes(){
+  if(Array.isArray(appSettings?.personal_notes))return appSettings.personal_notes;
+  try{
+    const saved=JSON.parse(localStorage.getItem(PERSONAL_NOTES_STORAGE_KEY)||"[]");
+    return Array.isArray(saved)?saved:[];
+  }catch{
+    return [];
+  }
+}
+
+function personalNoteTitle(body){
+  const firstLine=String(body||"").split(/\n/).map(line=>line.trim()).find(Boolean)||"Şəxsi qeyd";
+  return firstLine.length>38?firstLine.slice(0,38).trim()+"...":firstLine;
+}
+
+function resetPersonalNoteForm(){
+  $("personalNoteId").value="";
+  $("personalNoteText").value="";
+  $("cancelPersonalNoteEditBtn").classList.add("hidden");
+  $("savePersonalNoteBtn").textContent="Yadda saxla";
+}
+
+function renderPersonalNotes(){
+  if(!$("personalNotesList"))return;
+  const rows=personalNotes().slice().sort((a,b)=>String(b.updated_at||b.created_at).localeCompare(String(a.updated_at||a.created_at)));
+  $("personalNotesList").innerHTML=rows.length?rows.map(note=>`
+    <div class="personal-note-card" data-personal-note="${escapeHtml(note.id)}">
+      <button class="personal-note-main" type="button" data-view-personal-note="${escapeHtml(note.id)}">
+        <span>${escapeHtml(personalNoteTitle(note.body))}</span>
+        <span class="chev">⌄</span>
+      </button>
+      <div class="personal-note-body hidden" data-personal-note-body="${escapeHtml(note.id)}">${escapeHtml(note.body||"")}</div>
+      <div class="row2">
+        <button class="btn secondary" type="button" data-edit-personal-note="${escapeHtml(note.id)}">Düzəliş</button>
+        <button class="btn danger" type="button" data-delete-personal-note="${escapeHtml(note.id)}">Sil</button>
+      </div>
+    </div>
+  `).join(""):`<div class="empty">Şəxsi qeyd yoxdur.</div>`;
+}
+
+async function savePersonalNotes(next,message="Şəxsi qeydlər saxlandı"){
+  appSettings={...appSettings,personal_notes:next};
+  localStorage.setItem(PERSONAL_NOTES_STORAGE_KEY,JSON.stringify(next));
+  renderPersonalNotes();
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    personal_notes:next,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+  if(error)toast("Şəxsi qeyd lokal saxlandı. Supabase üçün SQL-i əlavə et.");
+  else toast(message);
+}
+
+async function savePersonalNote(){
+  const body=$("personalNoteText").value.trim();
+  if(!body){
+    toast("Qeyd yazın.");
+    return;
+  }
+  const id=$("personalNoteId").value;
+  const now=new Date().toISOString();
+  const current=personalNotes();
+  const next=id
+    ? current.map(note=>note.id===id?{...note,body,updated_at:now}:note)
+    : [{id:crypto.randomUUID(),body,created_at:now,updated_at:now},...current];
+  resetPersonalNoteForm();
+  await savePersonalNotes(next,id?"Şəxsi qeyd yeniləndi":"Şəxsi qeyd əlavə edildi");
+}
+
+async function deletePersonalNote(id){
+  const note=personalNotes().find(item=>item.id===id);
+  if(!note)return;
+  if(!await appConfirm("Bu şəxsi qeydi silmək istəyirsiniz?",{
+    title:"Şəxsi qeydi sil",
+    confirmText:"Sil",
+    cancelText:"İmtina",
+    tone:"danger"
+  }))return;
+  if($("personalNoteId").value===id)resetPersonalNoteForm();
+  await savePersonalNotes(personalNotes().filter(item=>item.id!==id),"Şəxsi qeyd silindi");
 }
 
 function dailyProfitFilterMatches(date){
@@ -7855,6 +8089,7 @@ function renderCurrentPage(page=currentPage){
     renderDailyProfits();
     renderYusifMoneySettings();
     renderWorkerPaySettings();
+    renderPersonalNotes();
     renderNotebookImages();
     renderBalanceWallets();
     renderQuickExpenseSettings();
@@ -8368,7 +8603,8 @@ async function deleteSale(id){
     return;
   }
 
-  await loadAll();
+  sales=sales.filter(item=>item.id!==id);
+  renderAll();
   toast("Satış silindi");
 }
 
@@ -8467,7 +8703,8 @@ async function deleteCategory(id){
   const {error}=await sb.from("categories").delete().eq("id",id);
   if(error){toast(error.message);return}
 
-  await loadAll();
+  categories=categories.filter(category=>category.id!==id);
+  renderAll();
   toast("Kateqoriya silindi");
 }
 
@@ -8595,7 +8832,8 @@ async function deleteExpense(id){
     return;
   }
 
-  await loadAll();
+  expenses=expenses.filter(item=>item.id!==id);
+  renderAll();
   toast("Xərc silindi");
 }
 
@@ -8653,7 +8891,8 @@ async function deleteNote(id){
     return;
   }
 
-  await loadAll();
+  notes=notes.filter(item=>item.id!==id);
+  renderAll();
   toast("Qeyd silindi");
 }
 
@@ -9335,7 +9574,8 @@ $("confirmMultiSale").addEventListener("click",async()=>{
     return;
   }
 
-  const payloads=[];
+  const entries=[];
+  const createdAt=new Date().toISOString();
 
   for(const [productId,draft] of multiSaleDraft.entries()){
     const product=products.find(item=>item.id===productId);
@@ -9351,20 +9591,13 @@ $("confirmMultiSale").addEventListener("click",async()=>{
 
     const quantity=Math.max(1,parseInt(draft.quantity||1,10)||1);
     const productSaleImages=productImages(product);
-    const customUrls=[];
-
-    for(const file of (draft.imageFiles||[])){
-      const url=await uploadImage(file);
-      if(url)customUrls.push(url);
-    }
-
-    // Satış üçün seçilən şəkillər həmişə öndə qalır. Məhsulda 5 şəkil olsa belə
-    // custom satış şəkli itmir; məhsulun şəkillərinə isə heç bir update edilmir.
-    const images=[...customUrls,...productSaleImages]
+    const previewImages=[...(draft.imagePreviewUrls||[]),...productSaleImages]
       .filter((url,index,array)=>url&&array.indexOf(url)===index)
       .slice(0,5);
-
-    payloads.push({
+    const payloadImages=[...productSaleImages]
+      .filter((url,index,array)=>url&&array.indexOf(url)===index)
+      .slice(0,5);
+    const payload={
       user_id:currentUser.id,
       product_id:product.id,
       category_id:product.category_id||null,
@@ -9374,15 +9607,26 @@ $("confirmMultiSale").addEventListener("click",async()=>{
       unit_cost_price:Number(product.cost_price||0),
       sale_price_provided:true,
       cost_price_provided:Number(product.cost_price||0)>0,
-    payment_method:"cash",
-    card_account:null,
-      image_url:images[0]||null,
-      image_urls:images,
+      payment_method:"cash",
+      card_account:null,
+      image_url:payloadImages[0]||null,
+      image_urls:payloadImages,
       note:null
+    };
+    entries.push({
+      id:crypto.randomUUID(),
+      type:"sale_insert",
+      local_id:LOCAL_ID_PREFIX+crypto.randomUUID(),
+      payload,
+      image_files:[...(draft.imageFiles||[])],
+      product_images:productSaleImages,
+      preview_image_url:previewImages[0]||null,
+      preview_image_urls:previewImages,
+      created_at:createdAt
     });
   }
 
-  if(!payloads.length){
+  if(!entries.length){
     toast("Satış üçün məhsul seçilməyib.");
     return;
   }
@@ -9390,14 +9634,56 @@ $("confirmMultiSale").addEventListener("click",async()=>{
   $("confirmMultiSale").disabled=true;
 
   try{
-    const {error}=await sb.from("sales").insert(payloads);
-    if(error)throw error;
+    entries.forEach(entry=>{
+      const queueEntry={...entry};
+      delete queueEntry.image_files;
+      delete queueEntry.product_images;
+      enqueueLocalMutation(queueEntry);
+      sales.unshift(makeLocalSaleRow(queueEntry));
+    });
 
     closeModal("multiSaleModal");
     clearMultiSaleDraft();
-    await loadAll();
     showPage("sales");
-    toast(`${payloads.length} satış əlavə edildi`);
+    renderAll();
+    toast(`${entries.length} satış əlavə edildi. Baza ilə sinxron gedir.`);
+
+    (async()=>{
+      for(const entry of entries){
+        try{
+          const customUrls=[];
+          for(const file of entry.image_files||[]){
+            const url=await uploadImage(file);
+            if(url)customUrls.push(url);
+          }
+          const images=[...customUrls,...(entry.product_images||[])]
+            .filter((url,index,array)=>url&&array.indexOf(url)===index)
+            .slice(0,5);
+          const finalEntry={
+            ...entry,
+            payload:{
+              ...entry.payload,
+              image_url:images[0]||null,
+              image_urls:images
+            },
+            preview_image_url:images[0]||entry.preview_image_url||null,
+            preview_image_urls:images.length?images:entry.preview_image_urls
+          };
+          delete finalEntry.image_files;
+          delete finalEntry.product_images;
+          updateLocalMutation(entry.id,{
+            payload:finalEntry.payload,
+            preview_image_url:finalEntry.preview_image_url,
+            preview_image_urls:finalEntry.preview_image_urls
+          });
+          await syncQueuedSale(finalEntry);
+        }catch(error){
+          console.warn(error);
+        }
+      }
+      renderAll();
+      syncLocalQueue();
+    })();
   }catch(error){
     console.error(error);
     toast(error.message||"Satışlar əlavə edilmədi.");
@@ -9635,8 +9921,14 @@ $("productForm").addEventListener("submit",async event=>{
       const {error}=await withAuthRetry(()=>sb.from("products").update(payload).eq("id",id));
       if(error)throw error;
 
+      products=products.map(product=>product.id===id?{
+        ...product,
+        ...payload,
+        image_url:payload.image_url||product.image_url||null,
+        image_urls:payload.image_urls?.length?payload.image_urls:product.image_urls
+      }:product);
       closeModal("productModal");
-      await loadAll();
+      renderAll();
       toast("Məhsul yeniləndi");
     }else{
       const localId=LOCAL_ID_PREFIX+crypto.randomUUID();
@@ -9725,9 +10017,10 @@ $("expenseForm").addEventListener("submit",async event=>{
       const result=await sb.from("expenses").update(finalPayload).eq("id",id);
       if(result.error)throw result.error;
 
+      expenses=expenses.map(expense=>expense.id===id?{...expense,...finalPayload}:expense);
       closeModal("expenseModal");
-      await loadAll();
       showPage("expenses");
+      renderAll();
       toast("Xərc yeniləndi");
       return;
     }
@@ -9815,9 +10108,10 @@ $("noteForm").addEventListener("submit",async event=>{
       const result=await sb.from("notes").update(finalPayload).eq("id",id);
       if(result.error)throw result.error;
 
+      notes=notes.map(note=>note.id===id?{...note,...finalPayload}:note);
       closeModal("noteModal");
-      await loadAll();
       showPage("notes");
+      renderAll();
       toast("Qeyd yeniləndi");
       return;
     }
@@ -10261,9 +10555,14 @@ $("looseSaleForm").addEventListener("submit",async event=>{
 
       if(error)throw error;
 
+      sales=sales.map(sale=>sale.id===id?{
+        ...sale,
+        ...finalPayload,
+        products:sale.products
+      }:sale);
       closeModal("looseSaleModal");
-      await loadAll();
       showPage("sales");
+      renderAll();
       toast(yusifStatusSaved
         ? "Satış yeniləndi"
         : "Satış yeniləndi. Yusif statusu üçün SQL-i işlədin.");
@@ -10410,8 +10709,13 @@ $("categoryForm").addEventListener("submit",async event=>{
 
   if(error){toast(error.message);return}
 
+  if(id){
+    categories=categories.map(category=>category.id===id?{...category,name:data?.name||name}:category);
+  }else if(data?.id){
+    categories.unshift(data);
+  }
   closeModal("categoryModal");
-  await loadAll();
+  renderAll();
 
   if(!id && categoryCreateContext==="product" && data?.id){
     $("productCategory").value=data.id;
@@ -10453,18 +10757,39 @@ $("copyReportType").addEventListener("change",()=>{
   });
 });
 
-$("copyReportTemplate").addEventListener("input",()=>{
-  localStorage.setItem(COPY_REPORT_TEMPLATE_KEY,$("copyReportTemplate").value);
-});
-
-$("copyReportTemplate").addEventListener("change",()=>{
-  toast("Kopyalama mətni saxlandı");
+[
+  ["copyReportSummaryTemplate","summary"],
+  ["copyReportListTemplate","list"],
+  ["copyReportQuickTemplate","quick"]
+].forEach(([id,key])=>{
+  $(id).addEventListener("input",()=>{
+    localStorage.setItem(COPY_TEMPLATE_STORAGE_KEYS[key],$(id).value);
+    appSettings={
+      ...appSettings,
+      copy_templates:{
+        ...copyReportTemplates(),
+        [key]:$(id).value
+      }
+    };
+  });
+  $(id).addEventListener("change",()=>{
+    const templates={
+      summary:$("copyReportSummaryTemplate").value,
+      list:$("copyReportListTemplate").value,
+      quick:$("copyReportQuickTemplate").value
+    };
+    saveCopyTemplates(templates);
+  });
 });
 
 $("resetCopyReportTemplate").addEventListener("click",()=>{
-  localStorage.setItem(COPY_REPORT_TEMPLATE_KEY,DEFAULT_COPY_REPORT_TEMPLATE);
-  $("copyReportTemplate").value=DEFAULT_COPY_REPORT_TEMPLATE;
-  toast("Kopyalama şablonu sıfırlandı");
+  Object.entries(COPY_TEMPLATE_STORAGE_KEYS).forEach(([key,storageKey])=>{
+    localStorage.setItem(storageKey,DEFAULT_COPY_TEMPLATES[key]);
+  });
+  $("copyReportSummaryTemplate").value=DEFAULT_COPY_TEMPLATES.summary;
+  $("copyReportListTemplate").value=DEFAULT_COPY_TEMPLATES.list;
+  $("copyReportQuickTemplate").value=DEFAULT_COPY_TEMPLATES.quick;
+  saveCopyTemplates(DEFAULT_COPY_TEMPLATES);
 });
 
 $("cardLimitsVisible").addEventListener("change",()=>{
@@ -10504,6 +10829,8 @@ async function downloadSqlPdf(){
     balance_wallets:balanceWallets(),
     quick_expense_buttons:quickExpenseButtons(),
     category_price_defaults:categoryPriceDefaults(),
+    copy_templates:copyReportTemplates(),
+    personal_notes:personalNotes(),
     created_at:appSettings.created_at,
     updated_at:appSettings.updated_at
   }:null;
@@ -10511,7 +10838,7 @@ async function downloadSqlPdf(){
     "-- SellerNote backup",
     `-- ${formatDate(new Date().toISOString())}`,
     "",
-    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","report_sections","pocket_overrides","daily_profits","show_dashboard_profit","show_cost_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","notebook_images","balance_wallets","quick_expense_buttons","category_price_defaults","created_at","updated_at"]),
+    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","report_sections","pocket_overrides","daily_profits","show_dashboard_profit","show_cost_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","notebook_images","balance_wallets","quick_expense_buttons","category_price_defaults","copy_templates","personal_notes","created_at","updated_at"]),
     sqlInsert("categories",categories,["id","user_id","name","created_at","updated_at"]),
     sqlInsert("products",[...products,...allDeleted.filter(row=>"sale_price" in row&&"cost_price" in row)],["id","user_id","category_id","name","sale_price","cost_price","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","money_holder","is_checked","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
@@ -10660,9 +10987,13 @@ function yusifReportInfo(data){
 }
 
 function appendYusifCopyBlock(lines,info){
-  if(!info.total)return;
-  lines.push("");
-  lines.push("Yusifdə var:");
+  const block=yusifCopyBlockLines(info);
+  if(block.length)lines.push("",...block);
+}
+
+function yusifCopyBlockLines(info){
+  if(!info.total)return [];
+  const lines=["Yusifdə var:"];
   if(info.saleAmount>0){
     lines.push(`Satışdan: ${money(info.saleAmount)} Satılan mallar:`);
     info.sales.forEach(sale=>{
@@ -10683,20 +11014,21 @@ function appendYusifCopyBlock(lines,info){
   }
   if(info.expenseAmount>0)lines.push(`Xərclərdən: ${money(info.expenseAmount)}`);
   lines.push(`Cəmi: ${money(info.total)}`);
+  return lines;
 }
 
 function summaryCopyReportText(from,to,data){
   const totals=reportCopyTotals(data);
-  const lines=copyReportTemplate()
-    .replaceAll("{date}",reportRangeLabel(from,to))
-    .replaceAll("{revenue}",money(totals.revenue))
-    .replaceAll("{expense}",money(totals.expense))
-    .replaceAll("{cash}",money(totals.cash))
-    .replaceAll("{card}",money(totals.card))
-    .trim()
-    .split("\n");
-  appendYusifCopyBlock(lines,yusifReportInfo(data));
-  return lines.join("\n").trim();
+  return fillCopyTemplate(copyReportTemplate("summary"),{
+    date:reportRangeLabel(from,to),
+    revenue:money(totals.revenue),
+    total_revenue:money(totals.revenue),
+    expense:money(totals.expense),
+    expense_total:money(totals.expense),
+    cash:money(totals.cash),
+    card:money(totals.card),
+    yusif:yusifCopyBlockLines(yusifReportInfo(data)).join("\n")
+  });
 }
 
 function listCopyReportText(from,to,data){
@@ -10828,7 +11160,66 @@ function listCopyReportText(from,to,data){
   lines.push("");
   lines.push(`Məndə var: ${money(inMyPocket)}`);
 
-  return lines.join("\n");
+  const productsBlock=regularSales.length
+    ? regularSales.map((sale,index)=>{
+      const method=sale.payment_method==="card"?"Kart":"Nağd";
+      const yusif=isYusifSale(sale)?" | Pul Yusifdədir":"";
+      return `${index+1}. ${saleTitle(sale)} | ${sale.quantity||1} ədəd | ${money(sale.total_revenue)} | ${method}${yusif}`;
+    }).join("\n")
+    : "Məhsul satışı yoxdur.";
+  const outsideBlock=outsideSales.length
+    ? [
+      "",
+      "Əlavə gəlirlər:",
+      ...outsideSales.map((sale,index)=>{
+        const yusif=isYusifSale(sale)?" | Pul Yusifdədir":"";
+        return `${index+1}. ${outsideIncomeLabel(sale)} | ${money(sale.total_revenue)}${yusif}`;
+      })
+    ].join("\n")
+    : "";
+  const expensesBlock=data.expenses.length
+    ? data.expenses.map((expense,index)=>`${index+1}. ${expense.title||"Xərc"} | ${money(expense.amount)}`).join("\n")
+    : "Xərc yoxdur.";
+  const summaryLines=[
+    `Ümumi gəlir: ${money(regularRevenue+outsideRevenue)}`,
+    `Nağd gəlir: ${money(cashRevenue)}`,
+    `Kart gəlir: ${money(cardRevenue)}`
+  ];
+  if(trustRevenue>0 && yusifTrustRevenue>0)summaryLines.push(`Etibar: ${money(trustRevenue)} + Pul Yusifdədir`);
+  else if(trustRevenue>0)summaryLines.push(`Etibar: ${money(trustRevenue)}`);
+  else if(yusifTrustRevenue>0)summaryLines.push("Etibar: Pul Yusifdədir");
+  else summaryLines.push("Etibar bu gün verməyib");
+  if(tailorRevenue>0 && yusifTailorRevenue>0)summaryLines.push(`Dərzi: ${money(tailorRevenue)} + Pul Yusifdədir`);
+  else if(tailorRevenue>0)summaryLines.push(`Dərzi: ${money(tailorRevenue)}`);
+  else if(yusifTailorRevenue>0)summaryLines.push("Dərzi: Pul Yusifdədir");
+  customOutsideEntries.forEach(([title,value])=>{
+    summaryLines.push(`${title}: ${money(value)}`);
+  });
+  summaryLines.push(`Xərc: ${money(expenseTotal)}`);
+
+  return fillCopyTemplate(copyReportTemplate("list"),{
+    date:reportRangeLabel(from,to),
+    range_revenue_label:from===to?"Gəlir":"Ümumi gəlir",
+    main_revenue:money(regularRevenue),
+    products:productsBlock,
+    outside:outsideBlock,
+    expenses:expensesBlock,
+    expense_total:money(expenseTotal),
+    summary:summaryLines.join("\n"),
+    yusif:yusifCopyBlockLines({
+      sales:yusifSales,
+      outsideGroups:yusifOutsideGroups,
+      outsideAmount:yusifOutsideAmount,
+      expenses:yusifExpenses,
+      saleAmount:yusifSaleAmount,
+      expenseAmount:yusifExpenseTotal,
+      total:yusifTotal
+    }).join("\n"),
+    pocket:money(inMyPocket),
+    revenue:money(regularRevenue+outsideRevenue),
+    cash:money(cashRevenue),
+    card:money(cardRevenue)
+  });
 }
 
 function quickCopyReportText(from,to){
@@ -10941,7 +11332,53 @@ function quickCopyReportText(from,to){
   lines.push("");
   lines.push(`Məndə var: ${money(inMyPocket)}`);
 
-  return lines.join("\n");
+  const expensesBlock=data.expenses.length
+    ? data.expenses.map((expense,index)=>{
+      const method=expensePaymentMethod(expense)==="card"?"Kart":"Nağd";
+      const yusif=isYusifExpense(expense)?" · Yusifdə var":"";
+      return `${index+1}. ${expense.title||"Xərc"} - ${money(expense.amount)} (${method}${yusif})`;
+    }).join("\n")
+    : "Xərc yoxdur.";
+  const summaryLines=[
+    `Ümumi gəlir: ${money(regularRevenue+outsideRevenue)}`,
+    `Nağd gəlir: ${money(cashRevenue)}`,
+    `Kart gəlir: ${money(cardRevenue)}`
+  ];
+  if(trustRevenue>0 && yusifTrustRevenue>0)summaryLines.push(`Etibar: ${money(trustRevenue)} + Pul Yusifdədir`);
+  else if(trustRevenue>0)summaryLines.push(`Etibar: ${money(trustRevenue)}`);
+  else if(yusifTrustRevenue>0)summaryLines.push("Etibar: Pul Yusifdədir");
+  else summaryLines.push("Etibar bu gün verməyib");
+  if(tailorRevenue>0 && yusifTailorRevenue>0)summaryLines.push(`Dərzi: ${money(tailorRevenue)} + Pul Yusifdədir`);
+  else if(tailorRevenue>0)summaryLines.push(`Dərzi: ${money(tailorRevenue)}`);
+  else if(yusifTailorRevenue>0)summaryLines.push("Dərzi: Pul Yusifdədir");
+  customOutsideEntries.forEach(([title,value])=>{
+    summaryLines.push(`${title}: ${money(value)}`);
+  });
+  summaryLines.push(`Xərc: ${money(expenseTotal)}`);
+
+  return fillCopyTemplate(copyReportTemplate("quick"),{
+    date:from===to?from:`${from} - ${to}`,
+    range_revenue_label:from===to?"Gəlir":"Ümumi gəlir",
+    main_revenue:money(regularRevenue),
+    products:"",
+    outside:"",
+    expenses:expensesBlock,
+    expense_total:money(expenseTotal),
+    summary:summaryLines.join("\n"),
+    yusif:yusifCopyBlockLines({
+      sales:yusifSales,
+      outsideGroups:yusifOutsideGroups,
+      outsideAmount:yusifOutsideAmount,
+      expenses:yusifExpenses,
+      saleAmount:yusifSaleAmount,
+      expenseAmount:yusifExpenseTotal,
+      total:yusifTotal
+    }).join("\n"),
+    pocket:money(inMyPocket),
+    revenue:money(regularRevenue+outsideRevenue),
+    cash:money(cashRevenue),
+    card:money(cardRevenue)
+  });
 }
 
 function copyReportText(from,to){
@@ -11572,6 +12009,32 @@ $("resetDailyProfitFilter").addEventListener("click",()=>{
   renderDailyProfits();
 });
 $("saveDailyProfitBtn").addEventListener("click",saveDailyProfit);
+$("savePersonalNoteBtn").addEventListener("click",savePersonalNote);
+$("cancelPersonalNoteEditBtn").addEventListener("click",resetPersonalNoteForm);
+$("personalNotesList").addEventListener("click",event=>{
+  const viewButton=event.target.closest("[data-view-personal-note]");
+  if(viewButton){
+    const id=viewButton.dataset.viewPersonalNote;
+    const body=document.querySelector(`[data-personal-note-body="${CSS.escape(id)}"]`);
+    body?.classList.toggle("hidden");
+    return;
+  }
+
+  const editButton=event.target.closest("[data-edit-personal-note]");
+  if(editButton){
+    const note=personalNotes().find(item=>item.id===editButton.dataset.editPersonalNote);
+    if(!note)return;
+    $("personalNoteId").value=note.id;
+    $("personalNoteText").value=note.body||"";
+    $("cancelPersonalNoteEditBtn").classList.remove("hidden");
+    $("savePersonalNoteBtn").textContent="Yenilə";
+    $("personalNoteText").focus();
+    return;
+  }
+
+  const deleteButton=event.target.closest("[data-delete-personal-note]");
+  if(deleteButton)deletePersonalNote(deleteButton.dataset.deletePersonalNote);
+});
 $("addNotebookImageBtn").addEventListener("click",()=>$("notebookImageInput").click());
 $("notebookImageInput").addEventListener("change",async()=>{
   await addNotebookImages($("notebookImageInput").files);
