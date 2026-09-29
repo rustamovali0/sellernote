@@ -10752,8 +10752,6 @@ function quickCopyReportText(from,to){
     lines.push(`${title}: ${money(value)}`);
   });
   lines.push(`Xərc: ${money(expenseTotal)}`);
-  lines.push("");
-  lines.push(`Məndə var: ${money(inMyPocket)}`);
 
   if(yusifTotal>0){
     lines.push("");
@@ -10768,6 +10766,9 @@ function quickCopyReportText(from,to){
     if(yusifExpenseTotal>0)lines.push(`- Xərclərdən: ${money(yusifExpenseTotal)}`);
     lines.push(`- Cəmi: ${money(yusifTotal)}`);
   }
+
+  lines.push("");
+  lines.push(`Məndə var: ${money(inMyPocket)}`);
 
   return lines.join("\n");
 }
