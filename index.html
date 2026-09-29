@@ -2847,6 +2847,28 @@
       <details class="card settings-card">
         <summary class="settings-toggle">
           <div>
+            <div class="settings-title">İşçi pulları</div>
+            <div class="meta">Şahin, Sahin, İşçi və İsci xərclərinə görə hesablanır</div>
+          </div>
+        </summary>
+        <div class="settings-body">
+          <div class="summary-grid">
+            <div class="stat">
+              <div class="label">Ümumi verilib</div>
+              <div id="settingsWorkerPayTotal" class="value profit">0 ₼</div>
+            </div>
+            <div class="stat">
+              <div class="label">Öyrənilən faiz</div>
+              <div id="settingsWorkerPayRate" class="value">0%</div>
+            </div>
+          </div>
+          <div id="settingsWorkerPayList" class="log-list" style="margin-top:10px"></div>
+        </div>
+      </details>
+
+      <details class="card settings-card">
+        <summary class="settings-toggle">
+          <div>
             <div class="settings-title">Sürətli xərclər</div>
             <div class="meta">Xərclər bölməsində görünən hazır düymələr</div>
           </div>
@@ -6839,6 +6861,12 @@ function workerPaidForDate(date){
     .reduce((sum,expense)=>sum+Number(expense.amount||0),0);
 }
 
+function workerExpensesList(){
+  return expenses
+    .filter(isWorkerExpense)
+    .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+}
+
 function learnedWorkerPayRate(excludedDate=null){
   const dates=[...new Set(expenses
     .filter(isWorkerExpense)
@@ -6892,6 +6920,11 @@ function workerPaySummaryForDate(date=currentWorkerPayDate()){
   const paid=workerPaidForDate(date);
   const remaining=estimated-paid;
   return {date,revenue,estimated,paid,remaining};
+}
+
+function workerPayRateLabel(){
+  const rate=learnedWorkerPayRate(null);
+  return rate===null ? "Auto" : `${Math.round(rate*1000)/10}%`;
 }
 
 function expensePaymentMethod(expense){
@@ -7010,6 +7043,77 @@ function renderYusifMoneySettings(){
 
   document.querySelectorAll("[data-edit-yusif-expense]").forEach(button=>{
     button.addEventListener("click",()=>openEditExpense(button.dataset.editYusifExpense));
+  });
+}
+
+function renderWorkerPaySettings(){
+  if(!$("settingsWorkerPayTotal"))return;
+
+  const list=workerExpensesList();
+  const totalPaid=list.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+  const groups=list.reduce((acc,expense)=>{
+    const date=isoLocalDate(new Date(expense.created_at));
+    if(!acc[date])acc[date]=[];
+    acc[date].push(expense);
+    return acc;
+  },{});
+
+  $("settingsWorkerPayTotal").textContent=money(totalPaid);
+  $("settingsWorkerPayRate").textContent=workerPayRateLabel();
+  $("settingsWorkerPayList").innerHTML=Object.entries(groups).length?Object.entries(groups)
+    .sort(([a],[b])=>b.localeCompare(a))
+    .map(([date,items])=>{
+      const summary=workerPaySummaryForDate(date);
+      const dayPaid=items.reduce((sum,item)=>sum+Number(item.amount||0),0);
+      const balance=summary.remaining<0
+        ? `Artıq: ${money(Math.abs(summary.remaining))}`
+        : `Qalıq: ${money(summary.remaining)}`;
+
+      return `
+        <div class="log-item">
+          <div class="log-top">
+            <div>
+              <div class="log-title">${escapeHtml(new Intl.DateTimeFormat("az-AZ",{day:"numeric",month:"long",year:"numeric"}).format(parseIsoLocalDate(date)))}</div>
+              <div class="log-tags">
+                <span class="log-tag">${escapeHtml(date)}</span>
+                <span class="log-tag">${items.length} qeyd</span>
+                <span class="log-tag">Satış: ${money(summary.revenue)}</span>
+              </div>
+            </div>
+            <div style="display:grid;gap:4px;justify-items:end">
+              <div class="value profit">${money(dayPaid)}</div>
+              <div class="sub">${escapeHtml(balance)}</div>
+            </div>
+          </div>
+          <div class="summary-grid" style="margin-top:10px">
+            <div class="stat"><div class="label">Hesablanan</div><div class="value">${money(summary.estimated)}</div></div>
+            <div class="stat"><div class="label">Verilib</div><div class="value profit">${money(summary.paid)}</div></div>
+          </div>
+          <div class="log-list" style="margin-top:10px">
+            ${items.map(expense=>`
+              <div class="log-item">
+                <div class="log-top">
+                  <div>
+                    <div class="log-title">${escapeHtml(expense.title||"İşçi")}</div>
+                    <div class="log-tags">
+                      <span class="log-tag">${escapeHtml(formatDate(expense.created_at))}</span>
+                      <span class="log-tag">${escapeHtml(paymentMethodLabel(expensePaymentMethod(expense)))}</span>
+                    </div>
+                  </div>
+                  <div style="display:grid;gap:8px;justify-items:end">
+                    <div class="value profit">${money(expense.amount)}</div>
+                    <button class="btn secondary" data-edit-worker-expense="${expense.id}" type="button">Düzəliş</button>
+                  </div>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }).join(""):'<div class="empty" style="padding:14px">İşçi pulu qeydi yoxdur. Xərc adına Şahin, Sahin, İşçi və ya İsci yazanda burada görünəcək.</div>';
+
+  document.querySelectorAll("[data-edit-worker-expense]").forEach(button=>{
+    button.addEventListener("click",()=>openEditExpense(button.dataset.editWorkerExpense));
   });
 }
 
@@ -7553,6 +7657,7 @@ function renderCurrentPage(page=currentPage){
     renderCardSettingsModal();
     renderDailyProfits();
     renderYusifMoneySettings();
+    renderWorkerPaySettings();
     renderNotebookImages();
     renderBalanceWallets();
     renderQuickExpenseSettings();
