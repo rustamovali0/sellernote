@@ -10572,7 +10572,7 @@ function copyReportDateRange(){
     return from<=to ? {from,to} : {from:to,to:from};
   }
 
-  return {from:today,to:today};
+  return defaultReportDateRange();
 }
 
 function reportRangeLabel(from,to){
@@ -10657,9 +10657,8 @@ function listCopyReportText(from,to,data){
   return lines.join("\n");
 }
 
-function quickCopyReportText(){
-  const today=isoLocalDate(new Date());
-  const data=reportData(today,today);
+function quickCopyReportText(from,to){
+  const data=reportData(from,to);
   const regularSales=data.sales.filter(sale=>!isOutsideIncomeSale(sale));
   const outsideSales=data.sales.filter(isOutsideIncomeSale);
   const normalExpenses=data.expenses.filter(expense=>!isYusifExpense(expense));
@@ -10677,12 +10676,6 @@ function quickCopyReportText(){
   const cardRevenue=normalRegularSales
     .filter(sale=>sale.payment_method==="card")
     .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
-  const cashExpenses=normalExpenses
-    .filter(expense=>expensePaymentMethod(expense)!=="card")
-    .reduce((sum,expense)=>sum+Number(expense.amount||0),0);
-  const cardExpenses=normalExpenses
-    .filter(expense=>expensePaymentMethod(expense)==="card")
-    .reduce((sum,expense)=>sum+Number(expense.amount||0),0);
   const yusifExpenseTotal=yusifExpenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
   const yusifSaleAmount=yusifSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const yusifTotal=yusifExpenseTotal+yusifSaleAmount;
@@ -10695,9 +10688,9 @@ function quickCopyReportText(){
   },{});
 
   const lines=[
-    `Tarix: ${today}`,
+    `Tarix: ${from===to?from:`${from} - ${to}`}`,
     "",
-    `Bu günki gəlir: ${money(regularRevenue)}`
+    `${from===to?"Gəlir":"Ümumi gəlir"}: ${money(regularRevenue)}`
   ];
 
   if(outsideRevenue>0){
@@ -10729,8 +10722,6 @@ function quickCopyReportText(){
   lines.push(`Məndə var: ${money(inMyPocket)}`);
   lines.push(`Nağd gəlir: ${money(cashRevenue)}`);
   lines.push(`Kart gəlir: ${money(cardRevenue)}`);
-  lines.push(`Nağd xərc: ${money(cashExpenses)}`);
-  lines.push(`Kart xərc: ${money(cardExpenses)}`);
 
   if(yusifTotal>0){
     lines.push("");
@@ -11196,8 +11187,9 @@ async function copyConfiguredReport(){
 }
 
 async function copyQuickReport(){
+  const range=copyReportDateRange();
   try{
-    await copyTextToClipboard(quickCopyReportText());
+    await copyTextToClipboard(quickCopyReportText(range.from,range.to));
     toast("Qısa hesabat kopyalandı");
   }catch(error){
     console.error(error);
@@ -11217,11 +11209,12 @@ $("pdfExportForm").addEventListener("submit",async event=>{
 $("exportJpgBtn").addEventListener("click",()=>runReportExport("jpg"));
 $("sharePdfBtn").addEventListener("click",()=>runReportExport("share"));
 $("sendReportWhatsapp").addEventListener("click",async()=>{
-  const today=isoLocalDate(new Date());
-  const config={from:today,to:today,sections:[...DEFAULT_REPORT_SECTIONS]};
+  const range=defaultReportDateRange();
+  const config={...range,sections:[...DEFAULT_REPORT_SECTIONS]};
   try{
     await shareReportJpg(config);
-    window.open("https://wa.me/994705428880?text="+encodeURIComponent("Bu günün satış+xərc hesabatı"),"_blank");
+    const label=range.from===range.to?range.from:`${range.from} - ${range.to}`;
+    window.open("https://wa.me/994705428880?text="+encodeURIComponent(`${label} satış+xərc hesabatı`),"_blank");
   }catch(error){
     console.error(error);
     toast("Hesabat göndərilmədi.");
