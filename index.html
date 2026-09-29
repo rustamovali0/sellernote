@@ -6904,7 +6904,7 @@ function fallbackWorkerPayForRevenue(revenue){
 }
 
 function workerPayForRevenue(revenue,date=null){
-  const rate=learnedWorkerPayRate(date);
+  const rate=learnedWorkerPayRate(null);
   if(rate!==null)return Math.round(Number(revenue||0)*rate);
   return fallbackWorkerPayForRevenue(revenue);
 }
