@@ -4681,6 +4681,16 @@ function isCustomOutsideIncomeName(name){
   return String(name||"").startsWith(CUSTOM_OUTSIDE_INCOME_PREFIX);
 }
 
+function isOutsideIncomeCategory(category){
+  if(!category)return false;
+  return OUTSIDE_INCOME_NAMES.some(name=>normalizeCategoryName(category.name)===normalizeCategoryName(name)) ||
+    isCustomOutsideIncomeName(category.name);
+}
+
+function visibleCategories(){
+  return categories.filter(category=>!isOutsideIncomeCategory(category));
+}
+
 function displayOutsideIncomeName(name){
   const value=String(name||"").trim();
   return isCustomOutsideIncomeName(value)
@@ -4691,11 +4701,7 @@ function displayOutsideIncomeName(name){
 function isOutsideIncomeCategoryId(categoryId){
   if(!categoryId)return false;
   return categories.some(category=>
-    category.id===categoryId &&
-    (
-      OUTSIDE_INCOME_NAMES.some(name=>normalizeCategoryName(category.name)===normalizeCategoryName(name)) ||
-      isCustomOutsideIncomeName(category.name)
-    )
+    category.id===categoryId && isOutsideIncomeCategory(category)
   );
 }
 
@@ -5721,13 +5727,13 @@ function syncProductCategoryCustom(){
   if(!$("productCategory")||!$("productCategoryMenu"))return;
 
   const selectedId=$("productCategory").value||"";
-  const selected=categories.find(category=>category.id===selectedId)||null;
+  const selected=visibleCategories().find(category=>category.id===selectedId)||null;
 
   $("productCategoryLabel").textContent=selected?.name||"Kateqoriya seçilməyib";
 
   const optionRows=[
     {id:"",name:"Kateqoriya seçilməyib"},
-    ...categories.map(category=>({id:category.id,name:category.name}))
+    ...visibleCategories().map(category=>({id:category.id,name:category.name}))
   ];
 
   $("productCategoryMenu").innerHTML=optionRows.map(option=>{
@@ -5746,7 +5752,7 @@ function syncProductCategoryCustom(){
 function mainCategoryRows(){
   return [
     {id:"",name:"Bütün kateqoriyalar"},
-    ...categories.map(category=>({id:category.id,name:category.name}))
+    ...visibleCategories().map(category=>({id:category.id,name:category.name}))
   ];
 }
 
@@ -5832,13 +5838,15 @@ function renderCategoryOptions(){
   const productSelected=$("categoryFilter").value;
   const salesSelected=$("salesCategoryFilter").value;
 
-  const options=categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+  const visible=visibleCategories();
+  const visibleIds=new Set(visible.map(category=>category.id));
+  const options=visible.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
 
   $("categoryFilter").innerHTML='<option value="">Bütün kateqoriyalar</option>'+options;
-  $("categoryFilter").value=productSelected;
+  $("categoryFilter").value=visibleIds.has(productSelected)?productSelected:"";
 
   $("salesCategoryFilter").innerHTML='<option value="">Bütün kateqoriyalar</option>'+options;
-  $("salesCategoryFilter").value=salesSelected;
+  $("salesCategoryFilter").value=visibleIds.has(salesSelected)?salesSelected:"";
   syncMainCategoryCustoms();
 
   $("productCategory").innerHTML='<option value="">Kateqoriya seçilməyib</option>'+options;
@@ -7330,7 +7338,8 @@ function renderNotes(){
 }
 
 function renderCategories(){
-  $("categoryList").innerHTML=categories.length?categories.map(category=>{
+  const rows=visibleCategories();
+  $("categoryList").innerHTML=rows.length?rows.map(category=>{
     const count=products.filter(product=>product.category_id===category.id).length;
     const defaultPrice=categoryDefaultPrice(category.id);
 
