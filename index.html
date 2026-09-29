@@ -10637,15 +10637,25 @@ function reportCopyTotals(data){
 
 function yusifReportInfo(data){
   const yusifSales=data.sales.filter(isYusifSale);
+  const regularSales=yusifSales.filter(sale=>!isOutsideIncomeSale(sale));
+  const outsideSales=yusifSales.filter(isOutsideIncomeSale);
+  const outsideGroups=outsideSales.reduce((totals,sale)=>{
+    const title=outsideIncomeLabel(sale);
+    totals[title]=(totals[title]||0)+Number(sale.total_revenue||0);
+    return totals;
+  },{});
   const yusifExpenses=data.expenses.filter(isYusifExpense);
-  const saleAmount=yusifSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const saleAmount=regularSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const outsideAmount=outsideSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const expenseAmount=yusifExpenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
   return {
-    sales:yusifSales,
+    sales:regularSales,
+    outsideGroups,
+    outsideAmount,
     expenses:yusifExpenses,
     saleAmount,
     expenseAmount,
-    total:saleAmount+expenseAmount
+    total:saleAmount+outsideAmount+expenseAmount
   };
 }
 
@@ -10658,6 +10668,13 @@ function appendYusifCopyBlock(lines,info){
     lines.push("Satılan mallar:");
     info.sales.forEach((sale,index)=>{
       lines.push(`${index+1}. ${saleTitle(sale)} - ${sale.quantity||1} ədəd - ${money(sale.total_revenue)}`);
+    });
+  }
+  const outsideEntries=Object.entries(info.outsideGroups||{}).filter(([,value])=>Number(value)>0);
+  if(outsideEntries.length){
+    lines.push("- Əlavə gəlir:");
+    outsideEntries.forEach(([title,value])=>{
+      lines.push(`  ${title}: Pul Yusifdədir ${money(value)}`);
     });
   }
   if(info.expenseAmount>0)lines.push(`- Xərclərdən: ${money(info.expenseAmount)}`);
@@ -10680,19 +10697,30 @@ function summaryCopyReportText(from,to,data){
 
 function listCopyReportText(from,to,data){
   const totals=reportCopyTotals(data);
+  const regularSales=data.sales.filter(sale=>!isOutsideIncomeSale(sale));
+  const outsideSales=data.sales.filter(isOutsideIncomeSale);
   const lines=[
     `Tarix: ${reportRangeLabel(from,to)}`,
     "",
     "Satışlar:"
   ];
 
-  if(data.sales.length){
-    data.sales.forEach((sale,index)=>{
+  if(regularSales.length){
+    regularSales.forEach((sale,index)=>{
       const method=sale.payment_method==="card"?"Kart":"Nağd";
       lines.push(`${index+1}. ${saleTitle(sale)} | ${sale.quantity||1} ədəd | ${money(sale.total_revenue)} | ${method}`);
     });
   }else{
     lines.push("Satış yoxdur.");
+  }
+
+  if(outsideSales.length){
+    lines.push("");
+    lines.push("Əlavə gəlirlər:");
+    outsideSales.forEach((sale,index)=>{
+      const yusif=isYusifSale(sale)?" | Pul Yusifdədir":"";
+      lines.push(`${index+1}. ${outsideIncomeLabel(sale)} | ${money(sale.total_revenue)}${yusif}`);
+    });
   }
 
   lines.push("");
@@ -10720,13 +10748,16 @@ function quickCopyReportText(from,to){
   const data=reportData(from,to);
   const regularSales=data.sales.filter(sale=>!isOutsideIncomeSale(sale));
   const outsideSales=data.sales.filter(isOutsideIncomeSale);
+  const normalOutsideSales=outsideSales.filter(sale=>!isYusifSale(sale));
+  const yusifOutsideSales=outsideSales.filter(isYusifSale);
   const normalExpenses=data.expenses.filter(expense=>!isYusifExpense(expense));
   const yusifExpenses=data.expenses.filter(isYusifExpense);
-  const yusifSales=data.sales.filter(isYusifSale);
+  const yusifSales=regularSales.filter(isYusifSale);
   const normalRegularSales=regularSales.filter(sale=>!isYusifSale(sale));
 
   const regularRevenue=normalRegularSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const outsideRevenue=outsideSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const normalOutsideRevenue=normalOutsideSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const expenseTotal=data.expenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
   const normalExpenseTotal=normalExpenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
   const cashRevenue=normalRegularSales
@@ -10737,19 +10768,30 @@ function quickCopyReportText(from,to){
     .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const yusifExpenseTotal=yusifExpenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
   const yusifSaleAmount=yusifSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
-  const yusifTotal=yusifExpenseTotal+yusifSaleAmount;
-  const inMyPocket=cashRevenue+outsideRevenue-normalExpenseTotal;
+  const yusifOutsideAmount=yusifOutsideSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const yusifTotal=yusifExpenseTotal+yusifSaleAmount+yusifOutsideAmount;
+  const inMyPocket=cashRevenue+normalOutsideRevenue-normalExpenseTotal;
 
-  const outsideGroups=outsideSales.reduce((totals,sale)=>{
+  const outsideGroups=normalOutsideSales.reduce((totals,sale)=>{
+    const title=outsideIncomeLabel(sale);
+    totals[title]=(totals[title]||0)+Number(sale.total_revenue||0);
+    return totals;
+  },{});
+  const yusifOutsideGroups=yusifOutsideSales.reduce((totals,sale)=>{
     const title=outsideIncomeLabel(sale);
     totals[title]=(totals[title]||0)+Number(sale.total_revenue||0);
     return totals;
   },{});
   const outsideEntries=Object.entries(outsideGroups);
+  const yusifOutsideEntries=Object.entries(yusifOutsideGroups);
   const trustEntry=outsideEntries.find(([title])=>normalizeCategoryName(title)===normalizeCategoryName(TRUST_CATEGORY_NAME));
   const tailorEntry=outsideEntries.find(([title])=>normalizeCategoryName(title)===normalizeCategoryName(TAILOR_CATEGORY_NAME));
+  const yusifTrustEntry=yusifOutsideEntries.find(([title])=>normalizeCategoryName(title)===normalizeCategoryName(TRUST_CATEGORY_NAME));
+  const yusifTailorEntry=yusifOutsideEntries.find(([title])=>normalizeCategoryName(title)===normalizeCategoryName(TAILOR_CATEGORY_NAME));
   const trustRevenue=Number(trustEntry?.[1]||0);
   const tailorRevenue=Number(tailorEntry?.[1]||0);
+  const yusifTrustRevenue=Number(yusifTrustEntry?.[1]||0);
+  const yusifTailorRevenue=Number(yusifTailorEntry?.[1]||0);
   const customOutsideEntries=outsideEntries
     .filter(([title])=>
       normalizeCategoryName(title)!==normalizeCategoryName(TRUST_CATEGORY_NAME) &&
@@ -10782,26 +10824,29 @@ function quickCopyReportText(from,to){
   lines.push(`Ümumi gəlir: ${money(regularRevenue+outsideRevenue)}`);
   lines.push(`Nağd gəlir: ${money(cashRevenue)}`);
   lines.push(`Kart gəlir: ${money(cardRevenue)}`);
-  lines.push(trustRevenue>0 ? `Etibar: ${money(trustRevenue)}` : "Etibar bu gün verməyib");
+  if(trustRevenue>0){
+    lines.push(`Etibar: ${money(trustRevenue)}`);
+  }else if(yusifTrustRevenue>0){
+    lines.push(`Etibar: Pul Yusifdədir ${money(yusifTrustRevenue)}`);
+  }else{
+    lines.push("Etibar bu gün verməyib");
+  }
   if(tailorRevenue>0)lines.push(`Dərzi: ${money(tailorRevenue)}`);
+  else if(yusifTailorRevenue>0)lines.push(`Dərzi: Pul Yusifdədir ${money(yusifTailorRevenue)}`);
   customOutsideEntries.forEach(([title,value])=>{
     lines.push(`${title}: ${money(value)}`);
   });
   lines.push(`Xərc: ${money(expenseTotal)}`);
 
-  if(yusifTotal>0){
-    lines.push("");
-    lines.push("Yusifdə var:");
-    if(yusifSaleAmount>0){
-      lines.push(`- Satışdan: ${money(yusifSaleAmount)}`);
-      lines.push("Satılan mallar:");
-      yusifSales.forEach((sale,index)=>{
-        lines.push(`${index+1}. ${saleTitle(sale)} - ${sale.quantity||1} ədəd - ${money(sale.total_revenue)}`);
-      });
-    }
-    if(yusifExpenseTotal>0)lines.push(`- Xərclərdən: ${money(yusifExpenseTotal)}`);
-    lines.push(`- Cəmi: ${money(yusifTotal)}`);
-  }
+  appendYusifCopyBlock(lines,{
+    sales:yusifSales,
+    outsideGroups:yusifOutsideGroups,
+    outsideAmount:yusifOutsideAmount,
+    expenses:yusifExpenses,
+    saleAmount:yusifSaleAmount,
+    expenseAmount:yusifExpenseTotal,
+    total:yusifTotal
+  });
 
   lines.push("");
   lines.push(`Məndə var: ${money(inMyPocket)}`);
