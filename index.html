@@ -207,6 +207,40 @@
     }
     .today-day{font-size:16px;font-weight:950;color:var(--text);letter-spacing:.02em;text-transform:uppercase}
     .today-time{font-size:13px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums;text-transform:none}
+    .sync-status{
+      grid-column:1/-1;
+      justify-self:center;
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      min-height:28px;
+      max-width:100%;
+      padding:6px 11px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:var(--card);
+      color:var(--muted);
+      font-size:11px;
+      font-weight:900;
+      line-height:1;
+      white-space:nowrap;
+      box-shadow:var(--softShadow);
+    }
+    .sync-status::before{
+      content:"";
+      width:7px;
+      height:7px;
+      border-radius:999px;
+      background:var(--success);
+      flex:0 0 7px;
+    }
+    .sync-status.pending::before{background:#f59e0b}
+    .sync-status.syncing::before{
+      background:#0ea5e9;
+      animation:syncPulse 1s ease-in-out infinite;
+    }
+    .sync-status.error::before{background:var(--danger)}
+    @keyframes syncPulse{50%{opacity:.35}}
 
     @media(max-width:430px){
       .topbar{
@@ -231,6 +265,11 @@
       }
       .today-day{font-size:13px}
       .today-time{font-size:11px;white-space:normal;line-height:1.15}
+      .sync-status{
+        margin-top:-4px;
+        font-size:10px;
+        padding:5px 9px;
+      }
       .nav-btn{
         min-height:44px;
         padding-left:2px;
@@ -776,8 +815,9 @@
     }
 
     .settings-card{
-      padding:13px;
-      margin-bottom:12px;
+      padding:16px;
+      margin-bottom:14px;
+      border-radius:18px;
     }
     details.settings-card{display:block;overflow:hidden}
     .settings-toggle{
@@ -786,9 +826,10 @@
       align-items:center;
       justify-content:space-between;
       gap:10px;
-      min-height:48px;
+      min-height:44px;
       cursor:pointer;
     }
+    .settings-toggle .meta{display:none}
     .settings-toggle::-webkit-details-marker{display:none}
     .settings-toggle::after{
       content:"⌄";
@@ -805,7 +846,7 @@
     }
     details[open]>.settings-toggle::after{transform:rotate(180deg)}
     .settings-body{
-      padding-top:12px;
+      padding-top:14px;
       margin-top:12px;
       border-top:1px solid var(--line);
     }
@@ -845,27 +886,30 @@
     }
     .settings-layout{
       display:grid;
-      grid-template-columns:118px minmax(0,1fr);
-      gap:10px;
+      grid-template-columns:148px minmax(0,1fr);
+      gap:14px;
       align-items:start;
     }
     .settings-sidebar{
       position:sticky;
       top:10px;
       display:grid;
-      gap:6px;
+      gap:8px;
       max-height:calc(100dvh - 150px);
       overflow:auto;
-      padding-bottom:8px;
+      padding:6px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:color-mix(in srgb,var(--card2) 78%,transparent);
       scrollbar-width:none;
     }
     .settings-sidebar::-webkit-scrollbar{display:none}
     .settings-nav-btn{
       width:100%;
-      min-height:40px;
-      padding:8px 9px;
+      min-height:42px;
+      padding:9px 10px;
       border:1px solid var(--line);
-      border-radius:12px;
+      border-radius:13px;
       background:var(--card);
       color:var(--text);
       text-align:left;
@@ -897,6 +941,9 @@
       min-width:0;
       font-size:13px;
     }
+    .settings-content .row2{
+      gap:10px;
+    }
     .settings-content .input,
     .settings-content .select,
     .settings-content .textarea{
@@ -918,6 +965,15 @@
       display:block;
     }
     #categoriesPage.sidebar-mode .settings-toggle{
+      display:flex;
+      cursor:default;
+      pointer-events:none;
+      min-height:auto;
+      padding-bottom:12px;
+      margin-bottom:14px;
+      border-bottom:1px solid var(--line);
+    }
+    #categoriesPage.sidebar-mode .settings-toggle::after{
       display:none;
     }
     #categoriesPage.sidebar-mode .settings-body{
@@ -926,16 +982,47 @@
       border-top:0;
     }
     @media(max-width:619px){
-      .settings-layout{grid-template-columns:96px minmax(0,1fr);gap:8px}
-      .settings-sidebar{top:8px;max-height:calc(100dvh - 165px)}
-      .settings-nav-btn{padding:8px 8px}
-      .settings-nav-btn strong{font-size:11px}
+      .settings-layout{
+        display:block;
+      }
+      .settings-sidebar{
+        top:0;
+        display:flex;
+        gap:7px;
+        max-height:none;
+        margin:0 0 12px;
+        padding:6px;
+        overflow-x:auto;
+        overflow-y:hidden;
+        border-radius:18px;
+      }
+      .settings-nav-btn{
+        flex:0 0 auto;
+        width:auto;
+        min-width:106px;
+        min-height:40px;
+        padding:8px 10px;
+        text-align:center;
+      }
+      .settings-nav-btn strong{
+        font-size:11px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
       .settings-nav-btn span{display:none}
+      .settings-card{
+        padding:15px;
+        border-radius:18px;
+      }
+      #categoriesPage.sidebar-mode .settings-toggle{
+        margin-bottom:12px;
+        padding-bottom:10px;
+      }
     }
     @media(max-width:360px){
-      .settings-layout{grid-template-columns:84px minmax(0,1fr);gap:7px}
-      .settings-sidebar{max-height:calc(100dvh - 155px);gap:6px}
-      .settings-nav-btn{min-height:44px;padding:8px 7px;border-radius:12px}
+      .settings-sidebar{gap:6px}
+      .settings-nav-btn{min-width:96px;min-height:38px;padding:8px 9px;border-radius:12px}
       .settings-nav-btn strong{font-size:10px}
       .settings-nav-btn span{display:none}
     }
@@ -2279,6 +2366,7 @@
         <button id="refreshAppBtn" class="icon-btn" type="button" aria-label="Yenilə">↻</button>
         <button id="themeToggle" class="icon-btn" type="button" aria-label="Tema dəyiş">☾</button>
       </div>
+      <div id="syncStatus" class="sync-status" aria-live="polite">Baza sinxron</div>
     </header>
 
     <div class="global-search-wrap">
@@ -2405,6 +2493,7 @@
         <button id="addCustomIncome" class="btn secondary" type="button">+ Custom</button>
         <button id="openPdfExport" class="btn secondary" type="button">PDF</button>
         <button id="copyReportBtn" class="btn secondary" type="button">Kopyala</button>
+        <button id="quickCopyReportBtn" class="btn secondary" type="button">Qısa kopyala</button>
         <button id="sendReportWhatsapp" class="btn secondary" type="button">Hesabat göndər</button>
       </div>
 
@@ -2725,6 +2814,14 @@
             </div>
           </div>
           <button id="saveDailyProfitBtn" class="btn full" type="button" style="margin-top:10px">Yadda saxla</button>
+          <div class="row2" style="margin-top:10px">
+            <select id="dailyProfitFilter" class="select">
+              <option value="all">Bütün qeydlər</option>
+              <option value="month">Bu ay</option>
+              <option value="today">Bu gün</option>
+            </select>
+            <button id="resetDailyProfitFilter" class="btn secondary full" type="button">Hamısını göstər</button>
+          </div>
           <div id="dailyProfitList" class="log-list" style="margin-top:10px"></div>
         </div>
         </div>
@@ -4097,39 +4194,73 @@ function showResetPasswordForm(message="Yeni şifrənizi yazın və təsdiqləyi
   setTimeout(()=>$("newPassword").focus(),0);
 }
 
+function isAuthJwtError(error){
+  const message=String(error?.message||"").toLowerCase();
+  const code=String(error?.code||"").toLowerCase();
+  return code==="pgrst301" || code==="401" || message.includes("jwt") || message.includes("token") || message.includes("session");
+}
+
+async function recoverAuthSession(error){
+  if(!isAuthJwtError(error))return false;
+  const {data,error:refreshError}=await sb.auth.refreshSession();
+  if(!refreshError&&data?.session){
+    currentUser=data.session.user;
+    toast("Session yeniləndi");
+    return true;
+  }
+  currentUser=null;
+  await sb.auth.signOut();
+  showLoginForm();
+  toast("Session bitib. Yenidən daxil olun.");
+  return false;
+}
+
+async function withAuthRetry(factory){
+  let result=await factory();
+  if(result?.error&&await recoverAuthSession(result.error)){
+    result=await factory();
+  }
+  return result;
+}
+
+async function handleLoadError(error,fallback="Məlumat yüklənmədi"){
+  if(await recoverAuthSession(error))return;
+  toast(error?.message||fallback);
+}
+
 async function loadCategories(){
-  const {data,error}=await sb.from("categories").select("*").order("name");
-  if(error){toast(error.message);return}
+  const {data,error}=await withAuthRetry(()=>sb.from("categories").select("*").order("name"));
+  if(error){await handleLoadError(error);return}
   categories=data||[];
 }
 
 async function loadProducts(){
-  const {data,error}=await sb.from("products").select("*, categories(name)").order("created_at",{ascending:false});
-  if(error){toast(error.message);return}
+  const {data,error}=await withAuthRetry(()=>sb.from("products").select("*, categories(name)").order("created_at",{ascending:false}));
+  if(error){await handleLoadError(error);return}
   products=(data||[]).filter(row=>!row.deleted_at);
 }
 
 async function loadSales(){
-  const {data,error}=await sb.from("sales")
+  const {data,error}=await withAuthRetry(()=>sb.from("sales")
     .select("*, products(name, category_id, categories(name))")
-    .order("created_at",{ascending:false});
-  if(error){toast(error.message);return}
+    .order("created_at",{ascending:false}));
+  if(error){await handleLoadError(error);return}
   sales=(data||[]).filter(row=>!row.deleted_at);
 }
 
 async function loadExpenses(){
-  const {data,error}=await sb.from("expenses")
+  const {data,error}=await withAuthRetry(()=>sb.from("expenses")
     .select("*")
-    .order("created_at",{ascending:false});
-  if(error){toast(error.message);return}
+    .order("created_at",{ascending:false}));
+  if(error){await handleLoadError(error);return}
   expenses=(data||[]).filter(row=>!row.deleted_at);
 }
 
 async function loadNotes(){
-  const {data,error}=await sb.from("notes")
+  const {data,error}=await withAuthRetry(()=>sb.from("notes")
     .select("*")
-    .order("created_at",{ascending:false});
-  if(error){toast(error.message);return}
+    .order("created_at",{ascending:false}));
+  if(error){await handleLoadError(error);return}
   notes=(data||[]).filter(row=>!row.deleted_at);
 }
 
@@ -4142,10 +4273,10 @@ async function loadDeletedRecords(){
   ];
 
   const results=await Promise.all(configs.map(async([table,label,titleKey])=>{
-    const {data,error}=await sb.from(table)
+    const {data,error}=await withAuthRetry(()=>sb.from(table)
       .select("*")
       .not("deleted_at","is",null)
-      .order("deleted_at",{ascending:false});
+      .order("deleted_at",{ascending:false}));
     if(error){
       console.warn(`${table} deleted:`,error.message);
       return [];
@@ -4162,10 +4293,10 @@ async function loadDeletedRecords(){
 }
 
 async function loadLogs(){
-  const {data,error}=await sb.from("activity_logs")
+  const {data,error}=await withAuthRetry(()=>sb.from("activity_logs")
     .select("*")
     .order("created_at",{ascending:false})
-    .limit(1000);
+    .limit(1000));
   if(error){
     console.warn("activity_logs:",error.message);
     activityLogs=[];
@@ -4175,9 +4306,9 @@ async function loadLogs(){
 }
 
 async function loadAppSettings(){
-  const {data,error}=await sb.from("app_settings")
+  const {data,error}=await withAuthRetry(()=>sb.from("app_settings")
     .select("*")
-    .maybeSingle();
+    .maybeSingle());
 
   if(error){
     console.warn("app_settings:",error.message);
@@ -4194,6 +4325,7 @@ async function loadAll(){
   await Promise.all([loadCategories(),loadProducts(),loadSales(),loadExpenses(),loadNotes(),loadDeletedRecords(),loadLogs(),loadAppSettings()]);
   applyLocalQueue();
   renderAll();
+  updateSyncStatus();
   syncLocalQueue();
 }
 
@@ -4210,8 +4342,29 @@ function localQueue(){
   }
 }
 
+function updateSyncStatus(mode="idle",message=""){
+  const el=$("syncStatus");
+  if(!el)return;
+  const pending=localQueue().length;
+  let text="Baza sinxron";
+  let state=mode;
+
+  if(mode==="syncing"){
+    text="Baza sinxron gedir";
+  }else if(mode==="error"){
+    text=message||"Sinxron xətası";
+  }else if(pending>0){
+    state="pending";
+    text=`Sinxron gözləyir (${pending})`;
+  }
+
+  el.className=`sync-status ${state==="idle"?"":state}`.trim();
+  el.textContent=text;
+}
+
 function saveLocalQueue(queue){
   localStorage.setItem(LOCAL_SYNC_QUEUE_KEY,JSON.stringify(queue));
+  updateSyncStatus();
 }
 
 function enqueueLocalMutation(entry){
@@ -4435,11 +4588,14 @@ async function syncLocalQueue(){
   if(!localQueue().length)return;
 
   localSyncRunning=true;
+  updateSyncStatus("syncing");
+  let hadError=false;
   try{
     for(const entry of localQueue().filter(item=>item.type==="product_insert")){
       try{
         await syncQueuedProduct(entry);
       }catch(error){
+        hadError=true;
         console.warn("local sync:",error);
       }
     }
@@ -4447,6 +4603,7 @@ async function syncLocalQueue(){
       try{
         await syncQueuedSale(entry);
       }catch(error){
+        hadError=true;
         console.warn("local sync:",error);
       }
     }
@@ -4454,6 +4611,7 @@ async function syncLocalQueue(){
       try{
         await syncQueuedExpense(entry);
       }catch(error){
+        hadError=true;
         console.warn("local sync:",error);
       }
     }
@@ -4461,12 +4619,14 @@ async function syncLocalQueue(){
       try{
         await syncQueuedNote(entry);
       }catch(error){
+        hadError=true;
         console.warn("local sync:",error);
       }
     }
     renderAll();
   }finally{
     localSyncRunning=false;
+    updateSyncStatus(hadError&&localQueue().length?"error":"idle",hadError?"Sinxron gözləyir":"");
   }
 }
 
@@ -4917,12 +5077,21 @@ function dailyProfits(){
     : {};
 }
 
+function dailyProfitFilterMatches(date){
+  const mode=$("dailyProfitFilter")?.value||"all";
+  const today=isoLocalDate(new Date());
+  if(mode==="today")return date===today;
+  if(mode==="month")return String(date||"").slice(0,7)===today.slice(0,7);
+  return true;
+}
+
 function renderDailyProfits(){
   if(!$("dailyProfitTotal"))return;
 
-  const entries=Object.entries(dailyProfits())
+  const allEntries=Object.entries(dailyProfits())
     .filter(([date,value])=>date && Number.isFinite(Number(value)))
     .sort(([a],[b])=>b.localeCompare(a));
+  const entries=allEntries.filter(([date])=>dailyProfitFilterMatches(date));
   const total=entries.reduce((sum,[,value])=>sum+Number(value||0),0);
   const average=entries.length?total/entries.length:0;
   const latest=entries[0];
@@ -4930,7 +5099,7 @@ function renderDailyProfits(){
   $("dailyProfitTotal").textContent=money(total);
   $("dailyProfitDetails").textContent=entries.length
     ? `${entries.length} qeyd · Orta ${money(average)} · Son ${latest[0]}: ${money(latest[1])}`
-    : "0 qeyd";
+    : `${allEntries.length?0:"0"} qeyd`;
   if(!$("dailyProfitDate").value)$("dailyProfitDate").value=isoLocalDate(new Date());
 
   const selectedAmount=dailyProfits()[$("dailyProfitDate").value];
@@ -4943,10 +5112,24 @@ function renderDailyProfits(){
           <div class="log-title">${escapeHtml(new Intl.DateTimeFormat("az-AZ",{day:"numeric",month:"long",year:"numeric"}).format(parseIsoLocalDate(date)))}</div>
           <div class="log-tags"><span class="log-tag">${escapeHtml(date)}</span></div>
         </div>
-        <div class="value profit">${money(value)}</div>
+        <div style="display:grid;gap:8px;justify-items:end">
+          <div class="value profit">${money(value)}</div>
+          <button class="btn secondary" data-edit-daily-profit="${escapeHtml(date)}" type="button">Düzəliş</button>
+        </div>
       </div>
     </div>
-  `).join(""):'<div class="empty" style="padding:14px">Hələ qazanc qeydi yoxdur.</div>';
+  `).join(""):'<div class="empty" style="padding:14px">Bu filterdə qazanc qeydi yoxdur.</div>';
+
+  document.querySelectorAll("[data-edit-daily-profit]").forEach(button=>{
+    button.addEventListener("click",()=>editDailyProfit(button.dataset.editDailyProfit));
+  });
+}
+
+function editDailyProfit(date){
+  const value=dailyProfits()[date];
+  $("dailyProfitDate").value=date;
+  $("dailyProfitAmount").value=Number.isFinite(Number(value))?String(value):"";
+  $("dailyProfitAmount").focus();
 }
 
 function notebookImages(){
@@ -6702,25 +6885,52 @@ function renderYusifMoneySettings(){
   const list=expenses
     .filter(isYusifExpense)
     .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  const groups=list.reduce((acc,expense)=>{
+    const date=isoLocalDate(new Date(expense.created_at));
+    if(!acc[date])acc[date]=[];
+    acc[date].push(expense);
+    return acc;
+  },{});
 
   $("settingsYusifExpenseTotal").textContent=money(yusifExpenseTotal(list));
-  $("settingsYusifExpenseList").innerHTML=list.length?list.slice(0,12).map(expense=>`
+  $("settingsYusifExpenseList").innerHTML=Object.entries(groups).length?Object.entries(groups)
+    .sort(([a],[b])=>b.localeCompare(a))
+    .map(([date,items])=>{
+      const dayTotal=items.reduce((sum,item)=>sum+Number(item.amount||0),0);
+      return `
     <div class="log-item">
       <div class="log-top">
         <div>
-          <div class="log-title">${escapeHtml(expense.title||"Xərc")}</div>
+          <div class="log-title">${escapeHtml(new Intl.DateTimeFormat("az-AZ",{day:"numeric",month:"long",year:"numeric"}).format(parseIsoLocalDate(date)))}</div>
           <div class="log-tags">
-            <span class="log-tag">${escapeHtml(formatDate(expense.created_at))}</span>
-            <span class="log-tag">Pul Yusifdədir</span>
+            <span class="log-tag">${escapeHtml(date)}</span>
+            <span class="log-tag">${items.length} qeyd</span>
           </div>
         </div>
-        <div style="display:grid;gap:8px;justify-items:end">
-          <div class="value profit">${money(expense.amount)}</div>
-          <button class="btn secondary" data-edit-yusif-expense="${expense.id}" type="button">Düzəliş</button>
-        </div>
+        <div class="value profit">${money(dayTotal)}</div>
+      </div>
+      <div class="log-list" style="margin-top:10px">
+        ${items.map(expense=>`
+          <div class="log-item">
+            <div class="log-top">
+              <div>
+                <div class="log-title">${escapeHtml(expense.title||"Xərc")}</div>
+                <div class="log-tags">
+                  <span class="log-tag">${escapeHtml(formatDate(expense.created_at))}</span>
+                  <span class="log-tag">${escapeHtml(paymentMethodLabel(expensePaymentMethod(expense)))}</span>
+                </div>
+              </div>
+              <div style="display:grid;gap:8px;justify-items:end">
+                <div class="value profit">${money(expense.amount)}</div>
+                <button class="btn secondary" data-edit-yusif-expense="${expense.id}" type="button">Düzəliş</button>
+              </div>
+            </div>
+          </div>
+        `).join("")}
       </div>
     </div>
-  `).join(""):'<div class="empty" style="padding:14px">Yusifdə olan pul qeydi yoxdur.</div>';
+  `;
+    }).join(""):'<div class="empty" style="padding:14px">Yusifdə olan pul qeydi yoxdur.</div>';
 
   document.querySelectorAll("[data-edit-yusif-expense]").forEach(button=>{
     button.addEventListener("click",()=>openEditExpense(button.dataset.editYusifExpense));
@@ -8982,9 +9192,55 @@ $("productForm").addEventListener("submit",async event=>{
     };
 
     if(id){
-      payload=await uploadProductImagesForPayload(payload,pendingProductImageFiles,editingImageUrls);
-      let error;
-      ({error}=await sb.from("products").update(payload).eq("id",id));
+      const files=[...pendingProductImageFiles];
+      const existingUrls=[...editingImageUrls];
+      const previewUrls=[...editingImageUrls,...pendingProductPreviewUrls].filter(Boolean).slice(0,5);
+
+      if(isLocalId(id)){
+        const queue=localQueue();
+        const index=queue.findIndex(entry=>entry.type==="product_insert"&&entry.local_id===id);
+        if(index>=0){
+          const entry=queue[index];
+          const nextEntry={
+            ...entry,
+            payload:{...entry.payload,...payload,user_id:currentUser.id},
+            preview_image_url:previewUrls[0]||null,
+            preview_image_urls:previewUrls
+          };
+          queue[index]=nextEntry;
+          saveLocalQueue(queue);
+          replaceLocalProduct(id,makeLocalProductRow(nextEntry));
+          closeModal("productModal");
+          renderAll();
+          toast("Məhsul yeniləndi. Baza ilə sinxron gedir.");
+
+          (async()=>{
+            try{
+              const finalPayload=await uploadProductImagesForPayload(nextEntry.payload,files,existingUrls);
+              updateLocalMutation(nextEntry.id,{
+                payload:finalPayload,
+                preview_image_url:finalPayload.image_url,
+                preview_image_urls:finalPayload.image_urls
+              });
+              await syncQueuedProduct({
+                ...nextEntry,
+                payload:finalPayload,
+                preview_image_url:finalPayload.image_url,
+                preview_image_urls:finalPayload.image_urls
+              });
+              renderAll();
+              toast("Məhsul bazaya yazıldı");
+            }catch(error){
+              console.warn(error);
+              toast("Məhsul lokaldadır. İnternet gələndə bazaya gedəcək.");
+            }
+          })();
+          return;
+        }
+      }
+
+      payload=await uploadProductImagesForPayload(payload,files,existingUrls);
+      const {error}=await withAuthRetry(()=>sb.from("products").update(payload).eq("id",id));
       if(error)throw error;
 
       closeModal("productModal");
@@ -10043,6 +10299,92 @@ function listCopyReportText(from,to,data){
   return lines.join("\n");
 }
 
+function quickCopyReportText(){
+  const today=isoLocalDate(new Date());
+  const data=reportData(today,today);
+  const regularSales=data.sales.filter(sale=>!isOutsideIncomeSale(sale));
+  const outsideSales=data.sales.filter(isOutsideIncomeSale);
+  const normalExpenses=data.expenses.filter(expense=>!isYusifExpense(expense));
+  const yusifExpenses=data.expenses.filter(isYusifExpense);
+  const yusifSales=regularSales.filter(isYusifSale);
+  const normalRegularSales=regularSales.filter(sale=>!isYusifSale(sale));
+
+  const regularRevenue=normalRegularSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const outsideRevenue=outsideSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const expenseTotal=data.expenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+  const normalExpenseTotal=normalExpenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+  const cashRevenue=normalRegularSales
+    .filter(sale=>sale.payment_method!=="card")
+    .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const cardRevenue=normalRegularSales
+    .filter(sale=>sale.payment_method==="card")
+    .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const cashExpenses=normalExpenses
+    .filter(expense=>expensePaymentMethod(expense)!=="card")
+    .reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+  const cardExpenses=normalExpenses
+    .filter(expense=>expensePaymentMethod(expense)==="card")
+    .reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+  const yusifExpenseTotal=yusifExpenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+  const yusifSaleAmount=yusifSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+  const yusifTotal=yusifExpenseTotal+yusifSaleAmount;
+  const inMyPocket=cashRevenue+outsideRevenue-normalExpenseTotal;
+
+  const outsideGroups=outsideSales.reduce((totals,sale)=>{
+    const title=outsideIncomeLabel(sale);
+    totals[title]=(totals[title]||0)+Number(sale.total_revenue||0);
+    return totals;
+  },{});
+
+  const lines=[
+    `Tarix: ${today}`,
+    "",
+    `Bu günki gəlir: ${money(regularRevenue)}`
+  ];
+
+  if(outsideRevenue>0){
+    lines.push("Əlavə gəlir:");
+    Object.entries(outsideGroups).forEach(([title,value])=>{
+      lines.push(`- ${title}: ${money(value)}`);
+    });
+  }
+
+  lines.push("");
+  lines.push("Xərclər:");
+  if(data.expenses.length){
+    data.expenses.forEach((expense,index)=>{
+      const method=expensePaymentMethod(expense)==="card"?"Kart":"Nağd";
+      const yusif=isYusifExpense(expense)?" · Yusifdə var":"";
+      lines.push(`${index+1}. ${expense.title||"Xərc"} - ${money(expense.amount)} (${method}${yusif})`);
+    });
+  }else{
+    lines.push("Xərc yoxdur.");
+  }
+
+  lines.push("");
+  lines.push(`Ümumi xərc: ${money(expenseTotal)}`);
+  lines.push("");
+  lines.push("Yekun:");
+  lines.push(`Ümumi gəlir: ${money(regularRevenue+outsideRevenue)}`);
+  lines.push(`Əlavə gəlir: ${money(outsideRevenue)}`);
+  lines.push(`Xərc: ${money(expenseTotal)}`);
+  lines.push(`Məndə var: ${money(inMyPocket)}`);
+  lines.push(`Nağd gəlir: ${money(cashRevenue)}`);
+  lines.push(`Kart gəlir: ${money(cardRevenue)}`);
+  lines.push(`Nağd xərc: ${money(cashExpenses)}`);
+  lines.push(`Kart xərc: ${money(cardExpenses)}`);
+
+  if(yusifTotal>0){
+    lines.push("");
+    lines.push("Yusifdə var:");
+    if(yusifSaleAmount>0)lines.push(`- Satışdan: ${money(yusifSaleAmount)}`);
+    if(yusifExpenseTotal>0)lines.push(`- Xərclərdən: ${money(yusifExpenseTotal)}`);
+    lines.push(`- Cəmi: ${money(yusifTotal)}`);
+  }
+
+  return lines.join("\n");
+}
+
 function copyReportText(from,to){
   const data=reportData(from,to);
   return copyReportType()==="list"
@@ -10495,7 +10837,18 @@ async function copyConfiguredReport(){
   }
 }
 
+async function copyQuickReport(){
+  try{
+    await copyTextToClipboard(quickCopyReportText());
+    toast("Qısa hesabat kopyalandı");
+  }catch(error){
+    console.error(error);
+    toast("Qısa hesabat kopyalanmadı.");
+  }
+}
+
 $("copyReportBtn").addEventListener("click",copyConfiguredReport);
+$("quickCopyReportBtn").addEventListener("click",copyQuickReport);
 $("copyReportSettingsBtn").addEventListener("click",copyConfiguredReport);
 
 $("pdfExportForm").addEventListener("submit",async event=>{
@@ -10652,6 +11005,11 @@ $("resetCardCountersBtn").addEventListener("click",resetCardCounters);
 $("resetCardCountersInlineBtn").addEventListener("click",resetCardCounters);
 
 $("dailyProfitDate").addEventListener("change",renderDailyProfits);
+$("dailyProfitFilter").addEventListener("change",renderDailyProfits);
+$("resetDailyProfitFilter").addEventListener("click",()=>{
+  $("dailyProfitFilter").value="all";
+  renderDailyProfits();
+});
 $("saveDailyProfitBtn").addEventListener("click",saveDailyProfit);
 $("addNotebookImageBtn").addEventListener("click",()=>$("notebookImageInput").click());
 $("notebookImageInput").addEventListener("change",async()=>{
