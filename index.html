@@ -10686,19 +10686,23 @@ function quickCopyReportText(from,to){
     totals[title]=(totals[title]||0)+Number(sale.total_revenue||0);
     return totals;
   },{});
+  const outsideEntries=Object.entries(outsideGroups);
+  const trustEntry=outsideEntries.find(([title])=>normalizeCategoryName(title)===normalizeCategoryName(TRUST_CATEGORY_NAME));
+  const tailorEntry=outsideEntries.find(([title])=>normalizeCategoryName(title)===normalizeCategoryName(TAILOR_CATEGORY_NAME));
+  const trustRevenue=Number(trustEntry?.[1]||0);
+  const tailorRevenue=Number(tailorEntry?.[1]||0);
+  const customOutsideEntries=outsideEntries
+    .filter(([title])=>
+      normalizeCategoryName(title)!==normalizeCategoryName(TRUST_CATEGORY_NAME) &&
+      normalizeCategoryName(title)!==normalizeCategoryName(TAILOR_CATEGORY_NAME)
+    )
+    .filter(([,value])=>Number(value)>0);
 
   const lines=[
     `Tarix: ${from===to?from:`${from} - ${to}`}`,
     "",
     `${from===to?"Gəlir":"Ümumi gəlir"}: ${money(regularRevenue)}`
   ];
-
-  if(outsideRevenue>0){
-    lines.push("Əlavə gəlir:");
-    Object.entries(outsideGroups).forEach(([title,value])=>{
-      lines.push(`- ${title}: ${money(value)}`);
-    });
-  }
 
   lines.push("");
   lines.push("Xərclər:");
@@ -10719,6 +10723,11 @@ function quickCopyReportText(from,to){
   lines.push(`Ümumi gəlir: ${money(regularRevenue+outsideRevenue)}`);
   lines.push(`Nağd gəlir: ${money(cashRevenue)}`);
   lines.push(`Kart gəlir: ${money(cardRevenue)}`);
+  lines.push(trustRevenue>0 ? `Etibar: ${money(trustRevenue)}` : "Etibar bu gün verməyib");
+  if(tailorRevenue>0)lines.push(`Dərzi: ${money(tailorRevenue)}`);
+  customOutsideEntries.forEach(([title,value])=>{
+    lines.push(`${title}: ${money(value)}`);
+  });
   lines.push(`Xərc: ${money(expenseTotal)}`);
   lines.push("");
   lines.push(`Məndə var: ${money(inMyPocket)}`);
