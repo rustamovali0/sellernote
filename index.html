@@ -2675,7 +2675,8 @@
 
       <div class="summary-grid">
         <div class="stat"><div id="expensesSummaryLabel" class="label">Bu günün xərci</div><div id="filterExpensesTotal" class="value">0 ₼</div></div>
-        <div class="stat"><div class="label">Xərc sayı</div><div id="filterExpensesCount" class="value">0</div><div id="workerPayHint" class="sub">İşçi pulu: 0 ₼</div></div>
+        <div class="stat"><div class="label">Xərc sayı</div><div id="filterExpensesCount" class="value">0</div></div>
+        <div class="stat"><div class="label">İşçi pulu</div><div id="workerPayTotal" class="value profit">0 ₼</div><div id="workerPayHint" class="sub">Verilib: 0 ₼ · Qalıq: 0 ₼</div></div>
         <button id="filterYusifExpenseStat" class="stat clickable-stat" type="button"><div class="label">Yusifdə var</div><div id="filterYusifExpenseTotal" class="value profit">0 ₼</div></button>
       </div>
 
@@ -3665,6 +3666,7 @@ const TRUST_CATEGORY_NAME="Etibar";
 const TAILOR_CATEGORY_NAME="Dərzi";
 const OUTSIDE_INCOME_NAMES=[TRUST_CATEGORY_NAME,TAILOR_CATEGORY_NAME];
 const CUSTOM_OUTSIDE_INCOME_PREFIX="Custom:";
+const WORKER_EXPENSE_KEYS=["sahin","isci"];
 const DEFAULT_CARD_ACCOUNTS=["Əlinin kartı","Yusifin kartı"];
 const CARD_PUBLIC_INFO={
   "Əlinin kartı":{bank:"Birbank",masked:"•••• •••• •••• 0323"},
@@ -4653,6 +4655,8 @@ function normalizeCategoryName(value){
   return String(value||"")
     .trim()
     .toLocaleLowerCase("az-AZ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
     .replace(/ə/g,"e")
     .replace(/ı/g,"i")
     .replace(/ş/g,"s")
@@ -6818,12 +6822,76 @@ function todayRegularSalesRevenue(){
     .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
 }
 
-function workerPayForRevenue(revenue){
+function regularSalesRevenueForDate(date){
+  return sales
+    .filter(sale=>!isOutsideIncomeSale(sale)&&isoLocalDate(new Date(sale.created_at))===date)
+    .reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
+}
+
+function isWorkerExpense(expense){
+  const title=normalizeCategoryName(expense?.title||"");
+  return WORKER_EXPENSE_KEYS.some(key=>title.includes(key));
+}
+
+function workerPaidForDate(date){
+  return expenses
+    .filter(expense=>isWorkerExpense(expense)&&isoLocalDate(new Date(expense.created_at))===date)
+    .reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+}
+
+function learnedWorkerPayRate(excludedDate=null){
+  const dates=[...new Set(expenses
+    .filter(isWorkerExpense)
+    .map(expense=>isoLocalDate(new Date(expense.created_at))))];
+
+  const rows=dates
+    .filter(date=>date!==excludedDate)
+    .map(date=>({
+      date,
+      revenue:regularSalesRevenueForDate(date),
+      paid:workerPaidForDate(date)
+    }))
+    .filter(row=>row.revenue>0&&row.paid>0);
+
+  const totalRevenue=rows.reduce((sum,row)=>sum+row.revenue,0);
+  const totalPaid=rows.reduce((sum,row)=>sum+row.paid,0);
+  const rate=totalRevenue>0?totalPaid/totalRevenue:0;
+
+  return rate>0&&rate<0.5?rate:null;
+}
+
+function fallbackWorkerPayForRevenue(revenue){
   const amount=Number(revenue||0);
   if(amount<=0)return 0;
   if(amount<=210)return Math.round(amount*0.08);
   if(amount<=268)return 18;
   return Math.round(amount*(18/268));
+}
+
+function workerPayForRevenue(revenue,date=null){
+  const rate=learnedWorkerPayRate(date);
+  if(rate!==null)return Math.round(Number(revenue||0)*rate);
+  return fallbackWorkerPayForRevenue(revenue);
+}
+
+function currentWorkerPayDate(){
+  if(expensesDateMode==="yesterday"){
+    const yesterday=new Date();
+    yesterday.setDate(yesterday.getDate()-1);
+    return isoLocalDate(yesterday);
+  }
+  if(expensesDateMode==="custom"&&$("expensesSingleDate").value){
+    return $("expensesSingleDate").value;
+  }
+  return isoLocalDate(new Date());
+}
+
+function workerPaySummaryForDate(date=currentWorkerPayDate()){
+  const revenue=regularSalesRevenueForDate(date);
+  const estimated=workerPayForRevenue(revenue,date);
+  const paid=workerPaidForDate(date);
+  const remaining=estimated-paid;
+  return {date,revenue,estimated,paid,remaining};
 }
 
 function expensePaymentMethod(expense){
@@ -7102,7 +7170,12 @@ function renderExpenses(){
   updateExpensesSummaryLabel();
   $("filterExpensesTotal").textContent=money(list.reduce((sum,item)=>sum+Number(item.amount||0),0));
   $("filterExpensesCount").textContent=list.length;
-  $("workerPayHint").textContent=`İşçi pulu: ${money(workerPayForRevenue(todayRegularSalesRevenue()))}`;
+  const workerSummary=workerPaySummaryForDate();
+  $("workerPayTotal").textContent=money(workerSummary.estimated);
+  const workerBalance=workerSummary.remaining<0
+    ? `Artıq: ${money(Math.abs(workerSummary.remaining))}`
+    : `Qalıq: ${money(workerSummary.remaining)}`;
+  $("workerPayHint").textContent=`Verilib: ${money(workerSummary.paid)} · ${workerBalance}`;
   $("filterYusifExpenseTotal").textContent=money(yusifExpenseTotal(list));
 
   $("expensesList").innerHTML=list.length?list.map(expense=>{
