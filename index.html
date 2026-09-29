@@ -5199,11 +5199,18 @@ function quickExpenseButtons(){
 function renderQuickExpenseButtons(){
   if(!$("expenseQuickActions"))return;
   const buttons=quickExpenseButtons();
-  $("expenseQuickActions").innerHTML=buttons.map(item=>`
+  $("expenseQuickActions").innerHTML=`
+    <button class="btn secondary" type="button" data-worker-expense-quick>
+      İşçi
+    </button>
+  `+buttons.map(item=>`
     <button class="btn secondary" type="button" data-quick-expense="${escapeHtml(item.id)}">
       ${escapeHtml(item.title)} ${money(item.amount)}
     </button>
   `).join("");
+  document.querySelectorAll("[data-worker-expense-quick]").forEach(button=>{
+    button.addEventListener("click",openWorkerExpenseModal);
+  });
   document.querySelectorAll("[data-quick-expense]").forEach(button=>{
     button.addEventListener("click",()=>{
       const item=quickExpenseButtons().find(entry=>entry.id===button.dataset.quickExpense);
@@ -8306,6 +8313,14 @@ function resetExpenseForm(){
 function openNewExpenseModal(){
   resetExpenseForm();
   openModal("expenseModal");
+}
+
+function openWorkerExpenseModal(){
+  resetExpenseForm();
+  $("expenseTitle").value="İşçi";
+  $("expenseModalTitle").textContent="İşçi pulu";
+  openModal("expenseModal");
+  setTimeout(()=>$("expenseAmount").focus(),0);
 }
 
 function openEditExpense(id){
