@@ -153,8 +153,11 @@ create table if not exists public.app_settings (
   user_id uuid primary key references auth.users(id) on delete cascade,
   logo_url text,
   favicon_url text,
+  design_theme text not null default 'default',
   report_sections text[] not null default array['sales','expenses'],
   pocket_overrides jsonb not null default '{}',
+  pocket_cash_counts jsonb not null default '{}',
+  pocket_cash_logs jsonb not null default '[]',
   daily_profits jsonb not null default '{}',
   show_dashboard_profit boolean not null default true,
   show_cost_profit boolean not null default true,
@@ -172,6 +175,9 @@ create table if not exists public.app_settings (
 );
 
 alter table public.app_settings
+  add column if not exists design_theme text not null default 'default';
+
+alter table public.app_settings
   add column if not exists report_sections text[] not null default array['sales','expenses'];
 
 alter table public.app_settings
@@ -179,6 +185,12 @@ alter table public.app_settings
 
 alter table public.app_settings
   add column if not exists pocket_overrides jsonb not null default '{}';
+
+alter table public.app_settings
+  add column if not exists pocket_cash_counts jsonb not null default '{}';
+
+alter table public.app_settings
+  add column if not exists pocket_cash_logs jsonb not null default '[]';
 
 alter table public.app_settings
   add column if not exists daily_profits jsonb not null default '{}';

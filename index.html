@@ -20,7 +20,7 @@
 
   <style>
     :root{
-      --bg:#f3f6fa;
+      --bg:#fff;
       --card:#fff;
       --card2:#f8fafc;
       --text:#0f172a;
@@ -51,19 +51,101 @@
       --shadowStrong:0 18px 46px rgba(0,0,0,.44);
       --glass:rgba(17,24,39,.94);
     }
+    html[data-design-theme="clean"],
+    html[data-design-theme="bold"],
+    html[data-design-theme="soft"],
+    html[data-design-theme="sharp"]{
+      --bg:#fff;
+    }
+    html[data-design-theme="clean"]{
+      --card:#fff;
+      --card2:#f8fafc;
+      --primary:#111827;
+      --success:#047857;
+      --line:#e5e7eb;
+      --shadow:0 1px 0 rgba(15,23,42,.04);
+      --shadowStrong:0 12px 28px rgba(15,23,42,.1);
+      --glass:rgba(255,255,255,.96);
+    }
+    html[data-design-theme="bold"]{
+      --card:#fff;
+      --card2:#f1f5f9;
+      --primary:#020617;
+      --success:#16a34a;
+      --line:#cbd5e1;
+      --shadow:0 10px 0 rgba(15,23,42,.08);
+      --shadowStrong:0 16px 0 rgba(15,23,42,.11);
+      --glass:rgba(255,255,255,.97);
+    }
+    html[data-design-theme="soft"]{
+      --card:#fff;
+      --card2:#f7fbff;
+      --primary:#1e3a8a;
+      --success:#059669;
+      --line:#dbeafe;
+      --shadow:0 14px 35px rgba(30,58,138,.08);
+      --shadowStrong:0 22px 54px rgba(30,58,138,.14);
+      --glass:rgba(255,255,255,.94);
+    }
+    html[data-design-theme="sharp"]{
+      --card:#fff;
+      --card2:#f5f5f4;
+      --primary:#18181b;
+      --success:#15803d;
+      --line:#d6d3d1;
+      --shadow:none;
+      --shadowStrong:0 0 0 1px #d6d3d1;
+      --glass:rgba(255,255,255,.98);
+    }
 
     *{box-sizing:border-box}
     html{-webkit-tap-highlight-color:transparent}
     body{
       margin:0;
-      background:
-        radial-gradient(circle at top left,rgba(59,130,246,.07),transparent 28%),
-        var(--bg);
+      background:var(--bg);
       color:var(--text);
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
       transition:background .2s,color .2s;
       touch-action:manipulation;
     }
+    html[data-design-theme="clean"] .stat,
+    html[data-design-theme="clean"] .card,
+    html[data-design-theme="clean"] .input,
+    html[data-design-theme="clean"] .select,
+    html[data-design-theme="clean"] .drop-btn,
+    html[data-design-theme="clean"] .btn,
+    html[data-design-theme="clean"] .bottom-nav,
+    html[data-design-theme="clean"] .modal{border-radius:10px!important}
+    html[data-design-theme="bold"] .stat,
+    html[data-design-theme="bold"] .card,
+    html[data-design-theme="bold"] .product,
+    html[data-design-theme="bold"] .sale,
+    html[data-design-theme="bold"] .log-item{border-width:2px}
+    html[data-design-theme="bold"] .btn,
+    html[data-design-theme="bold"] .nav-btn.active,
+    html[data-design-theme="bold"] .floating-add{box-shadow:0 5px 0 rgba(15,23,42,.18)}
+    html[data-design-theme="soft"] .stat,
+    html[data-design-theme="soft"] .card,
+    html[data-design-theme="soft"] .input,
+    html[data-design-theme="soft"] .select,
+    html[data-design-theme="soft"] .drop-btn,
+    html[data-design-theme="soft"] .btn,
+    html[data-design-theme="soft"] .bottom-nav,
+    html[data-design-theme="soft"] .modal{border-radius:22px!important}
+    html[data-design-theme="soft"] .brand-mark,
+    html[data-design-theme="soft"] .icon-btn,
+    html[data-design-theme="soft"] .floating-add{border-radius:20px!important}
+    html[data-design-theme="sharp"] .stat,
+    html[data-design-theme="sharp"] .card,
+    html[data-design-theme="sharp"] .input,
+    html[data-design-theme="sharp"] .select,
+    html[data-design-theme="sharp"] .drop-btn,
+    html[data-design-theme="sharp"] .btn,
+    html[data-design-theme="sharp"] .bottom-nav,
+    html[data-design-theme="sharp"] .modal,
+    html[data-design-theme="sharp"] .brand-mark,
+    html[data-design-theme="sharp"] .icon-btn,
+    html[data-design-theme="sharp"] .floating-add{border-radius:4px!important}
     body.modal-open{overflow:hidden}
     button,input,select,textarea{font:inherit}
     button{border:0;cursor:pointer}
@@ -1073,6 +1155,90 @@
       font-size:13px;
       line-height:1.45;
     }
+    .cash-count-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+    }
+    .cash-count-btn{
+      min-height:70px;
+      padding:10px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:var(--card2);
+      color:var(--text);
+      text-align:left;
+      box-shadow:none;
+    }
+    .cash-count-btn strong{
+      display:block;
+      font-size:20px;
+      line-height:1;
+    }
+    .cash-count-btn span{
+      display:block;
+      margin-top:7px;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:800;
+    }
+    .cash-count-btn.active{
+      border-color:color-mix(in srgb,var(--primary) 40%,var(--line));
+      background:color-mix(in srgb,var(--primary) 8%,var(--card2));
+    }
+    .cash-count-summary{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+    }
+    .cash-count-pill{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+      background:var(--card2);
+      color:var(--text);
+      font-weight:900;
+    }
+    .cash-count-pill span{
+      display:block;
+      margin-top:4px;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:800;
+    }
+    .theme-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+    }
+    .theme-choice{
+      min-height:74px;
+      padding:11px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:var(--card2);
+      color:var(--text);
+      text-align:left;
+      box-shadow:none;
+    }
+    .theme-choice strong{
+      display:block;
+      font-size:14px;
+      line-height:1.1;
+    }
+    .theme-choice span{
+      display:block;
+      margin-top:7px;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:800;
+    }
+    .theme-choice.active{
+      background:var(--primary);
+      color:var(--primaryText);
+      border-color:var(--primary);
+    }
+    .theme-choice.active span{color:color-mix(in srgb,var(--primaryText) 72%,transparent)}
     .settings-menu{
       display:grid;
       grid-template-columns:repeat(2,minmax(0,1fr));
@@ -2978,6 +3144,19 @@
       <details class="card settings-card">
         <summary class="settings-toggle">
           <div>
+            <div class="settings-title">Dizayn</div>
+            <div class="meta">Saytın ümumi görünüşü</div>
+          </div>
+        </summary>
+        <div class="settings-body">
+          <div id="designThemeGrid" class="theme-grid"></div>
+          <button id="resetDesignThemeBtn" class="btn secondary full" type="button" style="margin-top:10px">Default dizayna qayıt</button>
+        </div>
+      </details>
+
+      <details class="card settings-card">
+        <summary class="settings-toggle">
+          <div>
             <div class="settings-title">Dəftər şəkilləri</div>
             <div class="meta">Tarixə görə maksimum 5 şəkil</div>
           </div>
@@ -3003,6 +3182,48 @@
           <div id="balanceWalletTotal" class="stat"><div class="label">Ümumi balans</div><div class="value profit">0 ₼</div></div>
           <div id="balanceWalletFields" class="form" style="margin-top:10px"></div>
           <button id="saveBalanceWalletsBtn" class="btn full" type="button" style="margin-top:10px">Balansı saxla</button>
+        </div>
+      </details>
+
+      <details class="card settings-card">
+        <summary class="settings-toggle">
+          <div>
+            <div class="settings-title">Cib sayımı</div>
+            <div class="meta">Əsginas dəyişiklikləri və tarixçə</div>
+          </div>
+        </summary>
+        <div class="settings-body">
+          <div class="summary-grid">
+            <div class="stat">
+              <div class="label">Cari sayım</div>
+              <div id="settingsPocketCashTotal" class="value profit">0 ₼</div>
+            </div>
+            <div class="stat">
+              <div class="label">Dəyişiklik</div>
+              <div id="settingsPocketCashLogCount" class="value">0</div>
+            </div>
+          </div>
+          <div class="row2" style="margin-top:10px">
+            <select id="pocketCashLogDateFilter" class="select">
+              <option value="today">Bu gün</option>
+              <option value="yesterday">Dünən</option>
+              <option value="custom">Tarix seç</option>
+              <option value="all">Bütün</option>
+            </select>
+            <input id="pocketCashLogDate" class="input hidden" type="date">
+          </div>
+          <div class="row2" style="margin-top:10px">
+            <div>
+              <label class="label">Başlanğıc saat</label>
+              <input id="pocketCashLogStartTime" class="input" type="time">
+            </div>
+            <div>
+              <label class="label">Son saat</label>
+              <input id="pocketCashLogEndTime" class="input" type="time">
+            </div>
+          </div>
+          <button id="resetPocketCashLogFilters" class="btn secondary full" type="button" style="margin-top:10px">Filterləri sıfırla</button>
+          <div id="settingsPocketCashList" class="log-list" style="margin-top:10px"></div>
         </div>
       </details>
 
@@ -3711,6 +3932,18 @@
           <div class="stat"><div class="label">Cari cib</div><div id="pocketCurrentValue" class="value profit">0 ₼</div></div>
         </div>
         <div id="pocketIncomeBreakdown" class="log-list"></div>
+        <div class="card" style="padding:12px">
+          <div class="section-head" style="margin-bottom:8px">
+            <h2 style="font-size:16px">Cibdə var</h2>
+            <div id="pocketCashCountTotal" class="count">0 ₼</div>
+          </div>
+          <div id="pocketCashCountSummary" class="cash-count-summary"></div>
+          <button id="togglePocketCashCountEditor" class="btn secondary full" type="button" style="margin-top:10px">Pulun miqdarını təyin et</button>
+          <div id="pocketCashCountEditor" class="hidden" style="margin-top:10px">
+            <div id="pocketCashCountButtons" class="cash-count-grid"></div>
+            <button id="resetPocketCashCountBtn" class="btn secondary full" type="button" style="margin-top:10px">Sayımı sıfırla</button>
+          </div>
+        </div>
         <div>
           <label id="pocketEditLabel" class="label">Cib məbləği</label>
           <input id="pocketOverrideInput" class="input" type="number" step="0.01" inputmode="decimal" placeholder="Məs: 150" />
@@ -3875,7 +4108,7 @@ let expenses=[];
 let notes=[];
 let activityLogs=[];
 let deletedRecords=[];
-let appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,category_price_defaults:null,copy_templates:null,personal_notes:null};
+let appSettings={logo_url:null,favicon_url:null,design_theme:"default",report_sections:null,pocket_overrides:null,pocket_cash_counts:null,pocket_cash_logs:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null};
 let currentSaleProduct=null;
 let displayedLocalDate=null;
 let currentPage="sales";
@@ -3918,6 +4151,8 @@ let settingsActiveKey=localStorage.getItem("sellernote-settings-section")||"";
 let renderFrameId=0;
 let multiSaleSearchQuery="";
 let localSyncRunning=false;
+let pocketCashLogDateMode="today";
+let pocketCashSaveTimer=null;
 
 /* Delete buttons are intentionally not persisted. Refresh => hidden again. */
 let productDeleteMode=false;
@@ -3939,6 +4174,14 @@ const CARD_PUBLIC_INFO={
 const DEFAULT_QUICK_EXPENSE_BUTTONS=[
   {id:"tea",title:"Çay",amount:2},
   {id:"lottery",title:"Latareya",amount:50}
+];
+const CASH_DENOMINATIONS=[100,50,20,10,5,1];
+const DESIGN_THEMES=[
+  {id:"default",title:"Default",description:"İndiki rahat görünüş"},
+  {id:"clean",title:"Minimal",description:"Az kölgə, sadə kartlar"},
+  {id:"bold",title:"Güclü",description:"Qalın xətt və vurğulu düymə"},
+  {id:"soft",title:"Yumşaq",description:"Daha oval və sakit forma"},
+  {id:"sharp",title:"Kəskin",description:"Kvadrat, ciddi panel"}
 ];
 const DEFAULT_REPORT_SECTIONS=["summary","sales","expenses"];
 const REPORT_SECTION_LABELS={
@@ -3984,11 +4227,10 @@ const DEFAULT_COPY_TEMPLATES={
     "",
     "Ümumi xərc: {expense_total}",
     "",
-    "Yekun:",
-    "{summary}",
+    "Yekun: {summary}",
     "{yusif}",
     "",
-    "Məndə var: {pocket}"
+    "{bottom}"
   ].join("\n"),
   quick:[
     "Tarix: {date}",
@@ -3999,11 +4241,10 @@ const DEFAULT_COPY_TEMPLATES={
     "",
     "Ümumi xərc: {expense_total}",
     "",
-    "Yekun:",
-    "{summary}",
+    "Yekun: {summary}",
     "{yusif}",
     "",
-    "Məndə var: {pocket}"
+    "{bottom}"
   ].join("\n")
 };
 
@@ -4015,6 +4256,8 @@ const money=n=>new Intl.NumberFormat("az-AZ",{
   minimumFractionDigits:0,
   maximumFractionDigits:2
 }).format(Number(n||0))+" ₼";
+
+const manat=n=>money(n).replace(" ₼"," manat");
 
 function toast(message){
   $("toast").textContent=message;
@@ -4036,6 +4279,14 @@ function applyTheme(theme){
   document.documentElement.dataset.theme=theme;
   localStorage.setItem(THEME_KEY,theme);
   $("themeToggle").textContent=theme==="dark"?"☀":"☾";
+}
+
+function cleanDesignTheme(value){
+  return DESIGN_THEMES.some(theme=>theme.id===value)?value:"default";
+}
+
+function applyDesignTheme(value){
+  document.documentElement.dataset.designTheme=cleanDesignTheme(value);
 }
 
 function initialTheme(){
@@ -4622,12 +4873,13 @@ async function loadAppSettings(){
 
   if(error){
     console.warn("app_settings:",error.message);
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null};
+    appSettings={logo_url:null,favicon_url:null,design_theme:"default",report_sections:null,pocket_overrides:null,pocket_cash_counts:null,pocket_cash_logs:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null};
   }else{
-    appSettings={logo_url:null,favicon_url:null,report_sections:null,pocket_overrides:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null,...(data||{})};
+    appSettings={logo_url:null,favicon_url:null,design_theme:"default",report_sections:null,pocket_overrides:null,pocket_cash_counts:null,pocket_cash_logs:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null,...(data||{})};
   }
 
   applyBranding();
+  applyDesignTheme(appSettings.design_theme);
   renderReportSectionControls();
 }
 
@@ -4701,6 +4953,25 @@ function replaceQueuedProductId(localId,remoteId){
     return {...entry,payload:{...entry.payload,product_id:remoteId}};
   });
   saveLocalQueue(queue);
+}
+
+function remoteUuid(value){
+  return value && !isLocalId(value) ? value : null;
+}
+
+function remoteProductPayload(payload){
+  return {
+    ...payload,
+    category_id:remoteUuid(payload.category_id)
+  };
+}
+
+function remoteSalePayload(payload){
+  return {
+    ...payload,
+    product_id:remoteUuid(payload.product_id),
+    category_id:remoteUuid(payload.category_id)
+  };
 }
 
 function categoryRelation(categoryId){
@@ -4829,7 +5100,7 @@ function removeLocalRow(localId,type){
 
 async function syncQueuedProduct(entry){
   if(!localQueue().some(item=>item.id===entry.id))return;
-  const payload={...entry.payload,user_id:currentUser.id};
+  const payload=remoteProductPayload({...entry.payload,user_id:currentUser.id});
   const {data,error}=await sb.from("products")
     .insert(payload)
     .select("*, categories(name)")
@@ -4842,8 +5113,8 @@ async function syncQueuedProduct(entry){
 
 async function syncQueuedSale(entry){
   if(!localQueue().some(item=>item.id===entry.id))return false;
-  const payload={...entry.payload,user_id:currentUser.id};
-  if(isLocalId(payload.product_id))return false;
+  if(isLocalId(entry.payload?.product_id))return false;
+  const payload=remoteSalePayload({...entry.payload,user_id:currentUser.id});
 
   let {data,error}=await sb.from("sales")
     .insert(payload)
@@ -5112,7 +5383,15 @@ function copyReportTemplates(){
 }
 
 function copyReportTemplate(type="summary"){
-  return copyReportTemplates()[type]||DEFAULT_COPY_TEMPLATES[type]||DEFAULT_COPY_REPORT_TEMPLATE;
+  let template=copyReportTemplates()[type]||DEFAULT_COPY_TEMPLATES[type]||DEFAULT_COPY_REPORT_TEMPLATE;
+  if(["list","quick"].includes(type)){
+    template=template.replace("Yekun:\n{summary}","Yekun: {summary}");
+    template=template.replace("Məndə var: {pocket}","{bottom}");
+    if(!template.includes("{bottom}")){
+      template=`${template.trim()}\n\n{bottom}`;
+    }
+  }
+  return template;
 }
 
 function fillCopyTemplate(template,values){
@@ -5367,6 +5646,48 @@ async function saveCardLimitVisibility(visible){
 
   if(error)toast(error.message);
   else toast("Kart limit ayarı saxlandı");
+}
+
+function currentDesignTheme(){
+  return cleanDesignTheme(appSettings?.design_theme||"default");
+}
+
+function renderDesignThemeSettings(){
+  if(!$("designThemeGrid"))return;
+  const active=currentDesignTheme();
+  $("designThemeGrid").innerHTML=DESIGN_THEMES.map(theme=>`
+    <button class="theme-choice ${theme.id===active?"active":""}" type="button" data-design-theme="${escapeHtml(theme.id)}">
+      <strong>${escapeHtml(theme.title)}</strong>
+      <span>${escapeHtml(theme.description)}</span>
+    </button>
+  `).join("");
+  document.querySelectorAll("[data-design-theme]").forEach(button=>{
+    button.addEventListener("click",()=>saveDesignTheme(button.dataset.designTheme));
+  });
+}
+
+async function saveDesignTheme(value){
+  const theme=cleanDesignTheme(value);
+  appSettings={...appSettings,design_theme:theme};
+  applyDesignTheme(theme);
+  renderDesignThemeSettings();
+
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    design_theme:theme,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+
+  if(error){
+    if(isMissingSchemaColumn(error,"design_theme")){
+      toast("Dizayn lokal dəyişdi. Supabase üçün SQL-i əlavə et.");
+      return;
+    }
+    toast(error.message);
+    return;
+  }
+
+  toast(theme==="default"?"Default dizayn aktivdir":"Dizayn saxlandı");
 }
 
 function cardAccounts(){
@@ -6950,6 +7271,39 @@ function pocketOverrides(){
     : {};
 }
 
+function pocketCashCounts(){
+  return appSettings?.pocket_cash_counts && typeof appSettings.pocket_cash_counts==="object"
+    ? appSettings.pocket_cash_counts
+    : {};
+}
+
+function pocketCashLogs(){
+  return Array.isArray(appSettings?.pocket_cash_logs)?appSettings.pocket_cash_logs:[];
+}
+
+function cleanPocketCashCounts(counts={}){
+  return CASH_DENOMINATIONS.reduce((next,denomination)=>{
+    const count=Math.max(0,Math.floor(Number(counts?.[denomination]||0)));
+    if(count>0)next[denomination]=count;
+    return next;
+  },{});
+}
+
+function currentPocketCashCounts(){
+  return cleanPocketCashCounts(pocketCashCounts()[currentPocketKey()]||{});
+}
+
+function pocketCashCountTotal(counts=currentPocketCashCounts()){
+  return CASH_DENOMINATIONS.reduce((sum,denomination)=>sum+(denomination*Number(counts?.[denomination]||0)),0);
+}
+
+function pocketCashCountLabel(counts=currentPocketCashCounts()){
+  const parts=CASH_DENOMINATIONS
+    .filter(denomination=>Number(counts?.[denomination]||0)>0)
+    .map(denomination=>`${denomination}x${Number(counts[denomination])}`);
+  return parts.length?parts.join(" · "):"Sayım yoxdur";
+}
+
 function pocketOverrideValue(){
   const value=pocketOverrides()[currentPocketKey()];
   return Number.isFinite(Number(value))?Number(value):null;
@@ -6996,6 +7350,152 @@ async function savePocketOverride(value){
   return true;
 }
 
+function renderPocketCashCounts(){
+  const counts=currentPocketCashCounts();
+  const total=pocketCashCountTotal(counts);
+  if($("pocketCashCountTotal"))$("pocketCashCountTotal").textContent=money(total);
+  if($("pocketCashCountSummary")){
+    $("pocketCashCountSummary").innerHTML=CASH_DENOMINATIONS.map(denomination=>`
+      <div class="cash-count-pill">
+        ${denomination} ₼
+        <span>${Number(counts[denomination]||0)} ədəd</span>
+      </div>
+    `).join("");
+  }
+  if($("pocketCashCountButtons")){
+    $("pocketCashCountButtons").innerHTML=CASH_DENOMINATIONS.map(denomination=>{
+      const count=Number(counts[denomination]||0);
+      return `<button class="cash-count-btn ${count?"active":""}" type="button" data-cash-denomination="${denomination}">
+        <strong>${denomination} ₼</strong>
+        <span>${count} ədəd</span>
+      </button>`;
+    }).join("");
+  }
+  if($("settingsPocketCashTotal"))$("settingsPocketCashTotal").textContent=money(total);
+}
+
+function queuePocketCashSave(){
+  clearTimeout(pocketCashSaveTimer);
+  const counts=pocketCashCounts();
+  const logs=pocketCashLogs();
+  pocketCashSaveTimer=setTimeout(async()=>{
+    const {error}=await sb.from("app_settings").upsert({
+      user_id:currentUser.id,
+      pocket_cash_counts:counts,
+      pocket_cash_logs:logs,
+      updated_at:new Date().toISOString()
+    },{onConflict:"user_id"});
+    if(error){
+      if(isMissingSchemaColumn(error,"pocket_cash_counts")||isMissingSchemaColumn(error,"pocket_cash_logs")){
+        toast("Cib sayımı lokal saxlandı. Supabase üçün SQL-i əlavə et.");
+        return;
+      }
+      toast(error.message);
+    }
+  },350);
+}
+
+function changePocketCashCount(denomination){
+  const key=currentPocketKey();
+  const current=currentPocketCashCounts();
+  const before=Number(current[denomination]||0);
+  const next=cleanPocketCashCounts({...current,[denomination]:before+1});
+  const nextCounts={...pocketCashCounts(),[key]:next};
+  const now=new Date().toISOString();
+  const log={
+    id:crypto.randomUUID(),
+    key,
+    denomination:Number(denomination),
+    before,
+    after:before+1,
+    counts:next,
+    total:pocketCashCountTotal(next),
+    created_at:now
+  };
+  appSettings={
+    ...appSettings,
+    pocket_cash_counts:nextCounts,
+    pocket_cash_logs:[log,...pocketCashLogs()].slice(0,1000)
+  };
+  renderPocketCashCounts();
+  renderPocketCashLogSettings();
+  queuePocketCashSave();
+}
+
+function resetPocketCashCount(){
+  const key=currentPocketKey();
+  const before=currentPocketCashCounts();
+  const nextCounts={...pocketCashCounts()};
+  delete nextCounts[key];
+  const log={
+    id:crypto.randomUUID(),
+    key,
+    denomination:null,
+    before_total:pocketCashCountTotal(before),
+    after:0,
+    counts:{},
+    total:0,
+    reset:true,
+    created_at:new Date().toISOString()
+  };
+  appSettings={
+    ...appSettings,
+    pocket_cash_counts:nextCounts,
+    pocket_cash_logs:[log,...pocketCashLogs()].slice(0,1000)
+  };
+  renderPocketCashCounts();
+  renderPocketCashLogSettings();
+  queuePocketCashSave();
+  toast("Cib sayımı sıfırlandı");
+}
+
+function pocketCashLogMatchesTime(log,startTime,endTime){
+  if(startTime===null&&endTime===null)return true;
+  const date=new Date(log.created_at);
+  const minutes=date.getHours()*60+date.getMinutes();
+  if(startTime!==null&&endTime!==null){
+    if(startTime<=endTime)return minutes>=startTime&&minutes<=endTime;
+    return minutes>=startTime||minutes<=endTime;
+  }
+  if(startTime!==null)return minutes>=startTime;
+  return minutes<=endTime;
+}
+
+function renderPocketCashLogSettings(){
+  if(!$("settingsPocketCashList"))return;
+  const selectedDate=$("pocketCashLogDate")?.value||"";
+  const startTime=timeInputToMinutes($("pocketCashLogStartTime")?.value||"");
+  const endTime=timeInputToMinutes($("pocketCashLogEndTime")?.value||"");
+  $("pocketCashLogDate")?.classList.toggle("hidden",pocketCashLogDateMode!=="custom");
+  renderPocketCashCounts();
+
+  const list=pocketCashLogs().filter(log=>{
+    if(!dateMatches(log.created_at,pocketCashLogDateMode,selectedDate))return false;
+    return pocketCashLogMatchesTime(log,startTime,endTime);
+  });
+
+  $("settingsPocketCashLogCount").textContent=String(list.length);
+  $("settingsPocketCashList").innerHTML=list.length?list.map(log=>{
+    const title=log.reset
+      ? "Sayım sıfırlandı"
+      : `${Number(log.denomination)} ₼: ${Number(log.before||0)} → ${Number(log.after||0)}`;
+    return `
+      <div class="log-item">
+        <div class="log-top">
+          <div>
+            <div class="log-title">${escapeHtml(title)}</div>
+            <div class="log-tags">
+              <span class="log-tag">${escapeHtml(formatDate(log.created_at))}</span>
+              <span class="log-tag">${escapeHtml(pocketCashCountLabel(log.counts||{}))}</span>
+            </div>
+          </div>
+          <div class="log-date">${money(log.total||0)}</div>
+        </div>
+      </div>
+    `;
+  }).join(""):'<div class="empty" style="padding:14px">Bu filterdə cib sayımı dəyişikliyi yoxdur.</div>';
+}
+
 function openPocketEditModal(){
   const list=filteredSalesList();
   const regularList=list.filter(sale=>!isOutsideIncomeSale(sale));
@@ -7036,6 +7536,7 @@ function openPocketEditModal(){
     `);
   }
   $("pocketIncomeBreakdown").innerHTML=rows.join("") || '<div class="meta">Kənar gəlir və xərc yoxdur.</div>';
+  renderPocketCashCounts();
   openModal("pocketEditModal");
 }
 
@@ -8086,6 +8587,8 @@ function renderCurrentPage(page=currentPage){
     renderDeletedRecords();
     renderReportSectionControls();
     renderCardSettingsModal();
+    renderDesignThemeSettings();
+    renderPocketCashLogSettings();
     renderDailyProfits();
     renderYusifMoneySettings();
     renderWorkerPaySettings();
@@ -9918,7 +10421,11 @@ $("productForm").addEventListener("submit",async event=>{
       }
 
       payload=await uploadProductImagesForPayload(payload,files,existingUrls);
-      const {error}=await withAuthRetry(()=>sb.from("products").update(payload).eq("id",id));
+      if(isLocalId(id)){
+        throw new Error("Bu məhsul hələ bazaya sinxron olmayıb. İnternet gələndən sonra yenidən yoxlayın.");
+      }
+      const remotePayload=remoteProductPayload(payload);
+      const {error}=await withAuthRetry(()=>sb.from("products").update(remotePayload).eq("id",id));
       if(error)throw error;
 
       products=products.map(product=>product.id===id?{
@@ -10543,12 +11050,15 @@ $("looseSaleForm").addEventListener("submit",async event=>{
       );
       finalPayload.image_url=isTrust?null:finalPayload.image_url;
       finalPayload.image_urls=isTrust?[]:finalPayload.image_urls;
-      let {error}=await sb.from("sales").update(finalPayload).eq("id",id);
+      if(isLocalId(id)){
+        throw new Error("Bu satış hələ bazaya sinxron olmayıb. İnternet gələndən sonra yenidən yoxlayın.");
+      }
+      let {error}=await sb.from("sales").update(remoteSalePayload(finalPayload)).eq("id",id);
       let yusifStatusSaved=true;
 
       if(error && isMissingSchemaColumn(error,"money_holder")){
         yusifStatusSaved=false;
-        const fallbackPayload={...finalPayload};
+        const fallbackPayload=remoteSalePayload(finalPayload);
         delete fallbackPayload.money_holder;
         ({error}=await sb.from("sales").update(fallbackPayload).eq("id",id));
       }
@@ -10796,6 +11306,10 @@ $("cardLimitsVisible").addEventListener("change",()=>{
   saveCardLimitVisibility($("cardLimitsVisible").checked);
 });
 
+$("resetDesignThemeBtn").addEventListener("click",()=>{
+  saveDesignTheme("default");
+});
+
 function sqlValue(value){
   if(value===null||value===undefined)return "null";
   if(Array.isArray(value))return `array[${value.map(sqlValue).join(",")}]::text[]`;
@@ -10816,8 +11330,11 @@ async function downloadSqlPdf(){
     user_id:currentUser.id,
     logo_url:appSettings.logo_url,
     favicon_url:appSettings.favicon_url,
+    design_theme:currentDesignTheme(),
     report_sections:selectedReportSections(),
     pocket_overrides:pocketOverrides(),
+    pocket_cash_counts:pocketCashCounts(),
+    pocket_cash_logs:pocketCashLogs(),
     daily_profits:dailyProfits(),
     show_dashboard_profit:appSettings.show_dashboard_profit!==false,
     show_cost_profit:costProfitVisible(),
@@ -10838,7 +11355,7 @@ async function downloadSqlPdf(){
     "-- SellerNote backup",
     `-- ${formatDate(new Date().toISOString())}`,
     "",
-    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","report_sections","pocket_overrides","daily_profits","show_dashboard_profit","show_cost_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","notebook_images","balance_wallets","quick_expense_buttons","category_price_defaults","copy_templates","personal_notes","created_at","updated_at"]),
+    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","design_theme","report_sections","pocket_overrides","pocket_cash_counts","pocket_cash_logs","daily_profits","show_dashboard_profit","show_cost_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","notebook_images","balance_wallets","quick_expense_buttons","category_price_defaults","copy_templates","personal_notes","created_at","updated_at"]),
     sqlInsert("categories",categories,["id","user_id","name","created_at","updated_at"]),
     sqlInsert("products",[...products,...allDeleted.filter(row=>"sale_price" in row&&"cost_price" in row)],["id","user_id","category_id","name","sale_price","cost_price","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","money_holder","is_checked","image_url","image_urls","note","deleted_at","created_at","updated_at"]),
@@ -11045,6 +11562,7 @@ function listCopyReportText(from,to,data){
   const outsideRevenue=outsideSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const normalOutsideRevenue=normalOutsideSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const expenseTotal=data.expenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+  const workerPaid=data.expenses.filter(isWorkerExpense).reduce((sum,expense)=>sum+Number(expense.amount||0),0);
   const normalExpenseTotal=normalExpenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
   const cashRevenue=normalRegularSales
     .filter(sale=>sale.payment_method!=="card")
@@ -11178,7 +11696,11 @@ function listCopyReportText(from,to,data){
     ].join("\n")
     : "";
   const expensesBlock=data.expenses.length
-    ? data.expenses.map((expense,index)=>`${index+1}. ${expense.title||"Xərc"} | ${money(expense.amount)}`).join("\n")
+    ? data.expenses.map(expense=>{
+      const method=expensePaymentMethod(expense)==="card"?"Kart":"Nağd";
+      const yusif=isYusifExpense(expense)?" · Yusifdə var":"";
+      return `${expense.title||"Xərc"} - ${money(expense.amount)} (${method}${yusif})`;
+    }).join("\n")
     : "Xərc yoxdur.";
   const summaryLines=[
     `Ümumi gəlir: ${money(regularRevenue+outsideRevenue)}`,
@@ -11196,6 +11718,12 @@ function listCopyReportText(from,to,data){
     summaryLines.push(`${title}: ${money(value)}`);
   });
   summaryLines.push(`Xərc: ${money(expenseTotal)}`);
+  if(workerPaid>0)summaryLines.push(`Isci: ${manat(workerPaid)}`);
+  const bottomLines=[
+    `Məndə var: ${money(inMyPocket)}`,
+    `Kart: ${manat(cardRevenue)}`,
+    `Umumi ${manat(inMyPocket+cardRevenue)}`
+  ];
 
   return fillCopyTemplate(copyReportTemplate("list"),{
     date:reportRangeLabel(from,to),
@@ -11215,6 +11743,7 @@ function listCopyReportText(from,to,data){
       expenseAmount:yusifExpenseTotal,
       total:yusifTotal
     }).join("\n"),
+    bottom:bottomLines.join("\n"),
     pocket:money(inMyPocket),
     revenue:money(regularRevenue+outsideRevenue),
     cash:money(cashRevenue),
@@ -11237,6 +11766,7 @@ function quickCopyReportText(from,to){
   const outsideRevenue=outsideSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const normalOutsideRevenue=normalOutsideSales.reduce((sum,sale)=>sum+Number(sale.total_revenue||0),0);
   const expenseTotal=data.expenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
+  const workerPaid=data.expenses.filter(isWorkerExpense).reduce((sum,expense)=>sum+Number(expense.amount||0),0);
   const normalExpenseTotal=normalExpenses.reduce((sum,expense)=>sum+Number(expense.amount||0),0);
   const cashRevenue=normalRegularSales
     .filter(sale=>sale.payment_method!=="card")
@@ -11355,6 +11885,12 @@ function quickCopyReportText(from,to){
     summaryLines.push(`${title}: ${money(value)}`);
   });
   summaryLines.push(`Xərc: ${money(expenseTotal)}`);
+  if(workerPaid>0)summaryLines.push(`Isci: ${manat(workerPaid)}`);
+  const bottomLines=[
+    `Məndə var: ${money(inMyPocket)}`,
+    `Kart: ${manat(cardRevenue)}`,
+    `Umumi ${manat(inMyPocket+cardRevenue)}`
+  ];
 
   return fillCopyTemplate(copyReportTemplate("quick"),{
     date:from===to?from:`${from} - ${to}`,
@@ -11374,6 +11910,7 @@ function quickCopyReportText(from,to){
       expenseAmount:yusifExpenseTotal,
       total:yusifTotal
     }).join("\n"),
+    bottom:bottomLines.join("\n"),
     pocket:money(inMyPocket),
     revenue:money(regularRevenue+outsideRevenue),
     cash:money(cashRevenue),
@@ -12044,6 +12581,43 @@ $("saveBalanceWalletsBtn").addEventListener("click",saveBalanceWallets);
 $("addQuickExpenseButtonBtn").addEventListener("click",addQuickExpenseButtonFromSettings);
 
 $("salesPocketStat").addEventListener("click",openPocketEditModal);
+
+$("togglePocketCashCountEditor").addEventListener("click",()=>{
+  $("pocketCashCountEditor").classList.toggle("hidden");
+  renderPocketCashCounts();
+});
+
+$("pocketCashCountButtons").addEventListener("click",event=>{
+  const button=event.target.closest("[data-cash-denomination]");
+  if(!button)return;
+  changePocketCashCount(Number(button.dataset.cashDenomination));
+});
+
+$("resetPocketCashCountBtn").addEventListener("click",async()=>{
+  if(!await appConfirm("Cibdəki əsginas sayımını sıfırlamaq istəyirsiniz?",{
+    title:"Sayımı sıfırla",
+    confirmText:"Sıfırla",
+    cancelText:"İmtina",
+    tone:"danger"
+  }))return;
+  resetPocketCashCount();
+});
+
+["pocketCashLogDateFilter","pocketCashLogDate","pocketCashLogStartTime","pocketCashLogEndTime"].forEach(id=>{
+  $(id).addEventListener(id.includes("Time")?"input":"change",()=>{
+    if(id==="pocketCashLogDateFilter")pocketCashLogDateMode=$(id).value;
+    renderPocketCashLogSettings();
+  });
+});
+
+$("resetPocketCashLogFilters").addEventListener("click",()=>{
+  pocketCashLogDateMode="today";
+  $("pocketCashLogDateFilter").value="today";
+  $("pocketCashLogDate").value="";
+  $("pocketCashLogStartTime").value="";
+  $("pocketCashLogEndTime").value="";
+  renderPocketCashLogSettings();
+});
 
 $("pocketEditForm").addEventListener("submit",async event=>{
   event.preventDefault();
