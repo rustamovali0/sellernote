@@ -850,8 +850,16 @@
       background:transparent;color:var(--muted);
       font-size:10px;font-weight:750;line-height:1.15;
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;
+      transition:transform .12s ease,background .12s ease,color .12s ease;
     }
     .nav-btn.active{background:var(--primary);color:var(--primaryText);font-weight:850}
+    .nav-btn:active{transform:scale(.96)}
+    .nav-btn.tap-shake{animation:navTapShake .18s ease}
+    @keyframes navTapShake{
+      0%,100%{transform:translateX(0) scale(1)}
+      30%{transform:translateX(-1px) scale(.97)}
+      65%{transform:translateX(1px) scale(.99)}
+    }
 
     .floating-add{
       position:fixed;
@@ -8929,9 +8937,17 @@ function updateScrollTopButton(){
   button.classList.toggle("hidden",!shouldShow);
 }
 
+function vibrateNav(button){
+  if(navigator.vibrate)navigator.vibrate(14);
+  button.classList.remove("tap-shake");
+  void button.offsetWidth;
+  button.classList.add("tap-shake");
+}
+
 function showPage(page,options={}){
   const validPages=["sales","dashboard","expenses","notes","categories"];
   if(!validPages.includes(page))page="sales";
+  const previousPage=currentPage;
   currentPage=page;
 
   ["dashboard","sales","expenses","notes","categories"].forEach(name=>{
@@ -8948,10 +8964,17 @@ function showPage(page,options={}){
   $("notesAddBtn").classList.toggle("hidden",page!=="notes");
   syncGlobalSearch(page);
   closeDropdowns();
-  renderCurrentPage(page);
   applyUiVisibility();
-  fitValues();
   updateScrollTopButton();
+  const needsRender=previousPage!==page || options.forceRender || !$(page+"Page")?.dataset.renderedOnce;
+  if(needsRender){
+    $(page+"Page").dataset.renderedOnce="1";
+    schedulePageRender(page);
+    requestAnimationFrame(()=>{
+      fitValues();
+      updateScrollTopButton();
+    });
+  }
 
   if(options.history!==false){
     const current=history.state?.page;
@@ -12970,7 +12993,10 @@ window.addEventListener("popstate",event=>{
 
 /* Navbar */
 document.querySelectorAll(".nav-btn").forEach(button=>{
-  button.addEventListener("click",()=>showPage(button.dataset.page));
+  button.addEventListener("click",()=>{
+    vibrateNav(button);
+    showPage(button.dataset.page);
+  });
 });
 
 document.querySelector(".brand")?.addEventListener("click",()=>showPage("sales"));
