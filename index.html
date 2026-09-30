@@ -97,6 +97,22 @@
       --shadowStrong:0 0 0 1px #d6d3d1;
       --glass:rgba(255,255,255,.98);
     }
+    html[data-design-theme="premium"]{
+      --bg:#050505;
+      --card:#101010;
+      --card2:#181510;
+      --text:#fff7e6;
+      --muted:#c7a96a;
+      --line:#3c2e16;
+      --primary:#d4af37;
+      --primaryText:#090807;
+      --success:#d4af37;
+      --danger:#fb7185;
+      --dangerBg:#2a1015;
+      --shadow:0 12px 34px rgba(0,0,0,.36);
+      --shadowStrong:0 24px 70px rgba(0,0,0,.55),0 0 0 1px rgba(212,175,55,.16);
+      --glass:rgba(10,10,10,.92);
+    }
 
     *{box-sizing:border-box}
     html{-webkit-tap-highlight-color:transparent}
@@ -109,6 +125,12 @@
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
       transition:background .2s,color .2s;
       touch-action:manipulation;
+    }
+    html[data-design-theme="premium"] body{
+      background:
+        radial-gradient(circle at 14% 4%,rgba(212,175,55,.22),transparent 30%),
+        radial-gradient(circle at 92% 20%,rgba(255,232,150,.11),transparent 22%),
+        linear-gradient(145deg,#050505 0%,#0e0b05 54%,#050505 100%);
     }
     html[data-design-theme="clean"] .stat,
     html[data-design-theme="clean"] .card,
@@ -148,6 +170,32 @@
     html[data-design-theme="sharp"] .brand-mark,
     html[data-design-theme="sharp"] .icon-btn,
     html[data-design-theme="sharp"] .floating-add{border-radius:4px!important}
+    html[data-design-theme="premium"] .stat,
+    html[data-design-theme="premium"] .card,
+    html[data-design-theme="premium"] .input,
+    html[data-design-theme="premium"] .select,
+    html[data-design-theme="premium"] .drop-btn,
+    html[data-design-theme="premium"] .btn,
+    html[data-design-theme="premium"] .bottom-nav,
+    html[data-design-theme="premium"] .modal{
+      border-color:rgba(212,175,55,.28)!important;
+      box-shadow:var(--shadow);
+    }
+    html[data-design-theme="premium"] .btn,
+    html[data-design-theme="premium"] .nav-btn.active,
+    html[data-design-theme="premium"] .floating-add{
+      background:linear-gradient(135deg,#f7d76a,#a87512);
+      color:#090807;
+      border-color:rgba(255,232,150,.36);
+    }
+    html[data-design-theme="premium"] .btn.secondary{
+      background:#15120c;
+      color:#fff7e6;
+    }
+    html[data-design-theme="premium"] .brand-mark{
+      background:linear-gradient(135deg,#f7d76a,#9b6a12);
+      color:#090807;
+    }
     body.modal-open{overflow:hidden}
     button,input,select,textarea{font:inherit}
     button{border:0;cursor:pointer}
@@ -1447,7 +1495,54 @@
       color:#0f172a;
     }
     .card-number-modal .modal-head{
-      display:none;
+      position:absolute;
+      z-index:2;
+      top:max(14px,env(safe-area-inset-top));
+      left:max(18px,env(safe-area-inset-left));
+      right:max(18px,env(safe-area-inset-right));
+      display:grid;
+      gap:10px;
+      align-items:flex-start;
+      color:#0f172a;
+      pointer-events:none;
+    }
+    .card-number-modal .modal-head h3{
+      margin:0;
+      font-size:clamp(24px,6vw,44px);
+      font-weight:950;
+      letter-spacing:0;
+    }
+    .card-number-modal .modal-head .meta{
+      margin-top:4px;
+      color:#64748b;
+      font-size:clamp(14px,3.4vw,22px);
+      font-weight:850;
+    }
+    .card-owner-tabs{
+      display:flex;
+      gap:8px;
+      overflow:auto;
+      scrollbar-width:none;
+      pointer-events:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+    .card-owner-tabs::-webkit-scrollbar{display:none}
+    .card-owner-tab{
+      flex:0 0 auto;
+      min-height:38px;
+      padding:8px 12px;
+      border:1px solid #dbe3ee;
+      border-radius:999px;
+      background:#fff;
+      color:#0f172a;
+      font-size:13px;
+      font-weight:900;
+      box-shadow:0 8px 22px rgba(15,23,42,.08);
+    }
+    .card-owner-tab.active{
+      background:#0f172a;
+      color:#fff;
+      border-color:#0f172a;
     }
     .card-number-display{
       position:absolute;
@@ -2271,15 +2366,15 @@
     }
     .custom-category-chevron{
       flex:0 0 auto;
-      width:24px;
-      height:24px;
-      border-radius:8px;
+      width:30px;
+      height:30px;
       display:grid;
       place-items:center;
-      background:var(--card);
-      border:1px solid var(--line);
-      font-size:16px;
+      background:transparent;
+      border:0;
+      font-size:20px;
       line-height:1;
+      color:var(--muted);
       transition:transform .16s ease;
     }
     .custom-category-trigger.open .custom-category-chevron{
@@ -2595,6 +2690,7 @@
       background:var(--card);
       box-shadow:var(--shadow);
       font-weight:850;
+      padding-right:18px;
     }
     .main-category-custom .custom-category-menu{
       position:static;
@@ -2753,14 +2849,14 @@
       <div id="syncStatus" class="sync-status" aria-live="polite">Baza sinxron</div>
     </header>
 
-    <div class="global-search-wrap">
+    <div id="globalSearchWrap" class="global-search-wrap">
       <input id="globalSearch" class="input global-search" type="search" placeholder="Satışlarda axtar..." autocomplete="off">
       <button id="globalSearchBtn" class="btn" type="button">Axtar</button>
       <button id="globalClearBtn" class="btn secondary global-clear hidden" type="button">Təmizlə</button>
     </div>
 
     <section id="dashboardPage" class="hidden">
-      <div class="stats">
+      <div id="productStatsGrid" class="stats">
         <div class="stat"><div class="label">Məhsullar</div><div id="statProducts" class="value">0</div><div class="sub">qeydiyyatda</div></div>
         <div class="stat"><div class="label">Satış</div><div id="statRevenue" class="value">0 ₼</div><div class="sub">ümumi gəlir</div></div>
         <div class="stat"><div class="label">Maya</div><div id="statCost" class="value">0 ₼</div><div class="sub">satılan mallar</div></div>
@@ -2776,7 +2872,7 @@
           </div>
         </div>
 
-        <div class="toolbar with-clear">
+        <div id="productToolbar" class="toolbar with-clear">
           <div class="dropdown">
             <button id="productDateBtn" class="drop-btn" type="button" aria-expanded="false">
               <span class="txt">Tarix: <strong id="productDateLabel">Bütün</strong></span><span class="chev">⌄</span>
@@ -2867,7 +2963,6 @@
         </div>
       </div>
 
-      <button id="toggleSalesActions" class="btn secondary sales-actions-toggle" type="button">Əməliyyatları gizlət</button>
       <div id="salesQuickActions" class="sales-quick-actions">
         <button id="addSaleFromSales" class="btn secondary" type="button">+ Satış</button>
         <button id="goSellFromProducts" class="btn secondary" type="button">Sat</button>
@@ -2881,7 +2976,7 @@
         <button id="sendReportWhatsapp" class="btn secondary" type="button">Hesabat göndər</button>
       </div>
 
-      <div class="toolbar with-clear">
+      <div id="salesToolbar" class="toolbar with-clear">
         <div class="dropdown">
           <button id="salesDateBtn" class="drop-btn" type="button" aria-expanded="false">
             <span class="txt">Tarix: <strong id="salesDateLabel">Bu gün</strong></span><span class="chev">⌄</span>
@@ -2975,7 +3070,7 @@
         </div>
       </div>
 
-      <div class="summary-grid sales-summary-grid">
+      <div id="salesSummaryGrid" class="summary-grid sales-summary-grid">
         <button id="salesRevenueStat" class="stat clickable-stat" type="button"><div id="salesSummaryRevenueLabel" class="label">Bu günün satışı</div><div id="filterRevenue" class="value">0 ₼</div></button>
         <div id="salesProfitStat" class="stat"><div id="salesSummaryProfitLabel" class="label">Bu günün qazancı</div><div id="filterProfit" class="value profit">0 ₼</div></div>
         <button id="salesPocketStat" class="stat clickable-stat" type="button"><div id="salesSummaryPocketLabel" class="label">Bu günün cibi</div><div id="filterPocket" class="value profit">0 ₼</div></button>
@@ -2996,7 +3091,7 @@
         </div>
       </div>
 
-      <div class="toolbar with-clear">
+      <div id="expensesToolbar" class="toolbar with-clear">
         <div class="dropdown">
           <button id="expensesDateBtn" class="drop-btn" type="button" aria-expanded="false">
             <span class="txt">Tarix: <strong id="expensesDateLabel">Bu gün</strong></span><span class="chev">⌄</span>
@@ -3057,7 +3152,7 @@
         </div>
       </div>
 
-      <div class="summary-grid">
+      <div id="expensesSummaryGrid" class="summary-grid">
         <div class="stat"><div id="expensesSummaryLabel" class="label">Bu günün xərci</div><div id="filterExpensesTotal" class="value">0 ₼</div></div>
         <div class="stat"><div class="label">Xərc sayı</div><div id="filterExpensesCount" class="value">0</div></div>
         <div class="stat"><div class="label">İşçi pulu</div><div id="workerPayTotal" class="value profit">0 ₼</div><div id="workerPayHint" class="sub">Verilib: 0 ₼ · Qalıq: 0 ₼</div></div>
@@ -3153,6 +3248,19 @@
         <div class="settings-body">
           <div id="designThemeGrid" class="theme-grid"></div>
           <button id="resetDesignThemeBtn" class="btn secondary full" type="button" style="margin-top:10px">Default dizayna qayıt</button>
+        </div>
+      </details>
+
+      <details class="card settings-card">
+        <summary class="settings-toggle">
+          <div>
+            <div class="settings-title">Ekran elementləri</div>
+            <div class="meta">Satış, məhsul və xərc hissələrində görünən bloklar</div>
+          </div>
+        </summary>
+        <div class="settings-body">
+          <div id="uiVisibilitySettings" class="log-list"></div>
+          <button id="resetUiVisibilityBtn" class="btn secondary full" type="button" style="margin-top:10px">Hamısını göstər</button>
         </div>
       </details>
 
@@ -3917,6 +4025,7 @@
           <h3 id="cardNumberTitle">Kart</h3>
           <div id="cardNumberBank" class="meta">Birbank</div>
         </div>
+        <div id="cardNumberOwnerTabs" class="card-owner-tabs"></div>
       </div>
       <div id="cardNumberValue" class="card-number-display">•••• •••• •••• ••••</div>
     </div>
@@ -4110,7 +4219,7 @@ let expenses=[];
 let notes=[];
 let activityLogs=[];
 let deletedRecords=[];
-let appSettings={logo_url:null,favicon_url:null,design_theme:"default",report_sections:null,pocket_overrides:null,pocket_cash_counts:null,pocket_cash_logs:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null};
+let appSettings={logo_url:null,favicon_url:null,design_theme:"default",ui_visibility:null,report_sections:null,pocket_overrides:null,pocket_cash_counts:null,pocket_cash_logs:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null};
 let currentSaleProduct=null;
 let displayedLocalDate=null;
 let currentPage="sales";
@@ -4155,6 +4264,8 @@ let multiSaleSearchQuery="";
 let localSyncRunning=false;
 let pocketCashLogDateMode="today";
 let pocketCashSaveTimer=null;
+let designThemeSaveTimer=null;
+let uiVisibilitySaveTimer=null;
 
 /* Delete buttons are intentionally not persisted. Refresh => hidden again. */
 let productDeleteMode=false;
@@ -4183,7 +4294,48 @@ const DESIGN_THEMES=[
   {id:"clean",title:"Minimal",description:"Az kölgə, sadə kartlar"},
   {id:"bold",title:"Güclü",description:"Qalın xətt və vurğulu düymə"},
   {id:"soft",title:"Yumşaq",description:"Daha oval və sakit forma"},
-  {id:"sharp",title:"Kəskin",description:"Kvadrat, ciddi panel"}
+  {id:"sharp",title:"Kəskin",description:"Kvadrat, ciddi panel"},
+  {id:"premium",title:"Premium",description:"Qara fon və qızılı detallar"}
+];
+const UI_VISIBILITY_GROUPS=[
+  {
+    title:"Satış tarixçəsi",
+    items:[
+      {key:"sales.search",label:"Axtarış hissəsi"},
+      {key:"sales.cards",label:"Kart limit düymələri"},
+      {key:"sales.actions",label:"Əməliyyat düymələri"},
+      {key:"sales.filters",label:"Tarix və filterlər"},
+      {key:"sales.category",label:"Kateqoriya filteri"},
+      {key:"sales.summary",label:"Satış rəqəmləri"},
+      {key:"sales.list",label:"Satış siyahısı"},
+      {key:"sales.delete",label:"Sil düyməsi"},
+      {key:"sales.add",label:"+ satış düyməsi"}
+    ]
+  },
+  {
+    title:"Məhsullar",
+    items:[
+      {key:"products.search",label:"Axtarış hissəsi"},
+      {key:"products.stats",label:"Yuxarı rəqəmlər"},
+      {key:"products.filters",label:"Tarix və filterlər"},
+      {key:"products.category",label:"Kateqoriya filteri"},
+      {key:"products.list",label:"Məhsul siyahısı"},
+      {key:"products.delete",label:"Sil düyməsi"},
+      {key:"products.add",label:"+ məhsul düyməsi"}
+    ]
+  },
+  {
+    title:"Xərclər",
+    items:[
+      {key:"expenses.search",label:"Axtarış hissəsi"},
+      {key:"expenses.filters",label:"Tarix və filterlər"},
+      {key:"expenses.actions",label:"Sürətli xərc düymələri"},
+      {key:"expenses.summary",label:"Xərc rəqəmləri"},
+      {key:"expenses.list",label:"Xərc siyahısı"},
+      {key:"expenses.delete",label:"Sil düyməsi"},
+      {key:"expenses.add",label:"+ xərc düyməsi"}
+    ]
+  }
 ];
 const DEFAULT_REPORT_SECTIONS=["summary","sales","expenses"];
 const REPORT_SECTION_LABELS={
@@ -4385,16 +4537,18 @@ function finishLaunchSplash(){
   const splash=$("launchSplash");
   if(!splash || splash.classList.contains("done") || splash.dataset.closing==="true")return;
   splash.dataset.closing="true";
-  const remaining=Math.max(0,900-(Date.now()-launchSplashStartedAt));
+  const remaining=Math.max(0,250-(Date.now()-launchSplashStartedAt));
   setTimeout(()=>{
     splash.classList.add("done");
-    setTimeout(()=>splash.remove(),520);
+    setTimeout(()=>splash.remove(),260);
   },remaining);
 }
 
 function finishLaunchSplashAfterPaint(){
   requestAnimationFrame(()=>requestAnimationFrame(finishLaunchSplash));
 }
+
+setTimeout(finishLaunchSplashAfterPaint,1600);
 
 let confirmResolve=null;
 
@@ -4875,9 +5029,9 @@ async function loadAppSettings(){
 
   if(error){
     console.warn("app_settings:",error.message);
-    appSettings={logo_url:null,favicon_url:null,design_theme:"default",report_sections:null,pocket_overrides:null,pocket_cash_counts:null,pocket_cash_logs:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null};
+    appSettings={logo_url:null,favicon_url:null,design_theme:"default",ui_visibility:null,report_sections:null,pocket_overrides:null,pocket_cash_counts:null,pocket_cash_logs:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null};
   }else{
-    appSettings={logo_url:null,favicon_url:null,design_theme:"default",report_sections:null,pocket_overrides:null,pocket_cash_counts:null,pocket_cash_logs:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null,...(data||{})};
+    appSettings={logo_url:null,favicon_url:null,design_theme:"default",ui_visibility:null,report_sections:null,pocket_overrides:null,pocket_cash_counts:null,pocket_cash_logs:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null,...(data||{})};
   }
 
   applyBranding();
@@ -5668,28 +5822,138 @@ function renderDesignThemeSettings(){
   });
 }
 
-async function saveDesignTheme(value){
+function queueDesignThemeSave(theme){
+  clearTimeout(designThemeSaveTimer);
+  designThemeSaveTimer=setTimeout(async()=>{
+    const {error}=await sb.from("app_settings").upsert({
+      user_id:currentUser.id,
+      design_theme:theme,
+      updated_at:new Date().toISOString()
+    },{onConflict:"user_id"});
+
+    if(error){
+      if(isMissingSchemaColumn(error,"design_theme")){
+        toast("Dizayn lokal dəyişdi. Supabase üçün SQL-i əlavə et.");
+        return;
+      }
+      toast(error.message);
+      return;
+    }
+  },350);
+}
+
+function saveDesignTheme(value){
   const theme=cleanDesignTheme(value);
   appSettings={...appSettings,design_theme:theme};
   applyDesignTheme(theme);
   renderDesignThemeSettings();
-
-  const {error}=await sb.from("app_settings").upsert({
-    user_id:currentUser.id,
-    design_theme:theme,
-    updated_at:new Date().toISOString()
-  },{onConflict:"user_id"});
-
-  if(error){
-    if(isMissingSchemaColumn(error,"design_theme")){
-      toast("Dizayn lokal dəyişdi. Supabase üçün SQL-i əlavə et.");
-      return;
-    }
-    toast(error.message);
-    return;
-  }
-
+  queueDesignThemeSave(theme);
   toast(theme==="default"?"Default dizayn aktivdir":"Dizayn saxlandı");
+}
+
+function uiVisibility(){
+  return appSettings?.ui_visibility && typeof appSettings.ui_visibility==="object"
+    ? appSettings.ui_visibility
+    : {};
+}
+
+function uiVisible(key){
+  return uiVisibility()[key]!==false;
+}
+
+function setVisibleById(id,visible){
+  $(id)?.classList.toggle("hidden",!visible);
+}
+
+function applyUiVisibility(){
+  const productPage=currentPage==="dashboard";
+  const salesPage=currentPage==="sales";
+  const expensesPage=currentPage==="expenses";
+
+  setVisibleById("globalSearchWrap",
+    (salesPage&&uiVisible("sales.search")) ||
+    (productPage&&uiVisible("products.search")) ||
+    (expensesPage&&uiVisible("expenses.search")) ||
+    ["notes","categories"].includes(currentPage)
+  );
+
+  setVisibleById("cardLimitStrip",uiVisible("sales.cards"));
+  setVisibleById("salesQuickActions",uiVisible("sales.actions"));
+  setVisibleById("salesToolbar",uiVisible("sales.filters"));
+  setVisibleById("salesCategoryFilterCustom",uiVisible("sales.category"));
+  setVisibleById("salesSummaryGrid",uiVisible("sales.summary"));
+  setVisibleById("salesList",uiVisible("sales.list"));
+  setVisibleById("toggleSalesDelete",uiVisible("sales.delete"));
+  setVisibleById("salesAddBtn",salesPage&&uiVisible("sales.add"));
+
+  setVisibleById("productStatsGrid",uiVisible("products.stats"));
+  setVisibleById("productToolbar",uiVisible("products.filters"));
+  setVisibleById("categoryFilterCustom",uiVisible("products.category"));
+  setVisibleById("productList",uiVisible("products.list"));
+  setVisibleById("toggleProductDelete",uiVisible("products.delete"));
+  setVisibleById("addProductBtn",productPage&&uiVisible("products.add"));
+
+  setVisibleById("expensesToolbar",uiVisible("expenses.filters"));
+  setVisibleById("expenseQuickActions",uiVisible("expenses.actions"));
+  setVisibleById("expensesSummaryGrid",uiVisible("expenses.summary"));
+  setVisibleById("expensesList",uiVisible("expenses.list"));
+  setVisibleById("toggleExpensesDelete",uiVisible("expenses.delete"));
+  setVisibleById("expensesAddBtn",expensesPage&&uiVisible("expenses.add"));
+}
+
+function renderUiVisibilitySettings(){
+  if(!$("uiVisibilitySettings"))return;
+  const visibility=uiVisibility();
+  $("uiVisibilitySettings").innerHTML=UI_VISIBILITY_GROUPS.map(group=>`
+    <div class="log-item">
+      <div class="log-title">${escapeHtml(group.title)}</div>
+      <div class="form" style="margin-top:10px">
+        ${group.items.map(item=>`
+          <label class="check-card">
+            <input type="checkbox" data-ui-visibility="${escapeHtml(item.key)}" ${visibility[item.key]!==false?"checked":""}>
+            ${escapeHtml(item.label)}
+          </label>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+
+function queueUiVisibilitySave(){
+  clearTimeout(uiVisibilitySaveTimer);
+  const visibility=uiVisibility();
+  uiVisibilitySaveTimer=setTimeout(async()=>{
+    const {error}=await sb.from("app_settings").upsert({
+      user_id:currentUser.id,
+      ui_visibility:visibility,
+      updated_at:new Date().toISOString()
+    },{onConflict:"user_id"});
+    if(error){
+      if(isMissingSchemaColumn(error,"ui_visibility")){
+        toast("Ekran ayarı lokal dəyişdi. Supabase üçün SQL-i əlavə et.");
+        return;
+      }
+      toast(error.message);
+    }
+  },350);
+}
+
+function saveUiVisibility(key,visible){
+  const next={...uiVisibility()};
+  if(visible)delete next[key];
+  else next[key]=false;
+  appSettings={...appSettings,ui_visibility:next};
+  applyUiVisibility();
+  renderUiVisibilitySettings();
+  queueUiVisibilitySave();
+}
+
+function resetUiVisibility(){
+  appSettings={...appSettings,ui_visibility:{}};
+  applyUiVisibility();
+  renderUiVisibilitySettings();
+  queueUiVisibilitySave();
+  toast("Bütün ekran elementləri göstərildi");
 }
 
 function cardAccounts(){
@@ -6475,6 +6739,13 @@ function renderCardNumberModal(){
   $("cardNumberBank").textContent=info.bank||"Birbank";
   $("cardNumberValue").textContent=formatCardNumberDisplay(info.number||"Kart kodu əlavə edilməyib");
   $("cardNumberValue").dataset.bank=info.bank||"Birbank";
+  if($("cardNumberOwnerTabs")){
+    $("cardNumberOwnerTabs").innerHTML=cardAccounts().map(account=>`
+      <button class="card-owner-tab ${account===name?"active":""}" type="button" data-card-owner="${escapeHtml(account)}">
+        ${escapeHtml(account)}
+      </button>
+    `).join("");
+  }
 }
 
 function openCardNumberModal(name){
@@ -8590,6 +8861,7 @@ function renderCurrentPage(page=currentPage){
     renderReportSectionControls();
     renderCardSettingsModal();
     renderDesignThemeSettings();
+    renderUiVisibilitySettings();
     renderPocketCashLogSettings();
     renderDailyProfits();
     renderYusifMoneySettings();
@@ -8611,6 +8883,7 @@ function renderShared(){
   renderQuickExpenseButtons();
   applySalesActionsVisibility();
   applyCostProfitVisibility();
+  applyUiVisibility();
 }
 
 function renderAll(){
@@ -8641,19 +8914,11 @@ function applyCostProfitVisibility(){
 }
 
 function salesActionsVisible(){
-  return localStorage.getItem(SALES_ACTIONS_VISIBLE_KEY)!=="0";
+  return true;
 }
 
 function applySalesActionsVisibility(){
-  if(!$("salesQuickActions")||!$("toggleSalesActions"))return;
-  const visible=salesActionsVisible();
-  $("salesQuickActions").classList.toggle("hidden",!visible);
-  $("toggleSalesActions").textContent=visible?"Əməliyyatlar: açıq":"Əməliyyatlar: bağlı";
-}
-
-function toggleSalesActions(){
-  localStorage.setItem(SALES_ACTIONS_VISIBLE_KEY,salesActionsVisible()?"0":"1");
-  applySalesActionsVisibility();
+  $("salesQuickActions")?.classList.remove("hidden");
 }
 
 function updateScrollTopButton(){
@@ -8684,6 +8949,7 @@ function showPage(page,options={}){
   syncGlobalSearch(page);
   closeDropdowns();
   renderCurrentPage(page);
+  applyUiVisibility();
   fitValues();
   updateScrollTopButton();
 
@@ -9688,6 +9954,15 @@ function bindSwipeCloseModal(backdrop){
 document.querySelectorAll(".modal-backdrop").forEach(bindSwipeCloseModal);
 
 $("cardNumberModal").addEventListener("click",event=>{
+  const ownerButton=event.target.closest("[data-card-owner]");
+  if(ownerButton){
+    event.stopPropagation();
+    cardNumberAccountName=ownerButton.dataset.cardOwner;
+    cardNumberIndex=0;
+    renderCardNumberModal();
+    return;
+  }
+  if(event.target.closest(".modal-head"))return;
   if(!event.target.closest("#cardNumberValue"))closeModal("cardNumberModal");
 });
 
@@ -10956,7 +11231,6 @@ $("addLooseSale").addEventListener("click",openLooseSale);
 $("addTrustIncome").addEventListener("click",openTrustIncome);
 $("addTailorIncome").addEventListener("click",openTailorIncome);
 $("addCustomIncome").addEventListener("click",openCustomIncome);
-$("toggleSalesActions").addEventListener("click",toggleSalesActions);
 
 ["looseSalePrice","looseSaleCost","looseSaleQuantity"].forEach(id=>{
   $(id).addEventListener("input",updateLooseSalePreview);
@@ -11312,6 +11586,14 @@ $("resetDesignThemeBtn").addEventListener("click",()=>{
   saveDesignTheme("default");
 });
 
+$("uiVisibilitySettings").addEventListener("change",event=>{
+  const input=event.target.closest("[data-ui-visibility]");
+  if(!input)return;
+  saveUiVisibility(input.dataset.uiVisibility,input.checked);
+});
+
+$("resetUiVisibilityBtn").addEventListener("click",resetUiVisibility);
+
 function sqlValue(value){
   if(value===null||value===undefined)return "null";
   if(Array.isArray(value))return `array[${value.map(sqlValue).join(",")}]::text[]`;
@@ -11333,6 +11615,7 @@ async function downloadSqlPdf(){
     logo_url:appSettings.logo_url,
     favicon_url:appSettings.favicon_url,
     design_theme:currentDesignTheme(),
+    ui_visibility:uiVisibility(),
     report_sections:selectedReportSections(),
     pocket_overrides:pocketOverrides(),
     pocket_cash_counts:pocketCashCounts(),
@@ -11357,7 +11640,7 @@ async function downloadSqlPdf(){
     "-- SellerNote backup",
     `-- ${formatDate(new Date().toISOString())}`,
     "",
-    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","design_theme","report_sections","pocket_overrides","pocket_cash_counts","pocket_cash_logs","daily_profits","show_dashboard_profit","show_cost_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","notebook_images","balance_wallets","quick_expense_buttons","category_price_defaults","copy_templates","personal_notes","created_at","updated_at"]),
+    sqlInsert("app_settings",settingsRow?[settingsRow]:[],["user_id","logo_url","favicon_url","design_theme","ui_visibility","report_sections","pocket_overrides","pocket_cash_counts","pocket_cash_logs","daily_profits","show_dashboard_profit","show_cost_profit","show_card_limits","card_accounts","card_details","card_counter_reset_at","notebook_images","balance_wallets","quick_expense_buttons","category_price_defaults","copy_templates","personal_notes","created_at","updated_at"]),
     sqlInsert("categories",categories,["id","user_id","name","created_at","updated_at"]),
     sqlInsert("products",[...products,...allDeleted.filter(row=>"sale_price" in row&&"cost_price" in row)],["id","user_id","category_id","name","sale_price","cost_price","note","image_url","image_urls","deleted_at","created_at","updated_at"]),
     sqlInsert("sales",[...sales,...allDeleted.filter(row=>"unit_sale_price" in row)],["id","user_id","product_id","category_id","product_name","quantity","unit_sale_price","unit_cost_price","sale_price_provided","cost_price_provided","payment_method","card_account","money_holder","is_checked","image_url","image_urls","note","deleted_at","created_at","updated_at"]),

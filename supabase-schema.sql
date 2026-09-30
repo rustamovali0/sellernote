@@ -154,6 +154,7 @@ create table if not exists public.app_settings (
   logo_url text,
   favicon_url text,
   design_theme text not null default 'default',
+  ui_visibility jsonb not null default '{}',
   report_sections text[] not null default array['sales','expenses'],
   pocket_overrides jsonb not null default '{}',
   pocket_cash_counts jsonb not null default '{}',
@@ -176,6 +177,9 @@ create table if not exists public.app_settings (
 
 alter table public.app_settings
   add column if not exists design_theme text not null default 'default';
+
+alter table public.app_settings
+  add column if not exists ui_visibility jsonb not null default '{}';
 
 alter table public.app_settings
   add column if not exists report_sections text[] not null default array['sales','expenses'];
