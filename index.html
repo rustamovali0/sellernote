@@ -2417,19 +2417,33 @@
     }
     .custom-category-chevron{
       flex:0 0 auto;
-      width:30px;
-      height:30px;
+      width:32px;
+      height:32px;
       display:grid;
       place-items:center;
-      background:transparent;
+      background:color-mix(in srgb,var(--card2) 72%,var(--line));
       border:0;
-      font-size:20px;
+      border-radius:10px;
+      font-size:0;
       line-height:1;
       color:var(--muted);
+      transition:background .16s ease,color .16s ease;
+    }
+    .custom-category-chevron::before{
+      content:"";
+      width:9px;
+      height:9px;
+      border-right:3px solid currentColor;
+      border-bottom:3px solid currentColor;
+      transform:translateY(-2px) rotate(45deg);
       transition:transform .16s ease;
     }
     .custom-category-trigger.open .custom-category-chevron{
-      transform:rotate(180deg);
+      background:color-mix(in srgb,var(--primary) 12%,var(--card2));
+      color:var(--primary);
+    }
+    .custom-category-trigger.open .custom-category-chevron::before{
+      transform:translateY(2px) rotate(225deg);
     }
     .custom-category-menu{
       position:absolute;
@@ -2741,7 +2755,7 @@
       background:var(--card);
       box-shadow:var(--shadow);
       font-weight:850;
-      padding-right:18px;
+      padding:0 10px 0 18px;
     }
     .main-category-custom .custom-category-menu{
       position:static;
