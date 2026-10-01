@@ -1218,6 +1218,22 @@
       grid-template-columns:repeat(3,minmax(0,1fr));
       gap:8px;
     }
+    .cash-count-mode{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+      margin-bottom:8px;
+    }
+    .cash-count-mode .btn{
+      min-height:42px;
+      padding:9px 10px;
+      font-size:14px;
+    }
+    .cash-count-mode .btn.active{
+      background:var(--primary);
+      color:var(--primaryText);
+      border-color:var(--primary);
+    }
     .cash-count-btn{
       min-height:70px;
       padding:10px;
@@ -1249,6 +1265,7 @@
       grid-template-columns:repeat(2,minmax(0,1fr));
       gap:8px;
     }
+    .cash-count-summary .meta{grid-column:1/-1}
     .cash-count-pill{
       border:1px solid var(--line);
       border-radius:12px;
@@ -4069,6 +4086,10 @@
           <div id="pocketCashCountSummary" class="cash-count-summary"></div>
           <button id="togglePocketCashCountEditor" class="btn secondary full" type="button" style="margin-top:10px">Pulun miqdarını təyin et</button>
           <div id="pocketCashCountEditor" class="hidden" style="margin-top:10px">
+            <div class="cash-count-mode">
+              <button id="pocketCashAddMode" class="btn secondary active" type="button">Artır</button>
+              <button id="pocketCashSubtractMode" class="btn secondary" type="button">Azalt</button>
+            </div>
             <div id="pocketCashCountButtons" class="cash-count-grid"></div>
             <button id="resetPocketCashCountBtn" class="btn secondary full" type="button" style="margin-top:10px">Sayımı sıfırla</button>
           </div>
@@ -4282,6 +4303,7 @@ let multiSaleSearchQuery="";
 let localSyncRunning=false;
 let pocketCashLogDateMode="today";
 let pocketCashSaveTimer=null;
+let pocketCashCountMode="add";
 let designThemeSaveTimer=null;
 let uiVisibilitySaveTimer=null;
 
@@ -4563,6 +4585,10 @@ function finishLaunchSplash(){
 }
 
 function finishLaunchSplashAfterPaint(){
+  if($("authView")?.classList.contains("hidden") && $("mainApp")?.classList.contains("hidden")){
+    setTimeout(finishLaunchSplashAfterPaint,120);
+    return;
+  }
   requestAnimationFrame(()=>requestAnimationFrame(finishLaunchSplash));
 }
 
@@ -5860,13 +5886,20 @@ function queueDesignThemeSave(theme){
   },350);
 }
 
+function updateDesignThemeChoiceState(){
+  const active=currentDesignTheme();
+  document.querySelectorAll("[data-design-theme]").forEach(button=>{
+    button.classList.toggle("active",button.dataset.designTheme===active);
+  });
+}
+
 function saveDesignTheme(value){
   const theme=cleanDesignTheme(value);
+  if(theme===currentDesignTheme())return;
   appSettings={...appSettings,design_theme:theme};
   applyDesignTheme(theme);
-  renderDesignThemeSettings();
+  updateDesignThemeChoiceState();
   queueDesignThemeSave(theme);
-  toast(theme==="default"?"Default dizayn aktivdir":"Dizayn saxlandı");
 }
 
 function uiVisibility(){
@@ -7646,13 +7679,18 @@ function renderPocketCashCounts(){
   const total=pocketCashCountTotal(counts);
   if($("pocketCashCountTotal"))$("pocketCashCountTotal").textContent=money(total);
   if($("pocketCashCountSummary")){
-    $("pocketCashCountSummary").innerHTML=CASH_DENOMINATIONS.map(denomination=>`
+    const activeDenominations=CASH_DENOMINATIONS.filter(denomination=>Number(counts[denomination]||0)>0);
+    $("pocketCashCountSummary").innerHTML=activeDenominations.length
+      ? activeDenominations.map(denomination=>`
       <div class="cash-count-pill">
         ${denomination} ₼
         <span>${Number(counts[denomination]||0)} ədəd</span>
       </div>
-    `).join("");
+    `).join("")
+      : '<div class="meta">Nominal təyin edilməyib.</div>';
   }
+  $("pocketCashAddMode")?.classList.toggle("active",pocketCashCountMode==="add");
+  $("pocketCashSubtractMode")?.classList.toggle("active",pocketCashCountMode==="subtract");
   if($("pocketCashCountButtons")){
     $("pocketCashCountButtons").innerHTML=CASH_DENOMINATIONS.map(denomination=>{
       const count=Number(counts[denomination]||0);
@@ -7686,11 +7724,13 @@ function queuePocketCashSave(){
   },350);
 }
 
-function changePocketCashCount(denomination){
+function changePocketCashCount(denomination,direction=pocketCashCountMode==="subtract"?-1:1){
   const key=currentPocketKey();
   const current=currentPocketCashCounts();
   const before=Number(current[denomination]||0);
-  const next=cleanPocketCashCounts({...current,[denomination]:before+1});
+  if(direction<0 && before<=0)return;
+  const after=Math.max(0,before+direction);
+  const next=cleanPocketCashCounts({...current,[denomination]:after});
   const nextCounts={...pocketCashCounts(),[key]:next};
   const now=new Date().toISOString();
   const log={
@@ -7698,7 +7738,7 @@ function changePocketCashCount(denomination){
     key,
     denomination:Number(denomination),
     before,
-    after:before+1,
+    after,
     counts:next,
     total:pocketCashCountTotal(next),
     created_at:now
@@ -7711,6 +7751,18 @@ function changePocketCashCount(denomination){
   renderPocketCashCounts();
   renderPocketCashLogSettings();
   queuePocketCashSave();
+}
+
+function shouldOpenPocketCashEditorForSale(payload={}){
+  return payload.payment_method!=="card" && payload.money_holder!=="yusif";
+}
+
+function openPocketCashEditorAfterSale(payloads=[]){
+  const list=Array.isArray(payloads)?payloads:[payloads];
+  if(!list.some(shouldOpenPocketCashEditorForSale))return;
+  setTimeout(()=>{
+    if(currentUser)openPocketEditModal({showCashEditor:true});
+  },180);
 }
 
 function resetPocketCashCount(){
@@ -7787,7 +7839,7 @@ function renderPocketCashLogSettings(){
   }).join(""):'<div class="empty" style="padding:14px">Bu filterdə cib sayımı dəyişikliyi yoxdur.</div>';
 }
 
-function openPocketEditModal(){
+function openPocketEditModal(options={}){
   const list=filteredSalesList();
   const regularList=list.filter(sale=>!isOutsideIncomeSale(sale));
   const auto=computedPocketValue(list);
@@ -7828,6 +7880,7 @@ function openPocketEditModal(){
   }
   $("pocketIncomeBreakdown").innerHTML=rows.join("") || '<div class="meta">Kənar gəlir və xərc yoxdur.</div>';
   renderPocketCashCounts();
+  $("pocketCashCountEditor").classList.toggle("hidden",!options.showCashEditor);
   openModal("pocketEditModal");
 }
 
@@ -10460,6 +10513,7 @@ $("confirmMultiSale").addEventListener("click",async()=>{
     showPage("sales");
     renderAll();
     toast(`${entries.length} satış əlavə edildi. Baza ilə sinxron gedir.`);
+    openPocketCashEditorAfterSale(entries.map(entry=>entry.payload));
 
     (async()=>{
       for(const entry of entries){
@@ -11043,6 +11097,7 @@ $("saleForm").addEventListener("submit",async event=>{
   renderAll();
   $("saveSaleBtn").disabled=false;
   toast("Satış qeydə alındı. Baza ilə sinxron gedir.");
+  openPocketCashEditorAfterSale(salePayload);
   syncLocalQueue();
 });
 
@@ -11172,6 +11227,7 @@ async function addFixedOutsideIncome(name,amount){
     showPage("sales");
     renderAll();
     toast(`${name} ${money(amount)} əlavə edildi. Baza ilə sinxron gedir.`);
+    openPocketCashEditorAfterSale(payload);
     syncLocalQueue();
   }catch(error){
     console.error(error);
@@ -11431,6 +11487,7 @@ $("looseSaleForm").addEventListener("submit",async event=>{
       showPage("sales");
       renderAll();
       toast("Satış və məhsul əlavə edildi. Baza ilə sinxron gedir.");
+      openPocketCashEditorAfterSale(saleEntry.payload);
 
       (async()=>{
         try{
@@ -11470,6 +11527,7 @@ $("looseSaleForm").addEventListener("submit",async event=>{
     showPage("sales");
     renderAll();
     toast("Satış yadda saxlanıldı. Baza ilə sinxron gedir.");
+    openPocketCashEditorAfterSale(saleEntry.payload);
 
     (async()=>{
       try{
@@ -12902,6 +12960,16 @@ $("salesPocketStat").addEventListener("click",openPocketEditModal);
 
 $("togglePocketCashCountEditor").addEventListener("click",()=>{
   $("pocketCashCountEditor").classList.toggle("hidden");
+  renderPocketCashCounts();
+});
+
+$("pocketCashAddMode").addEventListener("click",()=>{
+  pocketCashCountMode="add";
+  renderPocketCashCounts();
+});
+
+$("pocketCashSubtractMode").addEventListener("click",()=>{
+  pocketCashCountMode="subtract";
   renderPocketCashCounts();
 });
 
