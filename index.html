@@ -4259,6 +4259,11 @@
         <button class="close" id="appConfirmClose" type="button" aria-label="Bağla">×</button>
       </div>
 
+      <div id="appConfirmInputWrap" class="hidden" style="margin:10px 0 2px">
+        <label id="appConfirmInputLabel" class="label" for="appConfirmInput">Qiymət</label>
+        <input id="appConfirmInput" class="input" type="number" step="0.01" inputmode="decimal" placeholder="">
+      </div>
+
       <div class="confirm-actions">
         <button id="appConfirmCancel" class="btn secondary" type="button">İmtina</button>
         <button id="appConfirmOk" class="btn danger" type="button">Sil</button>
@@ -4632,27 +4637,43 @@ function finishLaunchSplashAfterPaint(){
 setTimeout(finishLaunchSplashAfterPaint,1600);
 
 let confirmResolve=null;
+let confirmInputMode=false;
 
 function finishAppConfirm(result=false){
+  const inputValue=confirmInputMode ? $("appConfirmInput").value : "";
   closeModal("appConfirmModal");
   if(confirmResolve){
     const resolve=confirmResolve;
     confirmResolve=null;
-    resolve(result);
+    const payload=confirmInputMode
+      ? {confirmed:!!result,value:inputValue}
+      : result;
+    confirmInputMode=false;
+    resolve(payload);
   }
 }
 
 function appConfirm(message,options={}){
+  confirmInputMode=!!options.input;
   $("appConfirmTitle").textContent=options.title||"Təsdiq";
   $("appConfirmMessage").textContent=message||"Davam etmək istəyirsiniz?";
   $("appConfirmCancel").textContent=options.cancelText||"İmtina";
   $("appConfirmOk").textContent=options.confirmText||"Təsdiq et";
   $("appConfirmOk").classList.toggle("danger",options.tone!=="default");
+  $("appConfirmInputWrap").classList.toggle("hidden",!options.input);
+  $("appConfirmInputLabel").textContent=options.input?.label||"Qiymət";
+  $("appConfirmInput").value=options.input?.value||"";
+  $("appConfirmInput").placeholder=options.input?.placeholder||"";
   openModal("appConfirmModal");
+  if(options.input)setTimeout(()=>$("appConfirmInput").focus(),80);
 
   return new Promise(resolve=>{
     confirmResolve=resolve;
   });
+}
+
+function appPromptConfirm(message,options={}){
+  return appConfirm(message,{...options,input:options.input||{}});
 }
 
 $("appConfirmCancel").addEventListener("click",()=>finishAppConfirm(false));
@@ -5758,6 +5779,41 @@ function setMoneyInputFallback(input,value,emptyText="Qeyd edilməyib"){
     input.placeholder=emptyText;
     input.dataset.fallbackPrice="";
   }
+}
+
+function setTextInputFallback(input,value,emptyText=""){
+  if(!input)return;
+  const text=String(value||"").trim();
+  input.value="";
+  input.placeholder=text||emptyText;
+  input.dataset.fallbackText=text;
+}
+
+function textInputValue(id,defaultValue=""){
+  const input=$(id);
+  if(!input)return defaultValue;
+  return input.value.trim() || input.dataset.fallbackText || defaultValue;
+}
+
+function setNumberInputFallback(input,value,emptyText=""){
+  if(!input)return;
+  const number=Number(value||0);
+  input.value="";
+  if(Number.isFinite(number) && number>0){
+    input.placeholder=String(number);
+    input.dataset.fallbackNumber=String(number);
+  }else{
+    input.placeholder=emptyText;
+    input.dataset.fallbackNumber="";
+  }
+}
+
+function numberInputValue(id,defaultValue=0){
+  const input=$(id);
+  if(!input)return defaultValue;
+  const raw=input.value!=="" ? input.value : input.dataset.fallbackNumber;
+  const number=Number(raw);
+  return Number.isFinite(number) ? number : defaultValue;
 }
 
 function updateProductSalePricePlaceholder(forceCategoryDefault=false){
@@ -9238,8 +9294,14 @@ function showPage(page,options={}){
 function resetProductForm(){
   $("productForm").reset();
   $("productId").value="";
+  $("productName").dataset.fallbackText="";
+  $("productName").placeholder="Məhsulun adı (boş qala bilər)";
   $("salePrice").dataset.fallbackPrice="";
   $("salePrice").placeholder="Qeyd edilməyib";
+  $("costPrice").dataset.fallbackPrice="";
+  $("costPrice").placeholder="Qeyd edilməyib";
+  $("productNote").dataset.fallbackText="";
+  $("productNote").placeholder="Qeyd (istəyə bağlı)";
 
   pendingProductPreviewUrls.forEach(url=>URL.revokeObjectURL(url));
   pendingProductPreviewUrls=[];
@@ -9260,10 +9322,11 @@ function updateProfitPreview(){
   if(!costProfitVisible())return;
   const saleState=moneyInputValue("salePrice");
   const saleProvided=saleState.provided;
-  const costProvided=$("costPrice").value!=="";
+  const costState=moneyInputValue("costPrice");
+  const costProvided=$("costPrice").value!=="" || costState.provided;
 
   $("profitPreview").textContent=(saleProvided&&costProvided)
-    ? money(saleState.value-Number($("costPrice").value||0))
+    ? money(saleState.value-costState.value)
     : "Qeyd edilməyib";
   $("profitPreview").classList.toggle("not-recorded",!(saleProvided&&costProvided));
   fitValues();
@@ -9333,13 +9396,14 @@ function openEditProduct(id){
 
   $("productModalTitle").textContent="Məhsulu düzəlt";
   $("productId").value=product.id;
-  $("productName").value=product.name;
+  setTextInputFallback($("productName"),product.name,"Məhsulun adı");
   $("productCategory").value=product.category_id||"";
   syncProductCategoryCustom();
   $("salePrice").value="";
   setMoneyInputFallback($("salePrice"),effectiveProductSalePrice(product),"Qeyd edilməyib");
-  $("costPrice").value=Number(product.cost_price||0)===0?"":product.cost_price;
-  $("productNote").value=product.note||"";
+  $("costPrice").value="";
+  setMoneyInputFallback($("costPrice"),Number(product.cost_price||0),"Qeyd edilməyib");
+  setTextInputFallback($("productNote"),product.note,"Qeyd (istəyə bağlı)");
 
   editingImageUrls=productImages(product);
   renderProductImagePreviews();
@@ -9667,14 +9731,28 @@ async function duplicateSale(id,options={}){
     return;
   }
 
+  let salePrice=Number(sale.unit_sale_price||0);
   if(options.confirm){
-    const ok=await appConfirm("Bu satışın eynisi yenidən yaradılsın?",{
+    const result=await appPromptConfirm("Bu satış yenidən yaradılsın? Qiymət boş qalsa əvvəlki qiymət düşəcək.",{
       title:"Satışı təkrarla",
       confirmText:"Təsdiq et",
       cancelText:"İmtina",
-      tone:"default"
+      tone:"default",
+      input:{
+        label:"Satış qiyməti",
+        placeholder:money(salePrice)
+      }
     });
-    if(!ok)return;
+    if(!result.confirmed)return;
+    const raw=String(result.value||"").trim();
+    if(raw!==""){
+      const parsed=Number(raw.replace(",","."));
+      if(!Number.isFinite(parsed)){
+        toast("Qiyməti düzgün yazın.");
+        return;
+      }
+      salePrice=parsed;
+    }
   }
 
   const images=saleImages(sale).filter(Boolean).slice(0,5);
@@ -9685,7 +9763,7 @@ async function duplicateSale(id,options={}){
     category_id:sale.category_id||sale.products?.category_id||null,
     product_name:saleTitle(sale),
     quantity:Number(sale.quantity||1),
-    unit_sale_price:Number(sale.unit_sale_price||0),
+    unit_sale_price:salePrice,
     unit_cost_price:Number(sale.unit_cost_price||0),
     sale_price_provided:sale.sale_price_provided!==false,
     cost_price_provided:sale.cost_price_provided!==false && Number(sale.unit_cost_price||0)>0,
@@ -10913,13 +10991,14 @@ $("productForm").addEventListener("submit",async event=>{
     const id=$("productId").value;
     const categoryId=$("productCategory").value||await ensureShalvarCategory();
     const saleState=moneyInputValue("salePrice");
+    const costState=moneyInputValue("costPrice");
 
     let payload={
       category_id:categoryId,
-      name:$("productName").value.trim()||"Adsız məhsul",
+      name:textInputValue("productName","Adsız məhsul"),
       sale_price:saleState.provided?saleState.value:0,
-      cost_price:Number($("costPrice").value||0),
-      note:$("productNote").value.trim()||null,
+      cost_price:costState.provided?costState.value:0,
+      note:textInputValue("productNote","")||null,
       image_url:null,
       image_urls:[]
     };
@@ -11295,10 +11374,18 @@ function resetLooseSaleForm(){
   $("looseSaleForm").reset();
   $("looseSaleId").value="";
   $("looseSaleName").value="";
+  $("looseSaleName").dataset.fallbackText="";
   $("looseSalePaymentMethod").value="cash";
   $("looseSaleCardAccount").value=cardAccounts()[0];
   $("looseSalePrice").dataset.fallbackPrice="";
   $("looseSalePrice").placeholder="Qeyd edilməyib";
+  $("looseSaleCost").dataset.fallbackPrice="";
+  $("looseSaleCost").placeholder="Qeyd edilməyib";
+  $("looseSaleQuantity").dataset.fallbackNumber="";
+  $("looseSaleQuantity").value="";
+  $("looseSaleQuantity").placeholder="1";
+  $("looseSaleNote").dataset.fallbackText="";
+  $("looseSaleNote").placeholder="Qeyd (boş qala bilər)";
   updatePaymentAccountFields();
 
   pendingSalePreviewUrls.forEach(url=>URL.revokeObjectURL(url));
@@ -11336,7 +11423,9 @@ function updateLooseSaleModeFields(){
   $("looseSalePreviewGrid").classList.toggle("hidden",isOutside);
   $("looseSaleNote").classList.toggle("hidden",isOutside);
   $("looseSaleYusifMoneyWrap").classList.toggle("hidden",!$("looseSaleId").value);
-  $("looseSaleName").placeholder=(saleEntryMode==="regular"||isOutside)?"Başlıq":"Satış";
+  if(!$("looseSaleName").dataset.fallbackText){
+    $("looseSaleName").placeholder=(saleEntryMode==="regular"||isOutside)?"Başlıq":"Satış";
+  }
   updateLooseSalePricePlaceholder();
 }
 
@@ -11344,10 +11433,11 @@ function updateLooseSalePreview(){
   $("looseSaleProfitBlock")?.classList.toggle("hidden",!costProfitVisible());
   const saleState=moneyInputValue("looseSalePrice");
   const saleProvided=saleState.provided;
-  const costProvided=$("looseSaleCost").value!=="";
+  const costState=moneyInputValue("looseSaleCost");
+  const costProvided=$("looseSaleCost").value!=="" || costState.provided;
   const salePrice=saleState.value;
-  const costPrice=Number($("looseSaleCost").value||0);
-  const quantity=Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1);
+  const costPrice=costState.value;
+  const quantity=Math.max(1,parseInt($("looseSaleQuantity").value||$("looseSaleQuantity").dataset.fallbackNumber||1,10)||1);
 
   $("looseSaleTotal").textContent=saleProvided?money(salePrice*quantity):"Qeyd edilməyib";
   $("looseSaleProfit").textContent=(saleProvided&&costProvided)
@@ -11475,16 +11565,21 @@ function openEditSale(id){
   $("looseSaleModalTitle").textContent="Satışı düzəlt";
   $("saveLooseSaleBtn").textContent="Yadda saxla";
   $("looseSaleId").value=sale.id;
-  $("looseSaleName").value=saleTitle(sale);
-  $("looseSaleQuantity").value=sale.quantity||1;
+  setTextInputFallback($("looseSaleName"),saleTitle(sale),"Satış");
+  setNumberInputFallback($("looseSaleQuantity"),sale.quantity||1,"1");
   $("looseSalePrice").value="";
   setMoneyInputFallback(
     $("looseSalePrice"),
     sale.sale_price_provided===false ? 0 : Number(sale.unit_sale_price||0),
     "Qeyd edilməyib"
   );
-  $("looseSaleCost").value=(sale.cost_price_provided===false||Number(sale.unit_cost_price||0)===0)?"":Number(sale.unit_cost_price||0);
-  $("looseSaleNote").value=sale.note||"";
+  $("looseSaleCost").value="";
+  setMoneyInputFallback(
+    $("looseSaleCost"),
+    sale.cost_price_provided===false ? 0 : Number(sale.unit_cost_price||0),
+    "Qeyd edilməyib"
+  );
+  setTextInputFallback($("looseSaleNote"),sale.note,"Qeyd (boş qala bilər)");
   $("looseSaleCategory").value=sale.category_id||sale.products?.category_id||findShalvarCategory()?.id||"";
   syncLooseSaleCategoryCustom();
   $("looseSalePaymentMethod").value=sale.payment_method||"cash";
@@ -11550,14 +11645,15 @@ $("looseSaleForm").addEventListener("submit",async event=>{
   try{
     const id=$("looseSaleId").value;
     const isTrust=saleEntryMode==="trust" || isTrustCategoryId($("looseSaleCategory").value);
-    const costPriceProvided=!isTrust && $("looseSaleCost").value!=="";
+    const costState=moneyInputValue("looseSaleCost");
+    const costPriceProvided=!isTrust && ($("looseSaleCost").value!=="" || costState.provided);
 
-    const name=$("looseSaleName").value.trim()||(isTrust?currentOutsideIncomeName:"Satış");
+    const name=textInputValue("looseSaleName",isTrust?currentOutsideIncomeName:"Satış");
     if(isTrust && !name){
       toast("Başlıq yazın.");
       return;
     }
-    const note=$("looseSaleNote").value.trim()||null;
+    const note=textInputValue("looseSaleNote","")||null;
     const outsideCategoryName=currentOutsideIncomeName || `${CUSTOM_OUTSIDE_INCOME_PREFIX}${name}`;
     const categoryId=isTrust
       ? ($("looseSaleCategory").value||await ensureOutsideIncomeCategory(outsideCategoryName))
@@ -11571,9 +11667,9 @@ $("looseSaleForm").addEventListener("submit",async event=>{
       toast("Məbləği yazın.");
       return;
     }
-    const quantity=isTrust?1:Math.max(1,parseInt($("looseSaleQuantity").value||1,10)||1);
+    const quantity=isTrust?1:Math.max(1,parseInt($("looseSaleQuantity").value||$("looseSaleQuantity").dataset.fallbackNumber||1,10)||1);
     const salePrice=saleState.value;
-    const costPrice=isTrust?0:Number($("looseSaleCost").value||0);
+    const costPrice=isTrust?0:costState.value;
     const previewUrls=isTrust?[]:[...editingSaleImageUrls,...pendingSalePreviewUrls].filter(Boolean).slice(0,5);
     const files=isTrust?[]:[...pendingSaleImageFiles];
     const existingUrls=isTrust?[]:[...editingSaleImageUrls];
