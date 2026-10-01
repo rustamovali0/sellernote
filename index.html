@@ -4256,6 +4256,7 @@ const FIXED_LOGIN_EMAIL="rustamovali664@gmail.com";
 const THEME_KEY="mal_ucotu_theme";
 const SALES_ACTIONS_VISIBLE_KEY="mal_ucotu_sales_actions_visible";
 const AUTO_OPEN_POCKET_CASH_EDITOR_KEY="sellernote-auto-open-pocket-cash-editor";
+const POCKET_CASH_LOCAL_BACKUP_KEY="sellernote-pocket-cash-backup";
 const DEFAULT_APP_ICON="assets/apple-touch-icon.png";
 const launchSplashStartedAt=Date.now();
 
@@ -4589,6 +4590,7 @@ function closeModal(id){
   if(modal)modal.style.transform="";
   $(id).classList.add("hidden");
   syncModalScrollLock();
+  if(id==="pocketEditModal")flushPocketCashSave();
 }
 
 function finishLaunchSplash(){
@@ -5096,6 +5098,7 @@ async function loadAppSettings(){
     appSettings={logo_url:null,favicon_url:null,design_theme:"default",ui_visibility:null,report_sections:null,pocket_overrides:null,pocket_cash_counts:null,pocket_cash_logs:null,daily_profits:null,show_dashboard_profit:true,show_cost_profit:true,show_card_limits:false,card_accounts:null,card_details:null,card_counter_reset_at:null,notebook_images:null,balance_wallets:null,quick_expense_buttons:null,category_price_defaults:null,copy_templates:null,personal_notes:null,...(data||{})};
   }
 
+  applyPocketCashLocalBackup();
   applyBranding();
   applyDesignTheme(appSettings.design_theme);
   renderReportSectionControls();
@@ -7623,6 +7626,39 @@ function pocketCashLogs(){
   return Array.isArray(appSettings?.pocket_cash_logs)?appSettings.pocket_cash_logs:[];
 }
 
+function persistPocketCashLocalBackup(){
+  try{
+    localStorage.setItem(POCKET_CASH_LOCAL_BACKUP_KEY,JSON.stringify({
+      counts:pocketCashCounts(),
+      logs:pocketCashLogs(),
+      updated_at:new Date().toISOString()
+    }));
+  }catch(error){
+    console.warn("pocket cash local backup:",error);
+  }
+}
+
+function applyPocketCashLocalBackup(){
+  try{
+    const backup=JSON.parse(localStorage.getItem(POCKET_CASH_LOCAL_BACKUP_KEY)||"null");
+    if(!backup || typeof backup!=="object")return;
+    const backupTime=new Date(backup.updated_at||0).getTime();
+    const settingsTime=new Date(appSettings?.updated_at||0).getTime();
+    if(!backupTime || (settingsTime && backupTime<settingsTime))return;
+    appSettings={
+      ...appSettings,
+      pocket_cash_counts:backup.counts&&typeof backup.counts==="object"
+        ? backup.counts
+        : appSettings.pocket_cash_counts,
+      pocket_cash_logs:Array.isArray(backup.logs)
+        ? backup.logs
+        : appSettings.pocket_cash_logs
+    };
+  }catch(error){
+    console.warn("pocket cash restore:",error);
+  }
+}
+
 function cleanPocketCashCounts(counts={}){
   return CASH_DENOMINATIONS.reduce((next,denomination)=>{
     const count=Math.max(0,Math.floor(Number(counts?.[denomination]||0)));
@@ -7723,6 +7759,7 @@ function renderPocketCashCounts(){
 
 function queuePocketCashSave(){
   clearTimeout(pocketCashSaveTimer);
+  persistPocketCashLocalBackup();
   const counts=pocketCashCounts();
   const logs=pocketCashLogs();
   pocketCashSaveTimer=setTimeout(async()=>{
@@ -7740,6 +7777,32 @@ function queuePocketCashSave(){
       toast(error.message);
     }
   },350);
+}
+
+async function flushPocketCashSave({silent=false}={}){
+  if(!currentUser)return true;
+  clearTimeout(pocketCashSaveTimer);
+  pocketCashSaveTimer=null;
+  persistPocketCashLocalBackup();
+  const counts=pocketCashCounts();
+  const logs=pocketCashLogs();
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    pocket_cash_counts:counts,
+    pocket_cash_logs:logs,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+  if(error){
+    if(!silent){
+      if(isMissingSchemaColumn(error,"pocket_cash_counts")||isMissingSchemaColumn(error,"pocket_cash_logs")){
+        toast("Nominal lokal saxlandı. Supabase üçün SQL-i əlavə et.");
+      }else{
+        toast(error.message);
+      }
+    }
+    return false;
+  }
+  return true;
 }
 
 function changePocketCashCount(denomination,direction=pocketCashCountMode==="subtract"?-1:1){
@@ -13216,6 +13279,7 @@ sb.auth.onAuthStateChange(event=>{
 });
 
 $("logoutBtn").addEventListener("click",async()=>{
+  await flushPocketCashSave({silent:true});
   await sb.auth.signOut();
   currentUser=null;
   products=[];
@@ -13226,6 +13290,11 @@ $("logoutBtn").addEventListener("click",async()=>{
   activityLogs=[];
   $("password").value="";
   showLoginForm();
+});
+
+window.addEventListener("pagehide",persistPocketCashLocalBackup);
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="hidden")persistPocketCashLocalBackup();
 });
 
 addEventListener("resize",fitValues);
