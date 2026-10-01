@@ -4941,6 +4941,82 @@ function setNotesDate(mode){
   renderNotes();
 }
 
+function setDateModeUi(kind,mode){
+  const labels={today:"Bu gün",yesterday:"Dünən",custom:"Tarix seç",all:"Bütün"};
+  const map={
+    product:{label:"productDateLabel",box:"productDateBox",buttonAttr:"productDate"},
+    sales:{label:"salesDateLabel",box:"salesDateBox",buttonAttr:"salesDate"},
+    expenses:{label:"expensesDateLabel",box:"expensesDateBox",buttonAttr:"expensesDate"},
+    notes:{label:"notesDateLabel",box:"notesDateBox",buttonAttr:"notesDate"}
+  };
+  const config=map[kind];
+  if(!config)return;
+  $(config.label).textContent=labels[mode]||"Bu gün";
+  $(config.box)?.classList.toggle("hidden",mode!=="custom");
+  document.querySelectorAll(`[data-${kind}-date]`).forEach(button=>{
+    button.classList.toggle("active",button.dataset[config.buttonAttr]===mode);
+  });
+}
+
+function resetPageTransientState(page){
+  if(page==="dashboard"){
+    $("searchInput").value="";
+    $("categoryFilter").value="";
+    syncMainCategoryCustom("categoryFilter");
+    $("productPriceFilter").value="";
+    $("productProfitFilter").value="";
+    $("productSort").value="newest";
+    $("productSingleDate").value="";
+    productDateMode="all";
+    setDateModeUi("product","all");
+  }else if(page==="sales"){
+    $("salesSearchInput").value="";
+    $("salesCategoryFilter").value="";
+    syncMainCategoryCustom("salesCategoryFilter");
+    $("salesMinAmount").value="";
+    $("salesMaxAmount").value="";
+    $("salesStartTime").value="";
+    $("salesEndTime").value="";
+    $("salesProfitFilter").value="";
+    $("salesQtyFilter").value="";
+    $("salesSort").value="newest";
+    $("salesSingleDate").value="";
+    salesDateMode="today";
+    setDateModeUi("sales","today");
+    updateSalesSummaryLabels();
+  }else if(page==="expenses"){
+    $("expensesSearchInput").value="";
+    $("expensesMinAmount").value="";
+    $("expensesMaxAmount").value="";
+    $("expensesSort").value="newest";
+    $("expensesSingleDate").value="";
+    expensesDateMode="today";
+    setDateModeUi("expenses","today");
+    updateExpensesSummaryLabel();
+  }else if(page==="notes"){
+    $("notesSingleDate").value="";
+    notesSearchQuery="";
+    notesDateMode="today";
+    setDateModeUi("notes","today");
+  }else if(page==="categories"){
+    $("logSearch").value="";
+    $("logActionFilter").value="";
+    $("logEntityFilter").value="";
+    $("logDateFilter").value="today";
+    $("logSingleDate").value="";
+    $("logDateBox").classList.add("hidden");
+    logVisibleCount=5;
+    deletedDateMode="today";
+    $("deletedDateFilter").value="today";
+    pocketCashLogDateMode="today";
+    $("pocketCashLogDateFilter").value="today";
+    $("pocketCashLogDate").value="";
+    $("pocketCashLogStartTime").value="";
+    $("pocketCashLogEndTime").value="";
+    $("dailyProfitFilter").value="all";
+  }
+}
+
 function showAuth(){
   $("mainApp").classList.add("hidden");
   $("authView").classList.remove("hidden");
@@ -9103,6 +9179,9 @@ function showPage(page,options={}){
   const validPages=["sales","dashboard","expenses","notes","categories"];
   if(!validPages.includes(page))page="sales";
   const previousPage=currentPage;
+  if(previousPage!==page){
+    resetPageTransientState(previousPage);
+  }
   currentPage=page;
 
   ["dashboard","sales","expenses","notes","categories"].forEach(name=>{
