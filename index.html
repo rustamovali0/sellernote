@@ -73,8 +73,8 @@
       --primary:#020617;
       --success:#16a34a;
       --line:#cbd5e1;
-      --shadow:0 10px 0 rgba(15,23,42,.08);
-      --shadowStrong:0 16px 0 rgba(15,23,42,.11);
+      --shadow:0 8px 18px rgba(15,23,42,.10);
+      --shadowStrong:0 14px 30px rgba(15,23,42,.15);
       --glass:rgba(255,255,255,.97);
     }
     html[data-design-theme="soft"]{
@@ -98,6 +98,7 @@
       --glass:rgba(255,255,255,.98);
     }
     html[data-design-theme="premium"]{
+      background:#050505;
       --bg:#050505;
       --card:#101010;
       --card2:#181510;
@@ -132,6 +133,16 @@
         radial-gradient(circle at 92% 20%,rgba(255,232,150,.11),transparent 22%),
         linear-gradient(145deg,#050505 0%,#0e0b05 54%,#050505 100%);
     }
+    html[data-design-theme="premium"] .app{
+      background:
+        radial-gradient(circle at 14% 4%,rgba(212,175,55,.16),transparent 30%),
+        linear-gradient(145deg,#050505 0%,#0e0b05 54%,#050505 100%);
+    }
+    html[data-design-theme="premium"] .topbar{
+      background:
+        linear-gradient(to bottom,rgba(5,5,5,.98) 72%,rgba(5,5,5,0)),
+        radial-gradient(circle at 14% 4%,rgba(212,175,55,.14),transparent 30%);
+    }
     html[data-design-theme="clean"] .stat,
     html[data-design-theme="clean"] .card,
     html[data-design-theme="clean"] .input,
@@ -147,7 +158,7 @@
     html[data-design-theme="bold"] .log-item{border-width:2px}
     html[data-design-theme="bold"] .btn,
     html[data-design-theme="bold"] .nav-btn.active,
-    html[data-design-theme="bold"] .floating-add{box-shadow:0 5px 0 rgba(15,23,42,.18)}
+    html[data-design-theme="bold"] .floating-add{box-shadow:0 5px 14px rgba(15,23,42,.13)}
     html[data-design-theme="soft"] .stat,
     html[data-design-theme="soft"] .card,
     html[data-design-theme="soft"] .input,
@@ -544,7 +555,7 @@
 
     @media(max-width:430px){
       .topbar{
-        grid-template-columns:minmax(0,108px) minmax(138px,1fr) 41px;
+        grid-template-columns:36px minmax(138px,1fr) auto;
         gap:6px;
       }
       .brand{gap:7px}
@@ -554,8 +565,7 @@
         flex-basis:36px;
         border-radius:12px;
       }
-      .brand-title{font-size:16px}
-      .brand-sub{font-size:10px}
+      .brand-copy{display:none}
       .today{
         width:auto;
         min-width:138px;
@@ -1598,23 +1608,26 @@
         padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
       }
       #cardNumberModal .card-number-display{
-        top:61%;
-        width:min(calc(100dvh - 220px), 680px);
+        top:55%;
+        width:min(calc(100dvh - 44px), 760px);
         max-width:none;
-        padding:22px 16px;
+        padding:20px 16px;
         transform:translate(-50%,-50%) rotate(90deg);
-        font-size:clamp(36px,5.3dvh,54px);
+        font-size:clamp(32px,4.8dvh,50px);
         border-radius:24px;
       }
       #cardNumberModal .modal-head{
         align-items:flex-start;
         gap:12px;
+        top:max(10px,env(safe-area-inset-top));
       }
       #cardNumberModal .modal-head h3{
         font-size:22px;
       }
       #cardNumberModal .card-owner-tabs{
+        order:-1;
         max-width:100%;
+        margin-bottom:2px;
         padding-bottom:2px;
       }
       #cardNumberModal .card-owner-tab{
@@ -3333,14 +3346,14 @@
       <details class="card settings-card">
         <summary class="settings-toggle">
           <div>
-            <div class="settings-title">Cib sayımı</div>
-            <div class="meta">Əsginas dəyişiklikləri və tarixçə</div>
+            <div class="settings-title">Nominal dəyər</div>
+            <div class="meta">Əsginas bölgüsü və tarixçə</div>
           </div>
         </summary>
         <div class="settings-body">
           <div class="summary-grid">
             <div class="stat">
-              <div class="label">Cari sayım</div>
+              <div class="label">Nominal cəmi</div>
               <div id="settingsPocketCashTotal" class="value profit">0 ₼</div>
             </div>
             <div class="stat">
@@ -3348,6 +3361,10 @@
               <div id="settingsPocketCashLogCount" class="value">0</div>
             </div>
           </div>
+          <label class="check-card" style="margin-top:10px">
+            <input id="autoOpenPocketCashEditor" type="checkbox">
+            Satışdan sonra nominal ekranı açılsın
+          </label>
           <div class="row2" style="margin-top:10px">
             <select id="pocketCashLogDateFilter" class="select">
               <option value="today">Bu gün</option>
@@ -4069,22 +4086,22 @@
   <div id="pocketEditModal" class="modal-backdrop hidden">
     <div class="modal">
       <div class="modal-head">
-        <h3>Cibi dəyiş</h3>
+        <h3 id="pocketModalTitle">Cibi dəyiş</h3>
         <button class="close" data-close="pocketEditModal" type="button">×</button>
       </div>
       <form id="pocketEditForm" class="form" novalidate>
-        <div class="summary-grid">
+        <div id="pocketAmountSummary" class="summary-grid">
           <div class="stat"><div class="label">Avtomatik cib</div><div id="pocketAutoValue" class="value">0 ₼</div></div>
           <div class="stat"><div class="label">Cari cib</div><div id="pocketCurrentValue" class="value profit">0 ₼</div></div>
         </div>
         <div id="pocketIncomeBreakdown" class="log-list"></div>
         <div class="card" style="padding:12px">
           <div class="section-head" style="margin-bottom:8px">
-            <h2 style="font-size:16px">Cibdə var</h2>
+            <h2 style="font-size:16px">Nominal dəyər</h2>
             <div id="pocketCashCountTotal" class="count">0 ₼</div>
           </div>
           <div id="pocketCashCountSummary" class="cash-count-summary"></div>
-          <button id="togglePocketCashCountEditor" class="btn secondary full" type="button" style="margin-top:10px">Pulun miqdarını təyin et</button>
+          <button id="togglePocketCashCountEditor" class="btn secondary full" type="button" style="margin-top:10px">Nominalı dəyiş</button>
           <div id="pocketCashCountEditor" class="hidden" style="margin-top:10px">
             <div class="cash-count-mode">
               <button id="pocketCashAddMode" class="btn secondary active" type="button">Artır</button>
@@ -4094,11 +4111,11 @@
             <button id="resetPocketCashCountBtn" class="btn secondary full" type="button" style="margin-top:10px">Sayımı sıfırla</button>
           </div>
         </div>
-        <div>
+        <div id="pocketAmountEditor">
           <label id="pocketEditLabel" class="label">Cib məbləği</label>
           <input id="pocketOverrideInput" class="input" type="number" step="0.01" inputmode="decimal" placeholder="Məs: 150" />
         </div>
-        <div class="row2">
+        <div id="pocketAmountActions" class="row2">
           <button id="savePocketOverrideBtn" class="btn full" type="submit">Yadda saxla</button>
           <button id="clearPocketOverrideBtn" class="btn secondary full" type="button">Avtomatik hesabla</button>
         </div>
@@ -4238,6 +4255,7 @@ const SUPABASE_PUBLISHABLE_KEY="sb_publishable_64yI1atj6OICqpr0B2AX1w_8il9qBlH";
 const FIXED_LOGIN_EMAIL="rustamovali664@gmail.com";
 const THEME_KEY="mal_ucotu_theme";
 const SALES_ACTIONS_VISIBLE_KEY="mal_ucotu_sales_actions_visible";
+const AUTO_OPEN_POCKET_CASH_EDITOR_KEY="sellernote-auto-open-pocket-cash-editor";
 const DEFAULT_APP_ICON="assets/apple-touch-icon.png";
 const launchSplashStartedAt=Date.now();
 
@@ -7757,7 +7775,12 @@ function shouldOpenPocketCashEditorForSale(payload={}){
   return payload.payment_method!=="card" && payload.money_holder!=="yusif";
 }
 
+function autoOpenPocketCashEditorEnabled(){
+  return localStorage.getItem(AUTO_OPEN_POCKET_CASH_EDITOR_KEY)!=="false";
+}
+
 function openPocketCashEditorAfterSale(payloads=[]){
+  if(!autoOpenPocketCashEditorEnabled())return;
   const list=Array.isArray(payloads)?payloads:[payloads];
   if(!list.some(shouldOpenPocketCashEditorForSale))return;
   setTimeout(()=>{
@@ -7840,6 +7863,7 @@ function renderPocketCashLogSettings(){
 }
 
 function openPocketEditModal(options={}){
+  const nominalOnly=!!options.showCashEditor;
   const list=filteredSalesList();
   const regularList=list.filter(sale=>!isOutsideIncomeSale(sale));
   const auto=computedPocketValue(list);
@@ -7853,6 +7877,11 @@ function openPocketEditModal(options={}){
   $("pocketCurrentValue").textContent=money(shown);
   $("pocketOverrideInput").value=override===null?shown:override;
   $("pocketEditLabel").textContent=`${$("salesSummaryPocketLabel").textContent} məbləği`;
+  $("pocketModalTitle").textContent=nominalOnly?"Nominal əlavə et":"Cibi dəyiş";
+  $("pocketAmountSummary").classList.toggle("hidden",nominalOnly);
+  $("pocketIncomeBreakdown").classList.toggle("hidden",nominalOnly);
+  $("pocketAmountEditor").classList.toggle("hidden",nominalOnly);
+  $("pocketAmountActions").classList.toggle("hidden",nominalOnly);
   const outside=outsideIncomeTotals();
   const expenseTotal=expenseTotalForSalesDate({includeYusif:false});
   const rows=[
@@ -7880,7 +7909,7 @@ function openPocketEditModal(options={}){
   }
   $("pocketIncomeBreakdown").innerHTML=rows.join("") || '<div class="meta">Kənar gəlir və xərc yoxdur.</div>';
   renderPocketCashCounts();
-  $("pocketCashCountEditor").classList.toggle("hidden",!options.showCashEditor);
+  $("pocketCashCountEditor").classList.toggle("hidden",!nominalOnly);
   openModal("pocketEditModal");
 }
 
@@ -12955,6 +12984,14 @@ $("notebookImageInput").addEventListener("change",async()=>{
 });
 $("saveBalanceWalletsBtn").addEventListener("click",saveBalanceWallets);
 $("addQuickExpenseButtonBtn").addEventListener("click",addQuickExpenseButtonFromSettings);
+
+$("autoOpenPocketCashEditor").checked=autoOpenPocketCashEditorEnabled();
+$("autoOpenPocketCashEditor").addEventListener("change",()=>{
+  localStorage.setItem(AUTO_OPEN_POCKET_CASH_EDITOR_KEY,$("autoOpenPocketCashEditor").checked?"true":"false");
+  toast($("autoOpenPocketCashEditor").checked
+    ? "Nominal ekranı satışdan sonra açılacaq"
+    : "Nominal ekranı avtomatik açılmayacaq");
+});
 
 $("salesPocketStat").addEventListener("click",openPocketEditModal);
 
