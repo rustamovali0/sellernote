@@ -4340,8 +4340,16 @@ let notesSearchQuery="";
 let logVisibleCount=5;
 let settingsActiveKey=localStorage.getItem("sellernote-settings-section")||"";
 let renderFrameId=0;
+let fitValuesFrameId=0;
+let renderAllQueued=false;
+let categoryOptionsSignature="";
+let productOptionsSignature="";
+let cardOptionsSignature="";
+let quickExpenseSignature="";
+let cardLimitSignature="";
 let multiSaleSearchQuery="";
 let localSyncRunning=false;
+let localSyncPending=false;
 let pocketCashLogDateMode="today";
 let pocketCashSaveTimer=null;
 let pocketCashCountMode="add";
@@ -4582,7 +4590,9 @@ function refreshForDateChange(){
 }
 
 function fitValues(){
-  requestAnimationFrame(()=>{
+  if(fitValuesFrameId)return;
+  fitValuesFrameId=requestAnimationFrame(()=>{
+    fitValuesFrameId=0;
     const activePage=$(currentPage+"Page")||document;
     activePage.querySelectorAll(".stat .value,.sale-total").forEach(el=>{
       el.style.fontSize="";
@@ -5219,11 +5229,23 @@ async function loadAppSettings(){
 }
 
 async function loadAll(){
-  await Promise.all([loadCategories(),loadProducts(),loadSales(),loadExpenses(),loadNotes(),loadDeletedRecords(),loadLogs(),loadAppSettings()]);
+  await Promise.all([loadCategories(),loadProducts(),loadSales(),loadExpenses(),loadNotes(),loadAppSettings()]);
   applyLocalQueue();
   renderAll();
   updateSyncStatus();
   syncLocalQueue();
+
+  setTimeout(async()=>{
+    try{
+      await Promise.all([loadDeletedRecords(),loadLogs()]);
+      if(currentPage==="categories"){
+        renderDeletedRecords();
+        renderLogs();
+      }
+    }catch(error){
+      console.warn("deferred data:",error);
+    }
+  },0);
 }
 
 function isLocalId(id){
@@ -5500,10 +5522,15 @@ async function syncQueuedNote(entry){
 }
 
 async function syncLocalQueue(){
-  if(!currentUser||localSyncRunning)return;
+  if(!currentUser)return;
+  if(localSyncRunning){
+    localSyncPending=true;
+    return;
+  }
   if(!localQueue().length)return;
 
   localSyncRunning=true;
+  localSyncPending=false;
   updateSyncStatus("syncing");
   let hadError=false;
   try{
@@ -5543,6 +5570,10 @@ async function syncLocalQueue(){
   }finally{
     localSyncRunning=false;
     updateSyncStatus(hadError&&localQueue().length?"error":"idle",hadError?"Sinxron gözləyir":"");
+    if(localSyncPending && localQueue().length){
+      localSyncPending=false;
+      setTimeout(syncLocalQueue,0);
+    }
   }
 }
 
@@ -6431,6 +6462,9 @@ function quickExpenseButtons(){
 function renderQuickExpenseButtons(){
   if(!$("expenseQuickActions"))return;
   const buttons=quickExpenseButtons();
+  const signature=buttons.map(item=>`${item.id}:${item.title}:${item.amount}`).join("|");
+  if(quickExpenseSignature===signature)return;
+  quickExpenseSignature=signature;
   $("expenseQuickActions").innerHTML=`
     <button class="btn secondary" type="button" data-worker-expense-quick>
       İşçi
@@ -6721,8 +6755,18 @@ async function addQuickExpenseButtonFromSettings(){
 
 function renderCardAccountOptions(){
   const options=cardAccounts().map(name=>`<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
-  if($("saleCardAccount"))$("saleCardAccount").innerHTML=options;
-  if($("looseSaleCardAccount"))$("looseSaleCardAccount").innerHTML=options;
+  if(cardOptionsSignature===options)return;
+  cardOptionsSignature=options;
+  const saleValue=$("saleCardAccount")?.value;
+  const looseValue=$("looseSaleCardAccount")?.value;
+  if($("saleCardAccount")){
+    $("saleCardAccount").innerHTML=options;
+    if(cardAccounts().includes(saleValue))$("saleCardAccount").value=saleValue;
+  }
+  if($("looseSaleCardAccount")){
+    $("looseSaleCardAccount").innerHTML=options;
+    if(cardAccounts().includes(looseValue))$("looseSaleCardAccount").value=looseValue;
+  }
 }
 
 function cardSalesForCurrentDay(){
@@ -6752,6 +6796,7 @@ function cardAccountStats(list=filteredSalesList()){
 function renderCardLimitStrip(){
   if(!$("cardLimitStrip"))return;
   if(appSettings?.show_card_limits!==true){
+    cardLimitSignature="hidden";
     $("cardLimitStrip").classList.add("hidden");
     $("cardLimitStrip").innerHTML="";
     return;
@@ -6764,7 +6809,7 @@ function renderCardLimitStrip(){
     return acc;
   },{});
 
-  $("cardLimitStrip").innerHTML=cardAccounts().map(name=>{
+  const html=cardAccounts().map(name=>{
     const used=todayStats[name]||0;
     const left=Math.max(0,5-used);
     return `<button class="card-limit" type="button" data-show-card-number="${escapeHtml(name)}">
@@ -6772,6 +6817,9 @@ function renderCardLimitStrip(){
       <small>${left} mədaxil limiti</small>
     </button>`;
   }).join("");
+  if(cardLimitSignature===html)return;
+  cardLimitSignature=html;
+  $("cardLimitStrip").innerHTML=html;
 
   document.querySelectorAll("[data-show-card-number]").forEach(button=>{
     button.addEventListener("click",()=>openCardNumberModal(button.dataset.showCardNumber));
@@ -7113,15 +7161,21 @@ function renderCategoryOptions(){
   const visible=visibleCategories();
   const visibleIds=new Set(visible.map(category=>category.id));
   const options=visible.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+  const nextCategorySignature=visible.map(c=>`${c.id}:${c.name}`).join("|");
+  const categoryOptionsChanged=categoryOptionsSignature!==nextCategorySignature;
+  categoryOptionsSignature=nextCategorySignature;
 
-  $("categoryFilter").innerHTML='<option value="">Bütün kateqoriyalar</option>'+options;
+  if(categoryOptionsChanged){
+    $("categoryFilter").innerHTML='<option value="">Bütün kateqoriyalar</option>'+options;
+    $("salesCategoryFilter").innerHTML='<option value="">Bütün kateqoriyalar</option>'+options;
+  }
   $("categoryFilter").value=visibleIds.has(productSelected)?productSelected:"";
-
-  $("salesCategoryFilter").innerHTML='<option value="">Bütün kateqoriyalar</option>'+options;
   $("salesCategoryFilter").value=visibleIds.has(salesSelected)?salesSelected:"";
   syncMainCategoryCustoms();
 
-  $("productCategory").innerHTML='<option value="">Kateqoriya seçilməyib</option>'+options;
+  if(categoryOptionsChanged){
+    $("productCategory").innerHTML='<option value="">Kateqoriya seçilməyib</option>'+options;
+  }
 
   if(!$("productCategory").value){
     const defaultCategory=findShalvarCategory();
@@ -7132,7 +7186,9 @@ function renderCategoryOptions(){
 
   if($("looseSaleCategory")){
     const selected=$("looseSaleCategory").value;
-    $("looseSaleCategory").innerHTML='<option value="">Avtomatik: Şalvar</option>'+options;
+    if(categoryOptionsChanged){
+      $("looseSaleCategory").innerHTML='<option value="">Avtomatik: Şalvar</option>'+options;
+    }
 
     if(categories.some(category=>category.id===selected)){
       $("looseSaleCategory").value=selected;
@@ -7145,9 +7201,13 @@ function renderCategoryOptions(){
   }
 
   if($("saleProductSelect")){
+    const nextProductSignature=products.map(product=>`${product.id}:${product.name}`).join("|");
     const selected=$("saleProductSelect").value;
-    $("saleProductSelect").innerHTML='<option value="">Məhsul seç</option>'+
-      products.map(product=>`<option value="${product.id}">${escapeHtml(product.name)}</option>`).join("");
+    if(productOptionsSignature!==nextProductSignature){
+      productOptionsSignature=nextProductSignature;
+      $("saleProductSelect").innerHTML='<option value="">Məhsul seç</option>'+
+        products.map(product=>`<option value="${product.id}">${escapeHtml(product.name)}</option>`).join("");
+    }
     if(products.some(product=>product.id===selected)) $("saleProductSelect").value=selected;
   }
 }
@@ -9199,13 +9259,15 @@ function renderShared(){
 }
 
 function renderAll(){
-  renderShared();
-  renderCurrentPage();
+  scheduleRender();
 }
 
 function scheduleRender(page=currentPage){
+  renderAllQueued=true;
   cancelAnimationFrame(renderFrameId);
   renderFrameId=requestAnimationFrame(()=>{
+    renderFrameId=0;
+    renderAllQueued=false;
     renderShared();
     renderCurrentPage(page);
   });
@@ -9213,7 +9275,10 @@ function scheduleRender(page=currentPage){
 
 function schedulePageRender(page=currentPage){
   cancelAnimationFrame(renderFrameId);
-  renderFrameId=requestAnimationFrame(()=>renderCurrentPage(page));
+  renderFrameId=requestAnimationFrame(()=>{
+    renderFrameId=0;
+    renderCurrentPage(page);
+  });
 }
 
 function applyCostProfitVisibility(){
@@ -9276,7 +9341,8 @@ function showPage(page,options={}){
   const needsRender=previousPage!==page || options.forceRender || !$(page+"Page")?.dataset.renderedOnce;
   if(needsRender){
     $(page+"Page").dataset.renderedOnce="1";
-    schedulePageRender(page);
+    if(renderAllQueued) scheduleRender(page);
+    else schedulePageRender(page);
     requestAnimationFrame(()=>{
       fitValues();
       updateScrollTopButton();
@@ -13409,9 +13475,9 @@ $("authForm").addEventListener("submit",async event=>{
   showApp();
   setToday();
   finishLaunchSplash();
-  await loadAll();
   history.replaceState({page:"sales"},"","#sales");
   showPage("sales",{history:false});
+  await loadAll();
 });
 
 $("forgotPasswordBtn").addEventListener("click",async()=>{
@@ -13521,11 +13587,11 @@ setInterval(setToday,30000);
   $("toggleNotesDelete").textContent="Sil";
 
   setToday();
-  await loadAll();
-
   history.replaceState({page:"sales"},"","#sales");
   showApp();
   showPage("sales",{history:false});
+  finishLaunchSplashAfterPaint();
+  await loadAll();
   }catch(error){
     console.error(error);
     showLoginForm();
