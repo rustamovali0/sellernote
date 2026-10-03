@@ -7794,8 +7794,11 @@ function outsideIncomeForSalesDate(){
   );
 }
 
-function outsideIncomeTotals(){
-  return outsideIncomeForSalesDate().reduce((totals,sale)=>{
+function outsideIncomeTotals(options={}){
+  const includeYusif=options.includeYusif!==false;
+  return outsideIncomeForSalesDate()
+    .filter(sale=>includeYusif || !isYusifSale(sale))
+    .reduce((totals,sale)=>{
     const rawTitle=OUTSIDE_INCOME_NAMES.find(name=>normalizeCategoryName(name)===normalizeCategoryName(saleTitle(sale)))
       || categories.find(category=>category.id===(sale.category_id||sale.products?.category_id))?.name
       || saleTitle(sale);
@@ -7901,7 +7904,7 @@ function computedPocketValue(list=filteredSalesList()){
     .filter(sale=>!isOutsideIncomeSale(sale)&&sale.payment_method!=="card"&&!isYusifSale(sale))
     .reduce((sum,s)=>sum+Number(s.total_revenue||0),0);
   const expenseTotal=expenseTotalForSalesDate({includeYusif:false});
-  return revenue-expenseTotal+outsideIncomeTotals().total;
+  return revenue-expenseTotal+outsideIncomeTotals({includeYusif:false}).total;
 }
 
 function displayedPocketValue(list=filteredSalesList()){
@@ -7934,6 +7937,40 @@ async function savePocketOverride(value){
   await loadLogs();
   renderLogs();
   renderSales();
+  return true;
+}
+
+function pocketKeysForDate(dateValue=new Date()){
+  const date=isoLocalDate(new Date(dateValue||new Date()));
+  return [`date:${date}`,"all"];
+}
+
+async function clearPocketOverridesForDate(dateValue=new Date()){
+  const overrides=pocketOverrides();
+  const next={...overrides};
+  let changed=false;
+
+  pocketKeysForDate(dateValue).forEach(key=>{
+    if(Object.prototype.hasOwnProperty.call(next,key)){
+      delete next[key];
+      changed=true;
+    }
+  });
+
+  if(!changed)return true;
+  appSettings={...appSettings,pocket_overrides:next};
+
+  if(!currentUser)return true;
+  const {error}=await sb.from("app_settings").upsert({
+    user_id:currentUser.id,
+    pocket_overrides:next,
+    updated_at:new Date().toISOString()
+  },{onConflict:"user_id"});
+
+  if(error){
+    console.warn("clear pocket override:",error);
+    return false;
+  }
   return true;
 }
 
@@ -8154,7 +8191,7 @@ function openPocketEditModal(options={}){
   $("pocketIncomeBreakdown").classList.toggle("hidden",nominalOnly);
   $("pocketAmountEditor").classList.toggle("hidden",nominalOnly);
   $("pocketAmountActions").classList.toggle("hidden",nominalOnly);
-  const outside=outsideIncomeTotals();
+  const outside=outsideIncomeTotals({includeYusif:false});
   const expenseTotal=expenseTotalForSalesDate({includeYusif:false});
   const rows=[
     `<div class="log-item"><div class="log-top"><div class="log-title">Nağd satış</div><div class="log-date">${money(cashRevenue)}</div></div></div>`
@@ -9752,6 +9789,7 @@ function updateSalePreview(){
 }
 
 async function deleteSale(id){
+  const sale=sales.find(item=>item.id===id);
   if(!await appConfirm("Bu satış qeydini silmək istəyirsiniz?",{
     title:"Satışı sil",
     confirmText:"Sil",
@@ -9762,6 +9800,7 @@ async function deleteSale(id){
   if(isLocalId(id)){
     sales=sales.filter(item=>item.id!==id);
     saveLocalQueue(localQueue().filter(entry=>!(entry.type==="sale_insert" && entry.local_id===id)));
+    clearPocketOverridesForDate(sale?.created_at);
     renderAll();
     toast("Satış silindi");
     return;
@@ -9779,6 +9818,7 @@ async function deleteSale(id){
   }
 
   sales=sales.filter(item=>item.id!==id);
+  clearPocketOverridesForDate(sale?.created_at);
   renderAll();
   toast("Satış silindi");
 }
@@ -9852,6 +9892,7 @@ async function duplicateSale(id,options={}){
 
   enqueueLocalMutation(entry);
   sales.unshift(makeLocalSaleRow(entry));
+  clearPocketOverridesForDate(entry.created_at);
   renderAll();
   toast("Satış dublikatlandı. Baza ilə sinxron gedir.");
   syncLocalQueue();
@@ -9987,6 +10028,7 @@ async function addQuickExpense(title,amount){
 
     enqueueLocalMutation(entry);
     expenses.unshift(makeLocalExpenseRow(entry));
+    clearPocketOverridesForDate(entry.created_at);
     showPage("expenses");
     renderAll();
     toast(`${title} xərci əlavə edildi. Baza ilə sinxron gedir.`);
@@ -9998,6 +10040,7 @@ async function addQuickExpense(title,amount){
 }
 
 async function deleteExpense(id){
+  const expense=expenses.find(item=>item.id===id);
   if(!await appConfirm("Bu xərc qeydini silmək istəyirsiniz?",{
     title:"Xərci sil",
     confirmText:"Sil",
@@ -10008,6 +10051,7 @@ async function deleteExpense(id){
   if(isLocalId(id)){
     expenses=expenses.filter(item=>item.id!==id);
     saveLocalQueue(localQueue().filter(entry=>!(entry.type==="expense_insert" && entry.local_id===id)));
+    clearPocketOverridesForDate(expense?.created_at);
     renderAll();
     toast("Xərc silindi");
     return;
@@ -10022,6 +10066,7 @@ async function deleteExpense(id){
   }
 
   expenses=expenses.filter(item=>item.id!==id);
+  clearPocketOverridesForDate(expense?.created_at);
   renderAll();
   toast("Xərc silindi");
 }
@@ -11217,11 +11262,13 @@ $("expenseForm").addEventListener("submit",async event=>{
     };
 
     if(id){
+      const previousExpense=expenses.find(expense=>expense.id===id);
       const finalPayload=await uploadImagesForPayload(payload,pendingExpenseImageFiles,editingExpenseImageUrls);
       const result=await sb.from("expenses").update(finalPayload).eq("id",id);
       if(result.error)throw result.error;
 
       expenses=expenses.map(expense=>expense.id===id?{...expense,...finalPayload}:expense);
+      clearPocketOverridesForDate(previousExpense?.created_at);
       closeModal("expenseModal");
       showPage("expenses");
       renderAll();
@@ -11247,6 +11294,7 @@ $("expenseForm").addEventListener("submit",async event=>{
 
     enqueueLocalMutation(entry);
     expenses.unshift(makeLocalExpenseRow(entry));
+    clearPocketOverridesForDate(createdAt);
 
     closeModal("expenseModal");
     showPage("expenses");
@@ -11426,6 +11474,7 @@ $("saleForm").addEventListener("submit",async event=>{
   };
   enqueueLocalMutation(entry);
   sales.unshift(makeLocalSaleRow(entry));
+  clearPocketOverridesForDate(entry.created_at);
   closeModal("saleModal");
   renderAll();
   $("saveSaleBtn").disabled=false;
@@ -11780,11 +11829,13 @@ $("looseSaleForm").addEventListener("submit",async event=>{
 
       if(error)throw error;
 
+      const previousSale=sales.find(sale=>sale.id===id);
       sales=sales.map(sale=>sale.id===id?{
         ...sale,
         ...finalPayload,
         products:sale.products
       }:sale);
+      clearPocketOverridesForDate(previousSale?.created_at);
       closeModal("looseSaleModal");
       showPage("sales");
       renderAll();
@@ -11832,6 +11883,7 @@ $("looseSaleForm").addEventListener("submit",async event=>{
       enqueueLocalMutation(saleEntry);
       products.unshift(makeLocalProductRow(productEntry));
       sales.unshift(makeLocalSaleRow(saleEntry));
+      clearPocketOverridesForDate(createdAt);
 
       closeModal("looseSaleModal");
       showPage("sales");
@@ -11872,6 +11924,7 @@ $("looseSaleForm").addEventListener("submit",async event=>{
     };
     enqueueLocalMutation(saleEntry);
     sales.unshift(makeLocalSaleRow(saleEntry));
+    clearPocketOverridesForDate(saleEntry.created_at);
 
     closeModal("looseSaleModal");
     showPage("sales");
