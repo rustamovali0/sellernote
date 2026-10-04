@@ -4114,6 +4114,17 @@
         <div id="pocketIncomeBreakdown" class="log-list"></div>
         <div class="card" style="padding:12px">
           <div class="section-head" style="margin-bottom:8px">
+            <h2 style="font-size:16px">Yusifə ver</h2>
+            <div class="meta">Yusifdə var-a yazılacaq</div>
+          </div>
+          <input id="pocketYusifTransferAmount" class="input" type="number" step="0.01" inputmode="decimal" placeholder="Məbləğ" />
+          <div class="row2" style="margin-top:10px">
+            <button id="pocketYusifTransferCashBtn" class="btn secondary full" type="button">Nağd verdim</button>
+            <button id="pocketYusifTransferCardBtn" class="btn secondary full" type="button">Kartına göndərdim</button>
+          </div>
+        </div>
+        <div class="card" style="padding:12px">
+          <div class="section-head" style="margin-bottom:8px">
             <h2 style="font-size:16px">Nominal dəyər</h2>
             <div id="pocketCashCountTotal" class="count">0 ₼</div>
           </div>
@@ -4279,6 +4290,7 @@ const THEME_KEY="mal_ucotu_theme";
 const SALES_ACTIONS_VISIBLE_KEY="mal_ucotu_sales_actions_visible";
 const AUTO_OPEN_POCKET_CASH_EDITOR_KEY="sellernote-auto-open-pocket-cash-editor";
 const POCKET_CASH_LOCAL_BACKUP_KEY="sellernote-pocket-cash-backup";
+const POCKET_YUSIF_TRANSFER_TITLE="Yusifə verdim";
 const DEFAULT_APP_ICON="assets/apple-touch-icon.png";
 const launchSplashStartedAt=Date.now();
 
@@ -7782,7 +7794,7 @@ function expensesForSalesDate(){
 function expenseTotalForSalesDate(options={}){
   const includeYusif=options.includeYusif!==false;
   return expensesForSalesDate()
-    .filter(expense=>includeYusif || !isYusifExpense(expense))
+    .filter(expense=>includeYusif || !isYusifExpense(expense) || isPocketYusifTransfer(expense))
     .reduce((sum,expense)=>sum+Number(expense.amount||0),0);
 }
 
@@ -7820,6 +7832,28 @@ function currentPocketKey(){
     return $("salesSingleDate").value?`date:${$("salesSingleDate").value}`:"custom";
   }
   return "all";
+}
+
+function currentSalesDateTimeIso(){
+  const now=new Date();
+  let date=isoLocalDate(now);
+  if(salesDateMode==="yesterday"){
+    const yesterday=new Date();
+    yesterday.setDate(yesterday.getDate()-1);
+    date=isoLocalDate(yesterday);
+  }else if(salesDateMode==="custom" && $("salesSingleDate")?.value){
+    date=$("salesSingleDate").value;
+  }
+
+  const [year,month,day]=date.split("-").map(Number);
+  return new Date(
+    year,
+    Math.max(0,(month||1)-1),
+    day||1,
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds()
+  ).toISOString();
 }
 
 function pocketOverrides(){
@@ -8185,6 +8219,7 @@ function openPocketEditModal(options={}){
   $("pocketAutoValue").textContent=money(auto);
   $("pocketCurrentValue").textContent=money(shown);
   $("pocketOverrideInput").value=override===null?shown:override;
+  if($("pocketYusifTransferAmount"))$("pocketYusifTransferAmount").value="";
   $("pocketEditLabel").textContent=`${$("salesSummaryPocketLabel").textContent} məbləği`;
   $("pocketModalTitle").textContent=nominalOnly?"Nominal əlavə et":"Cibi dəyiş";
   $("pocketAmountSummary").classList.toggle("hidden",nominalOnly);
@@ -8220,6 +8255,47 @@ function openPocketEditModal(options={}){
   renderPocketCashCounts();
   $("pocketCashCountEditor").classList.toggle("hidden",!nominalOnly);
   openModal("pocketEditModal");
+}
+
+async function addPocketYusifTransfer(method="cash"){
+  const amount=Number($("pocketYusifTransferAmount").value||0);
+  if(!Number.isFinite(amount) || amount<=0){
+    toast("Yusifə verilən məbləği düzgün yazın.");
+    return;
+  }
+
+  const createdAt=currentSalesDateTimeIso();
+  const payload={
+    user_id:currentUser.id,
+    title:POCKET_YUSIF_TRANSFER_TITLE,
+    amount,
+    note:method==="card"?"Kartına göndərdim":"Nağd verdim",
+    money_holder:"yusif",
+    payment_method:method==="card"?"card":"cash",
+    image_url:null,
+    image_urls:[],
+    created_at:createdAt
+  };
+  const entry={
+    id:crypto.randomUUID(),
+    type:"expense_insert",
+    local_id:LOCAL_ID_PREFIX+crypto.randomUUID(),
+    payload,
+    preview_image_url:null,
+    preview_image_urls:[],
+    created_at:createdAt
+  };
+
+  enqueueLocalMutation(entry);
+  expenses.unshift(makeLocalExpenseRow(entry));
+  $("pocketYusifTransferAmount").value="";
+  clearPocketOverridesForDate(createdAt);
+  renderAll();
+  renderPocketCashCounts();
+  renderYusifMoneySettings();
+  if(!$("yusifExpenseModal")?.classList.contains("hidden"))updateYusifExpenseModal();
+  toast(`Yusifə ${money(amount)} ${method==="card"?"kartla":"nağd"} yazıldı`);
+  syncLocalQueue();
 }
 
 function currentPaymentSummary(list=filteredSalesList().filter(sale=>!isOutsideIncomeSale(sale))){
@@ -8443,6 +8519,11 @@ function expenseImages(expense){
 
 function isYusifExpense(expense){
   return expense?.money_holder==="yusif";
+}
+
+function isPocketYusifTransfer(expense){
+  return isYusifExpense(expense) &&
+    normalizeCategoryName(expense?.title||"")===normalizeCategoryName(POCKET_YUSIF_TRANSFER_TITLE);
 }
 
 function yusifExpenseTotal(list=expenses){
@@ -13368,6 +13449,8 @@ $("autoOpenPocketCashEditor").addEventListener("change",()=>{
 });
 
 $("salesPocketStat").addEventListener("click",openPocketEditModal);
+$("pocketYusifTransferCashBtn").addEventListener("click",()=>addPocketYusifTransfer("cash"));
+$("pocketYusifTransferCardBtn").addEventListener("click",()=>addPocketYusifTransfer("card"));
 
 $("togglePocketCashCountEditor").addEventListener("click",()=>{
   $("pocketCashCountEditor").classList.toggle("hidden");
