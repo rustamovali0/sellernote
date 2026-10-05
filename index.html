@@ -688,6 +688,17 @@
       background:transparent;
       box-shadow:none;
     }
+    .search-action-row{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:8px;
+      align-items:stretch;
+    }
+    .search-action-row .btn{
+      min-height:46px;
+      padding:0 14px;
+      white-space:nowrap;
+    }
     .drop-option{
       width:100%;min-height:42px;padding:9px 10px;border-radius:10px;
       background:transparent;color:var(--text);text-align:left;font-weight:650;
@@ -2956,7 +2967,12 @@
             </button>
             <div id="productFilterPanel" class="drop-panel right inline-filter-panel hidden">
               <div class="form">
-                <input id="searchInput" class="input" type="search" placeholder="Məhsul adına görə axtar..." />
+                <div class="search-action-row">
+                  <input id="searchInput" class="input" type="search" placeholder="Məhsul adına görə axtar..." />
+                  <button id="productSearchQuickSale" class="btn hidden" type="button" aria-label="Axtarışdakı ilk məhsulu sat">
+                    Sat
+                  </button>
+                </div>
                 <select id="productPriceFilter" class="select">
                   <option value="">Qiymət: hamısı</option>
                   <option value="under50">50 ₼-dən aşağı</option>
@@ -2984,9 +3000,6 @@
 
           <button id="clearProductToolbar" class="toolbar-clear" type="button" aria-label="Məhsul filterlərini təmizlə">
             Təmizlə
-          </button>
-          <button id="productSearchQuickSale" class="toolbar-clear hidden" type="button" aria-label="Axtarışdakı ilk məhsulu sat">
-            Sat
           </button>
         </div>
         <select id="categoryFilter" class="select main-category-filter native-hidden" aria-hidden="true" tabindex="-1"><option value="">Bütün kateqoriyalar</option></select>
