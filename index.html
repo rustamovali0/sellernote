@@ -2985,6 +2985,9 @@
           <button id="clearProductToolbar" class="toolbar-clear" type="button" aria-label="Məhsul filterlərini təmizlə">
             Təmizlə
           </button>
+          <button id="productSearchQuickSale" class="toolbar-clear hidden" type="button" aria-label="Axtarışdakı ilk məhsulu sat">
+            Sat
+          </button>
         </div>
         <select id="categoryFilter" class="select main-category-filter native-hidden" aria-hidden="true" tabindex="-1"><option value="">Bütün kateqoriyalar</option></select>
         <div id="categoryFilterCustom" class="custom-category-select main-category-custom" data-main-category-filter="categoryFilter">
@@ -7411,7 +7414,7 @@ function addProductImageFiles(files){
   renderProductImagePreviews();
 }
 
-function renderProducts(){
+function filteredProductList(){
   const query=$("searchInput").value.trim().toLowerCase();
   const category=$("categoryFilter").value;
   const priceFilter=$("productPriceFilter").value;
@@ -7420,7 +7423,7 @@ function renderProducts(){
   const selectedDate=$("productSingleDate").value;
   const showCostProfit=costProfitVisible();
 
-  let list=products.filter(product=>{
+  const list=products.filter(product=>{
     const salePrice=Number(product.sale_price||0);
     const profit=salePrice-Number(product.cost_price||0);
 
@@ -7450,6 +7453,19 @@ function renderProducts(){
     return new Date(b.created_at)-new Date(a.created_at);
   });
 
+  return list;
+}
+
+function updateProductQuickSaleButton(list=filteredProductList()){
+  const hasSearch=!!$("searchInput").value.trim();
+  $("productSearchQuickSale").classList.toggle("hidden",!hasSearch || !list.length);
+}
+
+function renderProducts(){
+  const list=filteredProductList();
+  const showCostProfit=costProfitVisible();
+
+  updateProductQuickSaleButton(list);
   $("productCount").textContent=`${list.length} məhsul`;
 
   $("productList").innerHTML=list.length?list.map(product=>{
@@ -10632,6 +10648,59 @@ function clearProductFilters(){
 }
 $("resetProductFilters").addEventListener("click",clearProductFilters);
 $("clearProductToolbar").addEventListener("click",clearProductFilters);
+
+function quickSaleFirstSearchedProduct(){
+  if(!$("searchInput").value.trim()){
+    toast("Əvvəlcə məhsul adı yazın.");
+    return;
+  }
+
+  const product=filteredProductList()[0];
+  if(!product){
+    toast("Axtarışda məhsul tapılmadı.");
+    updateProductQuickSaleButton([]);
+    return;
+  }
+
+  const images=productImages(product);
+  const salePrice=effectiveProductSalePrice(product);
+  const payload={
+    user_id:currentUser.id,
+    product_id:product.id,
+    category_id:product.category_id||null,
+    product_name:product.name||"Satış",
+    quantity:1,
+    unit_sale_price:salePrice,
+    unit_cost_price:Number(product.cost_price||0),
+    sale_price_provided:salePrice>0,
+    cost_price_provided:Number(product.cost_price||0)>0,
+    payment_method:"cash",
+    card_account:null,
+    money_holder:"normal",
+    image_url:images[0]||null,
+    image_urls:images
+  };
+  const entry={
+    id:crypto.randomUUID(),
+    type:"sale_insert",
+    local_id:LOCAL_ID_PREFIX+crypto.randomUUID(),
+    payload,
+    preview_image_url:images[0]||null,
+    preview_image_urls:images,
+    created_at:new Date().toISOString()
+  };
+
+  enqueueLocalMutation(entry);
+  sales.unshift(makeLocalSaleRow(entry));
+  clearPocketOverridesForDate(entry.created_at);
+  showPage("sales");
+  renderAll();
+  toast(`${product.name||"Məhsul"} satış tarixçəsinə əlavə edildi.`);
+  openPocketCashEditorAfterSale(payload);
+  syncLocalQueue();
+}
+
+$("productSearchQuickSale").addEventListener("click",quickSaleFirstSearchedProduct);
 
 /* Sales filters */
 ["salesSearchInput","salesCategoryFilter","salesMinAmount","salesMaxAmount","salesStartTime","salesEndTime","salesProfitFilter","salesQtyFilter","salesSort"].forEach(id=>{
