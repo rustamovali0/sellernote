@@ -2916,7 +2916,7 @@
 
     <div id="globalSearchWrap" class="global-search-wrap">
       <input id="globalSearch" class="input global-search" type="search" placeholder="Satışlarda axtar..." autocomplete="off">
-      <button id="globalSearchBtn" class="btn" type="button">Axtar</button>
+      <button id="globalSearchBtn" class="btn" type="button" aria-label="Klaviaturanı gizlət">Gizlət</button>
       <button id="globalClearBtn" class="btn secondary global-clear hidden" type="button">Təmizlə</button>
     </div>
 
@@ -5376,9 +5376,6 @@ function makeLocalProductRow(entry){
 function makeLocalSaleRow(entry){
   const payload=entry.payload||{};
   const createdAt=entry.created_at||new Date().toISOString();
-  const quantity=Number(payload.quantity||1);
-  const unitSale=Number(payload.unit_sale_price||0);
-  const unitCost=Number(payload.unit_cost_price||0);
   const product=products.find(item=>item.id===payload.product_id)||null;
   return {
     ...payload,
@@ -5389,15 +5386,24 @@ function makeLocalSaleRow(entry){
     created_at:createdAt,
     updated_at:createdAt,
     deleted_at:null,
-    total_revenue:unitSale*quantity,
-    total_cost:unitCost*quantity,
-    profit:(unitSale-unitCost)*quantity,
+    ...saleCalculatedFields(payload),
     products:product?{
       name:product.name,
       category_id:product.category_id,
       categories:product.categories||categoryRelation(product.category_id)
     }:null,
     _localPending:true
+  };
+}
+
+function saleCalculatedFields(row){
+  const quantity=Number(row?.quantity||1);
+  const unitSale=Number(row?.unit_sale_price||0);
+  const unitCost=Number(row?.unit_cost_price||0);
+  return {
+    total_revenue:unitSale*quantity,
+    total_cost:unitCost*quantity,
+    profit:(unitSale-unitCost)*quantity
   };
 }
 
@@ -5805,6 +5811,12 @@ function effectiveProductSalePrice(product){
   if(!product)return 0;
   const productPrice=Number(product.sale_price||0);
   return productPrice>0 ? productPrice : categoryDefaultPrice(product.category_id);
+}
+
+function productCategoryName(product){
+  return categories.find(category=>category.id===product?.category_id)?.name
+    || product?.categories?.name
+    || "Kateqoriyasız";
 }
 
 function moneyInputValue(id){
@@ -7458,7 +7470,7 @@ function renderProducts(){
 
       <div class="product-main">
         <div class="product-name">${escapeHtml(product.name)}</div>
-        <div class="meta">${escapeHtml(product.categories?.name||"Kateqoriyasız")} · ${formatDate(product.created_at)}</div>
+        <div class="meta">${escapeHtml(productCategoryName(product))} · ${formatDate(product.created_at)}</div>
 
         <div class="price-row">
           <span class="badge">Satış ${money(product.sale_price)}</span>
@@ -11284,6 +11296,7 @@ $("productForm").addEventListener("submit",async event=>{
       products=products.map(product=>product.id===id?{
         ...product,
         ...payload,
+        categories:categoryRelation(payload.category_id),
         image_url:payload.image_url||product.image_url||null,
         image_urls:payload.image_urls?.length?payload.image_urls:product.image_urls
       }:product);
@@ -11946,7 +11959,12 @@ $("looseSaleForm").addEventListener("submit",async event=>{
       sales=sales.map(sale=>sale.id===id?{
         ...sale,
         ...finalPayload,
-        products:sale.products
+        ...saleCalculatedFields(finalPayload),
+        products:sale.products ? {
+          ...sale.products,
+          category_id:finalPayload.category_id||sale.products.category_id||null,
+          categories:categoryRelation(finalPayload.category_id)||sale.products.categories||null
+        } : sale.products
       }:sale);
       clearPocketOverridesForDate(previousSale?.created_at);
       closeModal("looseSaleModal");
@@ -13345,7 +13363,7 @@ function syncGlobalSearch(page){
   $("globalClearBtn").classList.toggle("hidden",!input.value.trim());
 }
 
-function applyGlobalSearch(){
+function applyGlobalSearch(options={}){
   const active=document.querySelector(".nav-btn.active")?.dataset.page||"sales";
   const value=$("globalSearch").value;
 
@@ -13366,19 +13384,24 @@ function applyGlobalSearch(){
     renderLogs();
   }
   $("globalClearBtn").classList.toggle("hidden",!value.trim());
-  closeDropdowns();
+  if(options.closeDropdowns!==false)closeDropdowns();
 }
 
 function clearGlobalSearch(){
   $("globalSearch").value="";
-  applyGlobalSearch();
+  applyGlobalSearch({closeDropdowns:false});
 }
 
-$("globalSearchBtn").addEventListener("click",applyGlobalSearch);
+$("globalSearchBtn").addEventListener("click",()=>{
+  $("globalSearch").blur();
+  applyGlobalSearch({closeDropdowns:false});
+});
 $("globalClearBtn").addEventListener("click",clearGlobalSearch);
+$("globalSearch").addEventListener("input",()=>applyGlobalSearch({closeDropdowns:false}));
 $("globalSearch").addEventListener("keydown",event=>{
   if(event.key==="Enter"){
     event.preventDefault();
+    $("globalSearch").blur();
     applyGlobalSearch();
   }
 });
