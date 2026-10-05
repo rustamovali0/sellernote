@@ -1738,7 +1738,7 @@
     .global-search-wrap{
       margin:-3px 0 10px;
       display:grid;
-      grid-template-columns:1fr auto auto;
+      grid-template-columns:1fr auto auto auto;
       gap:8px;
     }
     .global-search{
@@ -2927,6 +2927,7 @@
 
     <div id="globalSearchWrap" class="global-search-wrap">
       <input id="globalSearch" class="input global-search" type="search" placeholder="Satışlarda axtar..." autocomplete="off">
+      <button id="productSearchQuickSale" class="btn hidden" type="button" aria-label="Axtarışdakı ilk məhsulu sat">Sat</button>
       <button id="globalSearchBtn" class="btn" type="button" aria-label="Klaviaturanı gizlət">Gizlət</button>
       <button id="globalClearBtn" class="btn secondary global-clear hidden" type="button">Təmizlə</button>
     </div>
@@ -2967,12 +2968,7 @@
             </button>
             <div id="productFilterPanel" class="drop-panel right inline-filter-panel hidden">
               <div class="form">
-                <div class="search-action-row">
-                  <input id="searchInput" class="input" type="search" placeholder="Məhsul adına görə axtar..." />
-                  <button id="productSearchQuickSale" class="btn hidden" type="button" aria-label="Axtarışdakı ilk məhsulu sat">
-                    Sat
-                  </button>
-                </div>
+                <input id="searchInput" class="input" type="search" placeholder="Məhsul adına görə axtar..." />
                 <select id="productPriceFilter" class="select">
                   <option value="">Qiymət: hamısı</option>
                   <option value="under50">50 ₼-dən aşağı</option>
@@ -7471,7 +7467,8 @@ function filteredProductList(){
 
 function updateProductQuickSaleButton(list=filteredProductList()){
   const hasSearch=!!$("searchInput").value.trim();
-  $("productSearchQuickSale").classList.toggle("hidden",!hasSearch || !list.length);
+  const active=document.querySelector(".nav-btn.active")?.dataset.page||"sales";
+  $("productSearchQuickSale").classList.toggle("hidden",active!=="dashboard" || !hasSearch || !list.length);
 }
 
 function renderProducts(){
@@ -13443,6 +13440,8 @@ function syncGlobalSearch(page){
     input.value=$("logSearch").value;
   }
   $("globalClearBtn").classList.toggle("hidden",!input.value.trim());
+  if(page==="dashboard")updateProductQuickSaleButton();
+  else $("productSearchQuickSale").classList.add("hidden");
 }
 
 function applyGlobalSearch(options={}){
@@ -13472,6 +13471,7 @@ function applyGlobalSearch(options={}){
 function clearGlobalSearch(){
   $("globalSearch").value="";
   applyGlobalSearch({closeDropdowns:false});
+  $("productSearchQuickSale").classList.add("hidden");
 }
 
 $("globalSearchBtn").addEventListener("click",()=>{
